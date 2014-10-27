@@ -47,6 +47,7 @@ var
 	core_trim = core_version.trim,
 
 	// Define a local copy of jQuery
+	// 定义本地jQuery方法
 	jQuery = function( selector, context ) {
 		// The jQuery object is actually just the init constructor 'enhanced'
 		// jQuery 方法其实是 jQuery.fn.init 构造器的强化
@@ -54,7 +55,7 @@ var
 	},
 
 	// Used for matching numbers
-	// 用于匹配数字，包括科学计数法
+	// 用于匹配数字，包括科学计数法，如：-123.34e-23
 	core_pnum = /[+-]?(?:\d*\.|)\d+(?:[eE][+-]?\d+|)/.source,
 
 	// Used for splitting on whitespace
@@ -62,17 +63,17 @@ var
 	core_rnotwhite = /\S+/g,
 
 	// Make sure we trim BOM and NBSP (here's looking at you, Safari 5.0 and IE)
-	// 正则，用于去掉字符串的前后空白
+	// 正则，用于去掉字符串的前后空白。包括BOM的unicode编码、十六进制编码
 	rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,
 
 	// A simple way to check for HTML strings
 	// Prioritize #id over <tag> to avoid XSS via location.hash (#9521)
 	// Strict HTML recognition (#11290: must start with <)
-	// 用于检测是否为HTML标签或ID，优先处理id值从而防止XSS攻击 ???
+	// 用于检测是否为HTML标签或ID
 	rquickExpr = /^(?:\s*(<[\w\W]+>)[^>]*|#([\w-]*))$/,
 
 	// Match a standalone tag
-	// 匹配单个标签
+	// 匹配标签，如：<div>、<div></div>、<input />
 	rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
 
 	// JSON RegExp
@@ -83,12 +84,11 @@ var
 	rvalidtokens = /"[^"\\\r\n]*"|true|false|null|-?(?:\d+\.|)\d+(?:[eE][+-]?\d+|)/g,
 
 	// Matches dashed string for camelizing
-	// ???
 	rmsPrefix = /^-ms-/,
 	rdashAlpha = /-([\da-z])/gi,
 
 	// Used by jQuery.camelCase as callback to replace()
-	// ???
+	// 用于方法jQuery.camelCase的替换方法
 	fcamelCase = function( all, letter ) {
 		return letter.toUpperCase();
 	},
@@ -105,18 +105,21 @@ var
 		}
 	},
 	// Clean-up method for dom ready events
-	// 清除 dom ready 事件 'completed' 方法（即文档DOM加载完之后）
+	// 清除 dom ready 事件 'completed' 方法（即文档DOM加载完之后卸载doc、win上事件）
 	detach = function() {
+		// 标准浏览器
 		if ( document.addEventListener ) {
 			document.removeEventListener( "DOMContentLoaded", completed, false );
 			window.removeEventListener( "load", completed, false );
 
+		// ie
 		} else {
 			document.detachEvent( "onreadystatechange", completed );
 			window.detachEvent( "onload", completed );
 		}
 	};
 
+// 原型对象扩展
 jQuery.fn = jQuery.prototype = {
 	// The current version of jQuery being used
 	jquery: core_version,
@@ -242,6 +245,7 @@ jQuery.fn = jQuery.prototype = {
 		return num == null ?
 
 			// Return a 'clean' array
+			// 这里this是选择器匹配的所有元素的集合（数组）
 			this.toArray() :
 
 			// Return just the object
@@ -250,10 +254,11 @@ jQuery.fn = jQuery.prototype = {
 
 	// Take an array of elements and push it onto the stack
 	// (returning the new matched element set)
-	// 把一个数组元素压入栈，返回新的匹配元素集
+	// 把一个数组元素压入栈，返回新的匹配元素集，内部方法，用于生成新的jquery对象
 	pushStack: function( elems ) {
 
 		// Build a new jQuery matched element set
+		// 创建一个新的jquery匹配元素集
 		var ret = jQuery.merge( this.constructor(), elems );
 
 		// Add the old object onto the stack (as a reference)
@@ -323,14 +328,16 @@ jQuery.fn = jQuery.prototype = {
 // Give the init function the jQuery prototype for later instantiation
 jQuery.fn.init.prototype = jQuery.fn;
 
+// jQuery的扩展方法
 jQuery.extend = jQuery.fn.extend = function() {
 	var src, copyIsArray, copy, name, options, clone,
 		target = arguments[0] || {},
-		i = 1,
+		i = 1, // 记录参数长度
 		length = arguments.length,
 		deep = false;
 
 	// Handle a deep copy situation
+	// ex: jQuery.extend(true, {a: 1})
 	if ( typeof target === "boolean" ) {
 		deep = target;
 		target = arguments[1] || {};
@@ -344,9 +351,10 @@ jQuery.extend = jQuery.fn.extend = function() {
 	}
 
 	// extend jQuery itself if only one argument is passed
+	// ex：jQuery.extend({a: 1})，如果参数只有一个对象，那就默认把对象扩展到this对象上。
 	if ( length === i ) {
 		target = this;
-		--i;
+		--i; // 从target开始算起
 	}
 
 	for ( ; i < length; i++ ) {
@@ -358,6 +366,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 				copy = options[ name ];
 
 				// Prevent never-ending loop
+				// 如果值全等，则继续下一循环。
 				if ( target === copy ) {
 					continue;
 				}
@@ -384,14 +393,17 @@ jQuery.extend = jQuery.fn.extend = function() {
 	}
 
 	// Return the modified object
+	// 返回修改后的对象
 	return target;
 };
 
 jQuery.extend({
 	// Unique for each copy of jQuery on the page
 	// Non-digits removed to match rinlinejQuery
+	// 当前页面jquery唯一标识，可能存在多个版本jquery（如，使用$.noConflict()）
 	expando: "jQuery" + ( core_version + Math.random() ).replace( /\D/g, "" ),
 
+	// 解决冲突
 	noConflict: function( deep ) {
 		if ( window.$ === jQuery ) {
 			window.$ = _$;
@@ -405,13 +417,16 @@ jQuery.extend({
 	},
 
 	// Is the DOM ready to be used? Set to true once it occurs.
+	// 用于标记dom是否ready
 	isReady: false,
 
 	// A counter to track how many items to wait for before
 	// the ready event fires. See #6781
+	// 一个计数器，用于记录dom ready后还有多少事件尚未触发
 	readyWait: 1,
 
 	// Hold (or release) the ready event
+	// 保持或者释放 dom ready 事件
 	holdReady: function( hold ) {
 		if ( hold ) {
 			jQuery.readyWait++;
@@ -421,6 +436,8 @@ jQuery.extend({
 	},
 
 	// Handle when the DOM is ready
+	// dom ready 句柄
+	// ???
 	ready: function( wait ) {
 
 		// Abort if there are pending holds or we're already ready
@@ -429,6 +446,7 @@ jQuery.extend({
 		}
 
 		// Make sure body exists, at least, in case IE gets a little overzealous (ticket #5443).
+		// 确保 body 元素存在。
 		if ( !document.body ) {
 			return setTimeout( jQuery.ready );
 		}
@@ -485,12 +503,14 @@ jQuery.extend({
 	},
 
 	// 判断是普通对象
+	// ???
 	isPlainObject: function( obj ) {
 		var key;
 
 		// Must be an Object.
 		// Because of IE, we also have to check the presence of the constructor property.
 		// Make sure that DOM nodes and window objects don't pass through, as well
+		// 首先要是个对象。确保dom节点和window对象不能通过检查。
 		if ( !obj || jQuery.type(obj) !== "object" || obj.nodeType || jQuery.isWindow( obj ) ) {
 			return false;
 		}
@@ -640,6 +660,7 @@ jQuery.extend({
 		return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, fcamelCase );
 	},
 
+	// 判断节点名称
 	nodeName: function( elem, name ) {
 		return elem.nodeName && elem.nodeName.toLowerCase() === name.toLowerCase();
 	},
