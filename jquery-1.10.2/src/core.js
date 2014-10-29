@@ -1026,6 +1026,17 @@ jQuery.each("Boolean Number String Function Array Date RegExp Object Error".spli
 	class2type[ "[object " + name + "]" ] = name.toLowerCase();
 });
 
+// 判断是否是类数组
+/**
+ * 若type==='array'直接返回true
+ * 若type!=='array'的话，如果type!=='function'为true的话开始判断括号里的内容，否则整体返回false
+ * 括号里的内容如果length===0为true则括号里整体为true，整体返回true
+ * 若length===0为false，判断typeof length==='number'，如果为flase，整体返回false
+ * 如果typeof length==='number'，如果为true,判断length>0，如果为false，整体返回false
+ * 如果length>0为true，判断( length - 1 ) in obj，这话的意思就是如果是类数组的对象，
+ * 其结构肯定是{0:'aaa',1:'bbb',length:2}这样的key值为数字的，所以如果是类数组对象，判断在obj里是否能找到length-1这样的key，如果找到，整体返回true，否则整体返回false
+ * in就是判断一个key是否在一个obj里。比如var obj = {a:'111'}，'a' in obj为true，'b' in obj为false
+ */
 function isArraylike( obj ) {
 	var length = obj.length,
 		type = jQuery.type( obj );
