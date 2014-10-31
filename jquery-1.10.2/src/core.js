@@ -94,11 +94,13 @@ var
 	},
 
 	// The ready event handler
-	// ready 事件句柄
+	// ready 事件句柄，dom ready后执行的函数
 	completed = function( event ) {
 
 		// readyState === "complete" is good enough for us to call the dom ready in oldIE
-		// readyState === "complete" 这个足够我们用来判断老ie的dom ready。
+		// readyState === "complete" 这个足够我们用来判断老ie的dom ready。（ie这个不需要判断document.readyState === "loaded"吗？）
+		// (标准浏览器执行到这个函数证明dom ready)
+		// (event.type === 'load'证明是经过window.onload事件过来的dom ready)
 		if ( document.addEventListener || event.type === "load" || document.readyState === "complete" ) {
 			detach();
 			jQuery.ready();
@@ -234,13 +236,14 @@ jQuery.fn = jQuery.prototype = {
 	// The default length of a jQuery object is 0
 	length: 0,
 
+	// 转换成数组
 	toArray: function() {
 		return core_slice.call( this );
 	},
 
 	// Get the Nth element in the matched element set OR
 	// Get the whole matched element set as a clean array
-	// 从集合中获取某个DOM元素或者所有匹配的DOM元素
+	// 从集合中获取某个DOM元素或者所有匹配的DOM元素，支持正负数字：3， -2。返回的是dom元素。
 	get: function( num ) {
 		return num == null ?
 
@@ -254,7 +257,7 @@ jQuery.fn = jQuery.prototype = {
 
 	// Take an array of elements and push it onto the stack
 	// (returning the new matched element set)
-	// 把一个数组元素压入栈，返回新的匹配元素集，内部方法，用于生成新的jquery对象
+	// 把一个数组元素压入栈，返回新的匹配元素集，内部方法，用于生成新的jquery对象。
 	pushStack: function( elems ) {
 
 		// Build a new jQuery matched element set
@@ -281,7 +284,7 @@ jQuery.fn = jQuery.prototype = {
 
 	ready: function( fn ) {
 		// Add the callback
-		// ???
+		// jQuery原型上添加dom ready事件回调函数到队列（注册在Deferred对象上）
 		jQuery.ready.promise().done( fn );
 
 		return this;
@@ -300,7 +303,7 @@ jQuery.fn = jQuery.prototype = {
 		return this.eq( -1 );
 	},
 
-	// 获取匹配的某个jquery对象
+	// 获取匹配的某个jquery对象，返回的时jquery对象。
 	eq: function( i ) {
 		var len = this.length,
 			j = +i + ( i < 0 ? len : 0 );
@@ -313,13 +316,19 @@ jQuery.fn = jQuery.prototype = {
 		}));
 	},
 
+	// 返回上一个jquery对象（从当前jquery对象的prevObject属性取），如果没有就返回空jquery对象
 	end: function() {
 		return this.prevObject || this.constructor(null);
 	},
 
 	// For internal use only.
 	// Behaves like an Array's method, not like a jQuery method.
-	// 仅供内部使用。如同一个数组的方法，而不是像jQuery的方法。
+	// 原型上的数组方法，处理匹配的jquery对象。
+	/* ex:
+	 * var a = {length: 0, push: [].push}
+	 * a.push(1)
+	 * console.log(a) // Object {0: 1, length: 1, push: function}
+	 */
 	push: core_push,
 	sort: [].sort,
 	splice: [].splice
@@ -328,7 +337,12 @@ jQuery.fn = jQuery.prototype = {
 // Give the init function the jQuery prototype for later instantiation
 jQuery.fn.init.prototype = jQuery.fn;
 
-// jQuery的扩展方法
+// jQuery 和 jQuery原型上共有的用于扩展对象的方法。
+/* ex:
+ * deep == true 是深copy，如：http://www.cnblogs.com/RascallySnake/archive/2010/05/07/1729563.html
+ * jQuery.extend({})、jQuery.extend(true) 扩展到jQuery对象上
+ * jQuery.extend(true, {}, {}) 后面的对象扩展到第一个对象上
+ */
 jQuery.extend = jQuery.fn.extend = function() {
 	var src, copyIsArray, copy, name, options, clone,
 		target = arguments[0] || {},
@@ -400,7 +414,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 jQuery.extend({
 	// Unique for each copy of jQuery on the page
 	// Non-digits removed to match rinlinejQuery
-	// 当前页面jquery唯一标识，可能存在多个版本jquery（如，使用$.noConflict()）
+	// 当前页面jquery版本唯一标识，可能存在多个版本jquery（如，使用$.noConflict()）
 	expando: "jQuery" + ( core_version + Math.random() ).replace( /\D/g, "" ),
 
 	// 解决冲突
@@ -427,6 +441,7 @@ jQuery.extend({
 
 	// Hold (or release) the ready event
 	// 保持或者释放 dom ready 事件
+	// 貌似木有用到 ???
 	holdReady: function( hold ) {
 		if ( hold ) {
 			jQuery.readyWait++;
@@ -436,8 +451,7 @@ jQuery.extend({
 	},
 
 	// Handle when the DOM is ready
-	// dom ready 句柄
-	// ???
+	// dom ready 后执行的函数
 	ready: function( wait ) {
 
 		// Abort if there are pending holds or we're already ready
@@ -452,6 +466,7 @@ jQuery.extend({
 		}
 
 		// Remember that the DOM is ready
+		// 标记jQuery.isReady为true
 		jQuery.isReady = true;
 
 		// If a normal DOM Ready event fired, decrement, and wait if need be
@@ -460,9 +475,11 @@ jQuery.extend({
 		}
 
 		// If there are functions bound, to execute
+		// 触发dom ready事件（注册在Deferred对象上的）
 		readyList.resolveWith( document, [ jQuery ] );
 
 		// Trigger any bound ready events
+		// 触发这样绑定的ready事件，如：jQuery( document ).bind('ready', fn)
 		if ( jQuery.fn.trigger ) {
 			jQuery( document ).trigger("ready").off("ready");
 		}
@@ -573,6 +590,7 @@ jQuery.extend({
 			scripts = !keepScripts && [];
 
 		// Single tag
+		// ex: ["<div></div>", "div"]
 		if ( parsed ) {
 			return [ context.createElement( parsed[1] ) ];
 		}
@@ -606,6 +624,7 @@ jQuery.extend({
 					.replace( rvalidtokens, "]" )
 					.replace( rvalidbraces, "")) ) {
 
+					// ex: return eval("("+data+")")
 					return ( new Function( "return " + data ) )();
 				}
 			}
@@ -643,6 +662,7 @@ jQuery.extend({
 	// Evaluates a script in a global context
 	// Workarounds based on findings by Jim Driscoll
 	// http://weblogs.java.net/blog/driscoll/archive/2009/09/08/eval-javascript-global-context
+	// 全局eval方法。ie下使用window.execScript，标准浏览器使用window.eval
 	globalEval: function( data ) {
 		if ( data && jQuery.trim( data ) ) {
 			// We use execScript on Internet Explorer
@@ -656,22 +676,25 @@ jQuery.extend({
 
 	// Convert dashed to camelCase; used by the css and data modules
 	// Microsoft forgot to hump their vendor prefix (#9572)
+	// camelCase函数的功能就是将形如background-color转化为驼峰表示法：backgroundColor
 	camelCase: function( string ) {
 		return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, fcamelCase );
 	},
 
-	// 判断节点名称
+	// 判断元素的节点名称是否等于给定的name。
 	nodeName: function( elem, name ) {
 		return elem.nodeName && elem.nodeName.toLowerCase() === name.toLowerCase();
 	},
 
 	// args is for internal usage only
+	// 遍历对象或数组，args参数用于内部使用。
 	each: function( obj, callback, args ) {
 		var value,
 			i = 0,
 			length = obj.length,
 			isArray = isArraylike( obj );
 
+		// 如果有参数args，则执行回调时，回调的参数即为args。
 		if ( args ) {
 			if ( isArray ) {
 				for ( ; i < length; i++ ) {
@@ -692,11 +715,13 @@ jQuery.extend({
 			}
 
 		// A special, fast, case for the most common use of each
+		// each函数特殊的、快速的、常用的用法。
 		} else {
 			if ( isArray ) {
 				for ( ; i < length; i++ ) {
 					value = callback.call( obj[ i ], i, obj[ i ] );
 
+					// 如果执行回调后返回值为false，则退出for循环。
 					if ( value === false ) {
 						break;
 					}
@@ -705,6 +730,7 @@ jQuery.extend({
 				for ( i in obj ) {
 					value = callback.call( obj[ i ], i, obj[ i ] );
 
+					// 如果执行回调后返回值为false，则退出for循环。
 					if ( value === false ) {
 						break;
 					}
@@ -751,6 +777,7 @@ jQuery.extend({
 		return ret;
 	},
 
+	// 判断元素是否在数组中，返回值是索引。i是一个界限（数组索引），判断元素是否在数组中i之前。
 	inArray: function( elem, arr, i ) {
 		var len;
 
@@ -760,7 +787,7 @@ jQuery.extend({
 			}
 
 			len = arr.length;
-			i = i ? i < 0 ? Math.max( 0, len + i ) : i : 0;
+			i = i ? (i < 0 ? Math.max( 0, len + i ) : i) : 0;
 
 			for ( ; i < len; i++ ) {
 				// Skip accessing in sparse arrays
@@ -773,6 +800,7 @@ jQuery.extend({
 		return -1;
 	},
 
+	// merge
 	merge: function( first, second ) {
 		var l = second.length,
 			i = first.length,
@@ -793,6 +821,7 @@ jQuery.extend({
 		return first;
 	},
 
+	// 遍历数组，有返回值，返回值是结果为inv的元素集（inv为期望返回值true/false）
 	grep: function( elems, callback, inv ) {
 		var retVal,
 			ret = [],
@@ -813,6 +842,8 @@ jQuery.extend({
 	},
 
 	// arg is for internal usage only
+	// arg仅供内部使用。
+	// 遍历数组，有返回值，返回值是遍历后的每个返回值成数组
 	map: function( elems, callback, arg ) {
 		var value,
 			i = 0,
@@ -821,16 +852,18 @@ jQuery.extend({
 			ret = [];
 
 		// Go through the array, translating each of the items to their
+		// elems为jquery对象
 		if ( isArray ) {
 			for ( ; i < length; i++ ) {
 				value = callback( elems[ i ], i, arg );
 
 				if ( value != null ) {
-					ret[ ret.length ] = value;
+					ret[ ret.length ] = value; // 或者：ret.push(value)
 				}
 			}
 
 		// Go through every key on the object,
+		// elems为object
 		} else {
 			for ( i in elems ) {
 				value = callback( elems[ i ], i, arg );
@@ -842,10 +875,12 @@ jQuery.extend({
 		}
 
 		// Flatten any nested arrays
+		// 返回数组（由map循环时执行回调的结果组成）
 		return core_concat.apply( [], ret );
 	},
 
 	// A global GUID counter for objects
+	// 一个全局GUID计数器
 	guid: 1,
 
 	// Bind a function to a context, optionally partially applying any
@@ -853,6 +888,8 @@ jQuery.extend({
 	proxy: function( fn, context ) {
 		var args, proxy, tmp;
 
+		// obj = {"test": fn};
+		// jQuery.proxy( obj, "test" ) 
 		if ( typeof context === "string" ) {
 			tmp = fn[ context ];
 			context = fn;
@@ -866,12 +903,14 @@ jQuery.extend({
 		}
 
 		// Simulated bind
+		// 取(fn, context)两个参数后的参数为新函数（代理函数）的参数
 		args = core_slice.call( arguments, 2 );
 		proxy = function() {
 			return fn.apply( context || this, args.concat( core_slice.call( arguments ) ) );
 		};
 
 		// Set the guid of unique handler to the same of original handler, so it can be removed
+		// 为代理函数设置guid
 		proxy.guid = fn.guid = fn.guid || jQuery.guid++;
 
 		return proxy;
@@ -938,6 +977,10 @@ jQuery.extend({
 	// A method for quickly swapping in/out CSS properties to get correct calculations.
 	// Note: this method belongs to the css module but it's needed here for the support module.
 	// If support gets modularized, this method should be moved back to the css module.
+	// 一种快速交换CSS属性得到正确的计算方法。
+	// 这个方法隶属于css模块，但是为兼容低版本浏览器，所以放在这里作为必须支持模块。
+	// 如果支持模块化，这个方法可以放到css模块里。
+	// ???
 	swap: function( elem, options, callback, args ) {
 		var ret, name,
 			old = {};
@@ -972,6 +1015,7 @@ jQuery.ready.promise = function( obj ) {
 			setTimeout( jQuery.ready );
 
 		// Standards-based browsers support DOMContentLoaded
+		// 标准浏览器支持DOMContentLoaded事件
 		} else if ( document.addEventListener ) {
 			// Use the handy event callback
 			document.addEventListener( "DOMContentLoaded", completed, false );
@@ -980,6 +1024,7 @@ jQuery.ready.promise = function( obj ) {
 			window.addEventListener( "load", completed, false );
 
 		// If IE event model is used
+		// IE 浏览器下
 		} else {
 			// Ensure firing before onload, maybe late but safe also for iframes
 			document.attachEvent( "onreadystatechange", completed );
@@ -989,6 +1034,14 @@ jQuery.ready.promise = function( obj ) {
 
 			// If IE and not a frame
 			// continually check to see if the document is ready
+			/*ie6~8可以使用document.onreadystatechange事件监听document.readyState状态是否等于complete来判断DOM是否加载完毕，
+			 *如果页面中嵌有iframe的话，ie6~8的document.readyState会等到iframe中的所有资源加载完才会变成complete，
+			 *此时iframe变成了耗时大户。但是经过测试，即使页面中没有iframe，当readyState等于complete时，
+			 *实际触发的是onload事件而不是DOMContentLoaded事件。
+			 *还好，ie有个特有的doScroll方法。当页面DOM未加载完成时，调用doScroll方法时，就会报错，
+			 *反过来，只要一直间隔调用doScroll直到不报错，那就表示页面DOM加载完毕了，
+			 *不管图片和iframe中的内容是否加载完毕，此法都有效。
+			 */
 			var top = false;
 
 			try {
@@ -1002,6 +1055,7 @@ jQuery.ready.promise = function( obj ) {
 						try {
 							// Use the trick by Diego Perini
 							// http://javascript.nwbox.com/IEContentLoaded/
+							// http://www.111cn.net/wy/js-ajax/59517.htm
 							top.doScroll("left");
 						} catch(e) {
 							return setTimeout( doScrollCheck, 50 );
@@ -1036,6 +1090,10 @@ jQuery.each("Boolean Number String Function Array Date RegExp Object Error".spli
  * 如果length>0为true，判断( length - 1 ) in obj，这话的意思就是如果是类数组的对象，
  * 其结构肯定是{0:'aaa',1:'bbb',length:2}这样的key值为数字的，所以如果是类数组对象，判断在obj里是否能找到length-1这样的key，如果找到，整体返回true，否则整体返回false
  * in就是判断一个key是否在一个obj里。比如var obj = {a:'111'}，'a' in obj为true，'b' in obj为false
+ * ex:
+ * var a = {length: 0, push: [].push}
+ * a.push(1)
+ * console.log(a) // Object {0: 1, length: 1, push: function}
  */
 function isArraylike( obj ) {
 	var length = obj.length,

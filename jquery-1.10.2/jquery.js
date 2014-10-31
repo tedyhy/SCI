@@ -312,6 +312,7 @@ jQuery.fn = jQuery.prototype = {
 // Give the init function the jQuery prototype for later instantiation
 jQuery.fn.init.prototype = jQuery.fn;
 
+// jQuery对象扩展方法
 jQuery.extend = jQuery.fn.extend = function() {
 	var src, copyIsArray, copy, name, options, clone,
 		target = arguments[0] || {},
@@ -468,6 +469,7 @@ jQuery.extend({
 			typeof obj;
 	},
 
+	// 判断是否是普通对象
 	isPlainObject: function( obj ) {
 		var key;
 
@@ -505,6 +507,7 @@ jQuery.extend({
 		return key === undefined || core_hasOwn.call( obj, key );
 	},
 
+	// 判断是否是空对象
 	isEmptyObject: function( obj ) {
 		var name;
 		for ( name in obj ) {
@@ -513,6 +516,7 @@ jQuery.extend({
 		return true;
 	},
 
+	// 抛出错误信息
 	error: function( msg ) {
 		throw new Error( msg );
 	},
@@ -599,11 +603,13 @@ jQuery.extend({
 		return xml;
 	},
 
+	// 空函数
 	noop: function() {},
 
 	// Evaluates a script in a global context
 	// Workarounds based on findings by Jim Driscoll
 	// http://weblogs.java.net/blog/driscoll/archive/2009/09/08/eval-javascript-global-context
+	// 全局eval方法。ie下使用window.execScript，标准浏览器下使用window.eval。
 	globalEval: function( data ) {
 		if ( data && jQuery.trim( data ) ) {
 			// We use execScript on Internet Explorer
@@ -617,21 +623,25 @@ jQuery.extend({
 
 	// Convert dashed to camelCase; used by the css and data modules
 	// Microsoft forgot to hump their vendor prefix (#9572)
+	// camelCase函数的功能就是将形如background-color转化为驼峰表示法：backgroundColor
 	camelCase: function( string ) {
 		return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, fcamelCase );
 	},
 
+	// 判断元素的节点名称是否等于给定的name。
 	nodeName: function( elem, name ) {
 		return elem.nodeName && elem.nodeName.toLowerCase() === name.toLowerCase();
 	},
 
 	// args is for internal usage only
+	// 遍历对象或数组，args参数用于内部使用。
 	each: function( obj, callback, args ) {
 		var value,
 			i = 0,
 			length = obj.length,
 			isArray = isArraylike( obj );
 
+		// 如果有参数args，则执行回调时，回调的参数即为args。
 		if ( args ) {
 			if ( isArray ) {
 				for ( ; i < length; i++ ) {
@@ -652,11 +662,13 @@ jQuery.extend({
 			}
 
 		// A special, fast, case for the most common use of each
+		// each函数特殊的、快速的、常用的用法。
 		} else {
 			if ( isArray ) {
 				for ( ; i < length; i++ ) {
 					value = callback.call( obj[ i ], i, obj[ i ] );
 
+					// 如果执行回调后返回值为false，则退出for循环。
 					if ( value === false ) {
 						break;
 					}
@@ -665,6 +677,7 @@ jQuery.extend({
 				for ( i in obj ) {
 					value = callback.call( obj[ i ], i, obj[ i ] );
 
+					// 如果执行回调后返回值为false，则退出for循环。
 					if ( value === false ) {
 						break;
 					}
@@ -676,6 +689,7 @@ jQuery.extend({
 	},
 
 	// Use native String.trim function wherever possible
+	// 尽可能用原生的trim方法
 	trim: core_trim && !core_trim.call("\uFEFF\xA0") ?
 		function( text ) {
 			return text == null ?

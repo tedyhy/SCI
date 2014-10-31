@@ -47,6 +47,7 @@ jQuery.extend({
 			deferred = {};
 
 		// Keep pipe for back-compat
+		// 兼容老版本，提供方法pipe，等同于then方法
 		promise.pipe = promise.then;
 
 		// Add list-specific methods
