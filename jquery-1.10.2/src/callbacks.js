@@ -86,10 +86,10 @@ jQuery.Callbacks = function( options ) {
 		jQuery.extend( {}, options );
 
 	var // Flag to know if list is currently firing
-		// 标记list中的回调是否正在被触发
+		// 标记list是否正在被触发
 		firing,
 		// Last fire value (for non-forgettable lists)
-		// 最后触发的值???
+		// 记录上次触发回调时所用的参数值
 		memory,
 		// Flag to know if list was already fired
 		// 标记list是否已经被触发过。
@@ -114,7 +114,7 @@ jQuery.Callbacks = function( options ) {
 		// Fire callbacks
 		// 触发回调list，参数data=[context, args]
 		fire = function( data ) {
-			memory = options.memory && data; //???
+			memory = options.memory && data;
 			fired = true;
 			firingIndex = firingStart || 0;
 			firingStart = 0;
@@ -132,7 +132,7 @@ jQuery.Callbacks = function( options ) {
 					if ( stack.length ) {
 						fire( stack.shift() ); // 自调用
 					}
-				} else if ( memory ) { //???
+				} else if ( memory ) {
 					list = [];
 				} else {
 					self.disable();
