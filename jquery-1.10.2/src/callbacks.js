@@ -1,13 +1,16 @@
+// 管理回调模块
 // String to Object options format cache
+// Callbacks选项缓存，如：jQuery.Callbacks("once memory")
 var optionsCache = {};
 
 // Convert String-formatted options into Object-formatted ones and store in cache
+// 将字符串选项（如："once memory"）转换成对象，并存储到缓存中。
 function createOptions( options ) {
 	var object = optionsCache[ options ] = {};
 	jQuery.each( options.match( core_rnotwhite ) || [], function( _, flag ) {
 		object[ flag ] = true;
 	});
-	return object;
+	return object; // {"once": true, "memory": true}
 }
 
 /*
@@ -22,15 +25,15 @@ function createOptions( options ) {
  * Possible options:
  *
  *	once:			will ensure the callback list can only be fired once (like a Deferred)
- *
+ *					确保回调列表中函数仅仅被触发一次。
  *	memory:			will keep track of previous values and will call any callback added
  *					after the list has been fired right away with the latest "memorized"
  *					values (like a Deferred)
  *
  *	unique:			will ensure a callback can only be added once (no duplicate in the list)
- *
+ *					确保每个回调唯一，不允许有重复的回调存在。
  *	stopOnFalse:	interrupt callings when a callback returns false
- *
+ *					当一个回调返回false，则中断所有回调的触发。
  */
 jQuery.Callbacks = function( options ) {
 
@@ -41,6 +44,7 @@ jQuery.Callbacks = function( options ) {
 		jQuery.extend( {}, options );
 
 	var // Flag to know if list is currently firing
+		// 标记当前列表中的回调是否正在被触发
 		firing,
 		// Last fire value (for non-forgettable lists)
 		memory,
@@ -53,6 +57,7 @@ jQuery.Callbacks = function( options ) {
 		// First callback to fire (used internally by add and fireWith)
 		firingStart,
 		// Actual callback list
+		// 回调列表（用来存储回调）。
 		list = [],
 		// Stack of fire calls for repeatable lists
 		stack = !options.once && [],
@@ -86,6 +91,7 @@ jQuery.Callbacks = function( options ) {
 		// Actual Callbacks object
 		self = {
 			// Add a callback or a collection of callbacks to the list
+			// 增加一个或多个回调函数到list数组里。
 			add: function() {
 				if ( list ) {
 					// First, we save the current length
@@ -99,6 +105,7 @@ jQuery.Callbacks = function( options ) {
 								}
 							} else if ( arg && arg.length && type !== "string" ) {
 								// Inspect recursively
+								// 类数组，如：{0: fn, 1: [fn, fn], 2: fn, length: 3}
 								add( arg );
 							}
 						});

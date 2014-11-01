@@ -51,11 +51,13 @@ jQuery.extend({
 		promise.pipe = promise.then;
 
 		// Add list-specific methods
+		// 增加方法到 promise 对象
 		jQuery.each( tuples, function( i, tuple ) {
 			var list = tuple[ 2 ],
 				stateString = tuple[ 3 ];
 
 			// promise[ done | fail | progress ] = list.add
+			// 增加方法 [ done | fail | progress ] 到promis对象。
 			promise[ tuple[1] ] = list.add;
 
 			// Handle state
