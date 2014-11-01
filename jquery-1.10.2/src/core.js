@@ -777,7 +777,7 @@ jQuery.extend({
 		return ret;
 	},
 
-	// 判断元素是否在数组中，返回值是索引。i是一个界限（数组索引），判断元素是否在数组中i之前。
+	// 判断元素是否在数组中，返回值是索引。i（数组索引）表示从第i个开始循环数组，判断元素是否在数组中i之后。
 	inArray: function( elem, arr, i ) {
 		var len;
 
