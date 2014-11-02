@@ -1,21 +1,34 @@
+/*
+ * http://wiki.commonjs.org/wiki/Promises/A
+ * https://github.com/kriskowal/q
+ * http://www.cnblogs.com/snandy/archive/2012/12/19/2812935.html
+ * http://api.jquery.com/category/deferred-object/
+ * http://api.jquery.com/promise/
+ *
+ */
+
 jQuery.extend({
 
 	Deferred: function( func ) {
 		var tuples = [
 				// action, add listener, listener list, final state
+				// 分别表示成功，失败，处理中三种状态
 				[ "resolve", "done", jQuery.Callbacks("once memory"), "resolved" ],
 				[ "reject", "fail", jQuery.Callbacks("once memory"), "rejected" ],
 				[ "notify", "progress", jQuery.Callbacks("memory") ]
 			],
 			state = "pending",
 			promise = {
+				// 返回Deferred对象状态，如："pending | resolved | rejected"
 				state: function() {
 					return state;
 				},
+				// 添加回调，不论状态为"resolved | rejected"，这个回调都会被执行
 				always: function() {
 					deferred.done( arguments ).fail( arguments );
 					return this;
 				},
+				//???
 				then: function( /* fnDone, fnFail, fnProgress */ ) {
 					var fns = arguments;
 					return jQuery.Deferred(function( newDefer ) {
@@ -40,6 +53,7 @@ jQuery.extend({
 				},
 				// Get a promise for this deferred
 				// If obj is provided, the promise aspect is added to the object
+				// 如果提供了deferred对象，则将promise对象扩展到deferred对象上，否则直接返回promise对象。
 				promise: function( obj ) {
 					return obj != null ? jQuery.extend( obj, promise ) : promise;
 				}
@@ -53,11 +67,11 @@ jQuery.extend({
 		// Add list-specific methods
 		// 增加方法到 promise 对象
 		jQuery.each( tuples, function( i, tuple ) {
-			var list = tuple[ 2 ],
-				stateString = tuple[ 3 ];
+			var list = tuple[ 2 ], // Callbacks对象
+				stateString = tuple[ 3 ]; // 状态描述，如："resolved"
 
 			// promise[ done | fail | progress ] = list.add
-			// 增加方法 [ done | fail | progress ] 到promis对象。
+			// 增加方法 [ done | fail | progress ] 到promise对象。
 			promise[ tuple[1] ] = list.add;
 
 			// Handle state
@@ -67,18 +81,23 @@ jQuery.extend({
 					state = stateString;
 
 				// [ reject_list | resolve_list ].disable; progress_list.lock
+				// ???
 				}, tuples[ i ^ 1 ][ 2 ].disable, tuples[ 2 ][ 2 ].lock );
 			}
 
 			// deferred[ resolve | reject | notify ]
+			// 扩展到deferred对象上的方法有：deferred[ resolve | reject | notify ]
 			deferred[ tuple[0] ] = function() {
 				deferred[ tuple[0] + "With" ]( this === deferred ? promise : this, arguments );
 				return this;
 			};
+			// deferred[ resolveWith | rejectWidth | notifyWidth ]
+			// 方法需要手动指定( context, args ) 
 			deferred[ tuple[0] + "With" ] = list.fireWith;
 		});
 
 		// Make the deferred a promise
+		// 将promise对象方法扩展到deferred对象上。
 		promise.promise( deferred );
 
 		// Call given func if any
