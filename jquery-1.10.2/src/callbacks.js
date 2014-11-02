@@ -47,12 +47,11 @@ function createOptions( options ) {
  *					看例子：
  *					var callbacks = $.Callbacks( "once" );
  *					callbacks.add( fn1 );
- *					callbacks.fire( "foo" );
+ *					callbacks.fire( "foo" );	// foo
  *					callbacks.add( fn2 );
  *					callbacks.fire( "bar" );
  *					callbacks.remove( fn2 );
  *					callbacks.fire( "foobar" );
- *					output: foo
  *
  *	memory:			will keep track of previous values and will call any callback added
  *					after the list has been fired right away with the latest "memorized"
@@ -60,17 +59,11 @@ function createOptions( options ) {
  *					记忆参数。看下面的例子：
  *					var callbacks = $.Callbacks( "memory" );
  *					callbacks.add( fn1 );
- *					callbacks.fire( "foo" );
- *					callbacks.add( fn2 );
- *					callbacks.fire( "bar" );
+ *					callbacks.fire( "foo" );	// foo
+ *					callbacks.add( fn2 );		// fn2 says:foo
+ *					callbacks.fire( "bar" );	// bar \n fn2 says:bar
  *					callbacks.remove( fn2 );
- *					callbacks.fire( "foobar" );
- *					output:
- *						foo
- *						fn2 says:foo
- *						bar
- *						fn2 says:bar
- *						foobar
+ *					callbacks.fire( "foobar" );	// foobar
  *
  *	unique:			will ensure a callback can only be added once (no duplicate in the list)
  *					确保每个回调唯一，不允许有重复的回调存在。
@@ -117,7 +110,7 @@ jQuery.Callbacks = function( options ) {
 			memory = options.memory && data;
 			fired = true;
 			firingIndex = firingStart || 0;
-			firingStart = 0;
+			firingStart = 0; // 将起始索引置为 0
 			firingLength = list.length;
 			firing = true;
 			for ( ; list && firingIndex < firingLength; firingIndex++ ) {
@@ -147,6 +140,7 @@ jQuery.Callbacks = function( options ) {
 			add: function() {
 				if ( list ) {
 					// First, we save the current length
+					// 保存当前list长度
 					var start = list.length;
 					(function add( args ) {
 						jQuery.each( args, function( _, arg ) {
@@ -164,12 +158,14 @@ jQuery.Callbacks = function( options ) {
 					})( arguments );
 					// Do we need to add the callbacks to the
 					// current firing batch?
+					// 如果list正在被触发，则重置触发列表的长度
 					if ( firing ) {
 						firingLength = list.length;
 					// With memory, if we're not firing then
 					// we should call right away
+					// 如果选项memory有值，而且列表不是正在被触发，则立即调用回调
 					} else if ( memory ) {
-						firingStart = start;
+						firingStart = start; // 将触发起点设置为list末尾
 						fire( memory );
 					}
 				}
