@@ -203,8 +203,8 @@ jQuery.Callbacks = function( options ) {
 			// Remove all callbacks from the list
 			// 清空list中所有回调
 			empty: function() {
-				list = [];
-				firingLength = 0;
+				list = []; // 清空list
+				firingLength = 0; // 禁止fire
 				return this;
 			},
 			// Have the list do nothing anymore
