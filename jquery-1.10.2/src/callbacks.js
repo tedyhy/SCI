@@ -12,12 +12,13 @@ var optionsCache = {};
 
 // Convert String-formatted options into Object-formatted ones and store in cache
 // 将字符串选项（如："once memory"）转换成对象，并存储到缓存中。
+// "once memory" =》{"once": true, "memory": true}
 function createOptions( options ) {
 	var object = optionsCache[ options ] = {};
 	jQuery.each( options.match( core_rnotwhite ) || [], function( _, flag ) {
 		object[ flag ] = true;
 	});
-	return object; // "once memory" =》{"once": true, "memory": true}
+	return object;
 }
 
 /*
