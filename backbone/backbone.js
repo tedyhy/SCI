@@ -50,10 +50,12 @@
 
 	// For Backbone's purposes, jQuery, Zepto, Ender, or My Library (kidding) owns
 	// the `$` variable.
+	// 将 jQuery 嵌入 Backbone
 	Backbone.$ = $;
 
 	// Runs Backbone.js in *noConflict* mode, returning the `Backbone` variable
 	// to its previous owner. Returns a reference to this Backbone object.
+	// 解决冲突
 	Backbone.noConflict = function() {
 		root.Backbone = previousBackbone;
 		return this;
@@ -62,12 +64,14 @@
 	// Turn on `emulateHTTP` to support legacy HTTP servers. Setting this option
 	// will fake `"PATCH"`, `"PUT"` and `"DELETE"` requests via the `_method` parameter and
 	// set a `X-Http-Method-Override` header.
+	// ???
 	Backbone.emulateHTTP = false;
 
 	// Turn on `emulateJSON` to support legacy servers that can't deal with direct
 	// `application/json` requests ... will encode the body as
 	// `application/x-www-form-urlencoded` instead and will send the model in a
 	// form param named `model`.
+	// ???
 	Backbone.emulateJSON = false;
 
 	// Backbone.Events
@@ -87,7 +91,10 @@
 
 		// Bind an event to a `callback` function. Passing `"all"` will bind
 		// the callback to all events fired.
+		// 绑定事件，"all" 事件将触发所有绑定的事件。
 		on: function(name, callback, context) {
+			// 如果 (!name || !callback) 则返回 this。
+			// 如果有name
 			if (!eventsApi(this, 'on', name, [callback, context]) || !callback) return this;
 			this._events || (this._events = {});
 			var events = this._events[name] || (this._events[name] = []);
@@ -178,26 +185,52 @@
 	};
 
 	// Regular expression used to split event strings.
+	// 正则表达式用于分割事件字符串，如：var name = "click focus blur"
 	var eventSplitter = /\s+/;
 
 	// Implement fancy features of the Events API such as multiple event
 	// names `"change blur"` and jQuery-style event maps `{change: action}`
 	// in terms of the existing API.
+	/*
+	 * @this：当前要绑定事件的对象。
+	 * @action：事件动作，如：'on/off/trigger'
+	 * @name：事件类型名称。
+	 * @rest：数组 [callback, context]
+	 * @result：true/false
+	 */
+	// on: function(name, callback, context) {
+	// if (!eventsApi(this, 'on', name, [callback, context]) || !callback)
 	var eventsApi = function(obj, action, name, rest) {
 		if (!name) return true;
 
 		// Handle event maps.
+		/*
+		如：
+			var name = {
+				click: handler1,
+				focus: handler2,
+				blur: handler3
+			}
+		*/
 		if (typeof name === 'object') {
 			for (var key in name) {
+				// 参数为：(key, name[key] [, ......])，callback或context不存在。
+				// 即：rest = [ context ]，此时木有callback，context替代了callback。
+				// obj.on(name, context)
 				obj[action].apply(obj, [key, name[key]].concat(rest));
 			}
 			return false;
 		}
 
 		// Handle space separated event names.
+		/*
+		如：
+			var name = "click focus blur"
+		*/
 		if (eventSplitter.test(name)) {
 			var names = name.split(eventSplitter);
 			for (var i = 0, l = names.length; i < l; i++) {
+				// 参数为：(names[i], callback, context)
 				obj[action].apply(obj, [names[i]].concat(rest));
 			}
 			return false;
