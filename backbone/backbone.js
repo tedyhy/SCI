@@ -35,9 +35,11 @@
 
 	// Save the previous value of the `Backbone` variable, so that it can be
 	// restored later on, if `noConflict` is used.
+	// 用于解决冲突，保存当前 window.Backbone 变量。
 	var previousBackbone = root.Backbone;
 
 	// Create local references to array methods we'll want to use later.
+	// 创建本地数组方法
 	var array = [];
 	var push = array.push;
 	var slice = array.slice;
