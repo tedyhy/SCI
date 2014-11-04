@@ -185,6 +185,7 @@
 			var allEvents = this._events.all;
 			if (events) triggerEvents(events, args);
 			// 任何事件触发都会触发事件 all 上的回调。
+			// http://backbonejs.org/#Events-on
 			if (allEvents) triggerEvents(allEvents, arguments);
 			return this;
 		},
@@ -291,6 +292,7 @@
 		}
 	};
 
+	// 监听方法 listenTo、listenToOnce
 	var listenMethods = {
 		listenTo: 'on',
 		listenToOnce: 'once'
@@ -300,6 +302,7 @@
 	// listen to an event in another object ... keeping track of what it's
 	// listening to.
 	_.each(listenMethods, function(implementation, method) {
+		// ???
 		Events[method] = function(obj, name, callback) {
 			var listeningTo = this._listeningTo || (this._listeningTo = {});
 			var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
@@ -311,11 +314,13 @@
 	});
 
 	// Aliases for backwards compatibility.
+	// 事件别名，为了向后兼容
 	Events.bind = Events.on;
 	Events.unbind = Events.off;
 
 	// Allow the `Backbone` object to serve as a global event bus, for folks who
 	// want global "pubsub" in a convenient place.
+	// 为全局变量 Backbone 添加事件系统。
 	_.extend(Backbone, Events);
 
 	// Backbone.Model
