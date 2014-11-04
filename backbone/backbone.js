@@ -94,27 +94,35 @@
 		// 绑定事件，"all" 事件将触发所有绑定的事件。
 		on: function(name, callback, context) {
 			// 如果 (!name || !callback) 则返回 this。
-			// 如果有name
+			// 如果 name === "click blur" || name === {click: fn1, blur: fn2}，则递归调用on方法
+			// 注册事件，最后返回 this。
 			if (!eventsApi(this, 'on', name, [callback, context]) || !callback) return this;
+			// this._events 一个对象，用于存储当前实例上（this）所有注册的事件。
 			this._events || (this._events = {});
 			var events = this._events[name] || (this._events[name] = []);
+			// 如：this._events['click'] = [{}, {}, ...]
 			events.push({
 				callback: callback,
 				context: context,
 				ctx: context || this
 			});
+			// 链式调用
 			return this;
 		},
 
 		// Bind an event to only be triggered a single time. After the first time
 		// the callback is invoked, it will be removed.
+		// 绑定事件，只触发一次，随后回调会被移除。
 		once: function(name, callback, context) {
 			if (!eventsApi(this, 'once', name, [callback, context]) || !callback) return this;
 			var self = this;
+			// http://underscorejs.org/#once
+			// 生成一次性函数（只能执行一次）。
 			var once = _.once(function() {
 				self.off(name, once);
 				callback.apply(this, arguments);
 			});
+			// 一个属性，存储原始回调。
 			once._callback = callback;
 			return this.on(name, once, context);
 		},
@@ -123,17 +131,28 @@
 		// callbacks with that function. If `callback` is null, removes all
 		// callbacks for the event. If `name` is null, removes all bound
 		// callbacks for all events.
+		// 移走一个或多个回调。
+		// 如果参数 context 不为空，则移走当前实例的事件name下所有作用域为 context 的回调。
+		// 如果参数 callback 为空，则移走当前实例的事件name下所有回调。
+		// 如果参数 name 为空，则移走当前实例下所有事件的所有回调。
 		off: function(name, callback, context) {
 			var retain, ev, events, names, i, l, j, k;
+			// 如果 (!this._events || 递归移除回调成功)，则返回 this。
 			if (!this._events || !eventsApi(this, 'off', name, [callback, context])) return this;
+			// 如果没有参数 name、callback、context，则将对象 this._events 置为undefined，
+			// 即：清空当前实例下的所有事件的所有回调。
 			if (!name && !callback && !context) {
 				this._events = void 0;
 				return this;
 			}
+			// 事件 name 有值时，取当前实例下事件 name 下所有回调。
+			// 事件 name 无值时，取当前实例下所有事件下所有回调。
 			names = name ? [name] : _.keys(this._events);
 			for (i = 0, l = names.length; i < l; i++) {
+				// 事件name，如：click
 				name = names[i];
 				if (events = this._events[name]) {
+					// retain 为剩下的回调集合，重新赋给对象 this._events[name]。
 					this._events[name] = retain = [];
 					if (callback || context) {
 						for (j = 0, k = events.length; j < k; j++) {
