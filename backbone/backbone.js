@@ -174,13 +174,17 @@
 		// passed the same arguments as `trigger` is, apart from the event name
 		// (unless you're listening on `"all"`, which will cause your callback to
 		// receive the true name of the event as the first argument).
+		// 触发一个或多个事件 name 下回调。
 		trigger: function(name) {
 			if (!this._events) return this;
+			// 取参数 arg1, arg2, ...，如：obj.trigger('click', arg1, arg2, ...)
 			var args = slice.call(arguments, 1);
+			// 递归调用实例的trigger方法，如果事件 name 为空，则返回实例。
 			if (!eventsApi(this, 'trigger', name, args)) return this;
 			var events = this._events[name];
 			var allEvents = this._events.all;
 			if (events) triggerEvents(events, args);
+			// 任何事件触发都会触发事件 all 上的回调。
 			if (allEvents) triggerEvents(allEvents, arguments);
 			return this;
 		},
@@ -261,6 +265,7 @@
 	// A difficult-to-believe, but optimized internal dispatch function for
 	// triggering events. Tries to keep the usual cases speedy (most internal
 	// Backbone events have 3 arguments).
+	// 内部使用的触发事件执行回调的方法，为了保证通常快速执行，Backbone的事件回调大多会有3个参数。
 	var triggerEvents = function(events, args) {
 		var ev, i = -1,
 			l = events.length,
