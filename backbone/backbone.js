@@ -94,13 +94,15 @@
 		// 绑定事件，"all" 事件将触发所有绑定的事件。
 		on: function(name, callback, context) {
 			// 如果 (!name || !callback) 则返回 this。
-			// 如果 name === "click blur" || name === {click: fn1, blur: fn2}，则递归调用on方法
+			// 如果 (name === "click blur" || name === {click: fn1, blur: fn2}) 则递归调用on方法
 			// 注册事件，最后返回 this。
 			if (!eventsApi(this, 'on', name, [callback, context]) || !callback) return this;
 			// this._events 一个对象，用于存储当前实例上（this）所有注册的事件。
 			this._events || (this._events = {});
+			// 当前实例的事件 name 下的所有回调。
 			var events = this._events[name] || (this._events[name] = []);
-			// 如：this._events['click'] = [{}, {}, ...]
+			// 如：this._events['click'] = [{}, {}, ...]。
+			// 每个回调都由 {callback: callback, context: context, ctx: context || this} 组成。
 			events.push({
 				callback: callback,
 				context: context,
@@ -112,8 +114,10 @@
 
 		// Bind an event to only be triggered a single time. After the first time
 		// the callback is invoked, it will be removed.
-		// 绑定事件，只触发一次，随后回调会被移除。
+		// 绑定事件，只触发一次，随后回调会被移除。借用了underscore的方法_.once()。
 		once: function(name, callback, context) {
+			// 如果 (!name || !callback) 则返回 this。
+			// 如果 (name === "click blur" || name === {click: fn1, blur: fn2}) 则递归调用once注册事件。
 			if (!eventsApi(this, 'once', name, [callback, context]) || !callback) return this;
 			var self = this;
 			// http://underscorejs.org/#once
@@ -137,7 +141,7 @@
 		// 如果参数 name 为空，则移走当前实例下所有事件的所有回调。
 		off: function(name, callback, context) {
 			var retain, ev, events, names, i, l, j, k;
-			// 如果 (!this._events || 递归移除回调成功)，则返回 this。
+			// 如果 (!this._events || 递归调用off方法)，则返回 this。
 			if (!this._events || !eventsApi(this, 'off', name, [callback, context])) return this;
 			// 如果没有参数 name、callback、context，则将对象 this._events 置为undefined，
 			// 即：清空当前实例下的所有事件的所有回调。
@@ -154,9 +158,11 @@
 				if (events = this._events[name]) {
 					// retain 为剩下的回调集合，重新赋给对象 this._events[name]。
 					this._events[name] = retain = [];
+					// obj.off(name, callback, context) 或 obj.off(null, callback, context)
 					if (callback || context) {
 						for (j = 0, k = events.length; j < k; j++) {
 							ev = events[j];
+							// on/once 绑定的事件。
 							if ((callback && callback !== ev.callback && callback !== ev.callback._callback) ||
 								(context && context !== ev.context)) {
 								retain.push(ev);
