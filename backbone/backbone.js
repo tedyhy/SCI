@@ -320,6 +320,7 @@
 			// 对象 this._listeningTo 用于存储当前实例监听的所有对象，如：obj。
 			var listeningTo = this._listeningTo || (this._listeningTo = {});
 			// 添加监听 id 到 obj 上，如：obj._listenId
+			// http://underscorejs.org/#uniqueId
 			var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
 			listeningTo[id] = obj;
 			// 事件 name === {click: fn1, blur: fn2}) 情况下，将作用域this覆盖参数callback，
@@ -351,20 +352,34 @@
 
 	// Create a new model with the specified attributes. A client id (`cid`)
 	// is automatically generated and assigned for you.
+	// Backbone 的数据模块，Model模块里有个自动生成的，全局唯一的cid，用于区分数据实例。
 	var Model = Backbone.Model = function(attributes, options) {
 		var attrs = attributes || {};
 		options || (options = {});
-		this.cid = _.uniqueId('c'); // 当前model唯一id
-		this.attributes = {}; // 数据初始化
-		if (options.collection) this.collection = options.collection; //??????
-		if (options.parse) attrs = this.parse(attrs, options) || {}; //??????
+		// 当前数据实例唯一id
+		this.cid = _.uniqueId('c');
+		// 用于存储当前数据实例的所有数据（属性或方法）。
+		this.attributes = {};
+		// ???
+		if (options.collection) this.collection = options.collection;
+		if (options.parse) attrs = this.parse(attrs, options) || {};
+		// http://underscorejs.org/#result
+		// http://underscorejs.org/#defaults
+		// 整理数据，即：构造器传入的参数 attributes 数据优先级高，其次是当前数据实例的。
+		// defaults 为默认数据。
 		attrs = _.defaults({}, attrs, _.result(this, 'defaults'));
+		// 为每个数据实例初始化默认数据。
 		this.set(attrs, options);
+		// 记录当前数据实例改变的数据。
 		this.changed = {};
+		// 执行当前实例的 initialize 方法，参数为传给构造器的参数。
+		// var A = Backbone.Model.extend({});
+		// new A({}, {});
 		this.initialize.apply(this, arguments);
 	};
 
 	// Attach all inheritable methods to the Model prototype.
+	// 将 Events 事件系统添加到 Model 模块实例上。那么，每个数据实例将拥有完整的事件系统。
 	_.extend(Model.prototype, Events, {
 
 		// A hash of attributes whose current and previous value differ.
