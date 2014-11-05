@@ -383,15 +383,16 @@
 	_.extend(Model.prototype, Events, {
 
 		// A hash of attributes whose current and previous value differ.
-		// 统计哪些属性值改变了
+		// 存储值被改变的数据。
 		changed: null,
 
 		// The value returned during the last failed validation.
-		// 最后验证，失败返回的信息
+		// 用于存储验证数据失败信息。
 		validationError: null,
 
 		// The default name for the JSON `id` attribute is `"id"`. MongoDB and
 		// CouchDB users may want to set this to `"_id"`.
+		// json数据中的id别名，如："id"、"_id"
 		idAttribute: 'id',
 
 		// Initialize is an empty function by default. Override it with your own
@@ -400,7 +401,7 @@
 		initialize: function() {},
 
 		// Return a copy of the model's `attributes` object.
-		// 返回当前实例数据的copy。
+		// 返回当前实例数据的copy，json格式。
 		toJSON: function(options) {
 			return _.clone(this.attributes);
 		},
