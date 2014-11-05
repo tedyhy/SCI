@@ -106,7 +106,7 @@
 			events.push({
 				callback: callback,
 				context: context,
-				ctx: context || this
+				ctx: context || this // context 的简写
 			});
 			// 链式调用
 			return this;
@@ -199,10 +199,15 @@
 		// Tell this object to stop listening to either specific events ... or
 		// to every object it's currently listening to.
 		stopListening: function(obj, name, callback) {
+			// 如果当前实例无监听对象列表 this._listeningTo，则返回当前实例。
 			var listeningTo = this._listeningTo;
 			if (!listeningTo) return this;
+			// (!name && !callback) 情况将清除当前实例监听的所有对象。
 			var remove = !name && !callback;
+			// 事件 name === {click: fn1, blur: fn2}) 情况下，将作用域this覆盖参数callback，
+			// 此时callback成为作用域context。
 			if (!callback && typeof name === 'object') callback = this;
+			// 如：listeningTo['l123'] = obj;
 			if (obj)(listeningTo = {})[obj._listenId] = obj;
 			for (var id in listeningTo) {
 				obj = listeningTo[id];
@@ -299,6 +304,7 @@
 	};
 
 	// 监听方法 listenTo、listenToOnce
+	// 用于当前实例监听另一个对象的变化，并执行相关事件的回调。
 	var listenMethods = {
 		listenTo: 'on',
 		listenToOnce: 'once'
@@ -308,12 +314,18 @@
 	// listen to an event in another object ... keeping track of what it's
 	// listening to.
 	_.each(listenMethods, function(implementation, method) {
-		// ???
+		// 例如：implementation === 'on'，method === 'listenTo'
+		// 例子：view.listenTo(allfoods, 'change', view.render);
 		Events[method] = function(obj, name, callback) {
+			// 对象 this._listeningTo 用于存储当前实例监听的所有对象，如：obj。
 			var listeningTo = this._listeningTo || (this._listeningTo = {});
+			// 添加监听 id 到 obj 上，如：obj._listenId
 			var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
 			listeningTo[id] = obj;
+			// 事件 name === {click: fn1, blur: fn2}) 情况下，将作用域this覆盖参数callback，
+			// 此时callback成为作用域context。
 			if (!callback && typeof name === 'object') callback = this;
+			// 等效于在 obj 上注册事件 name，回调为callback，context为当前实例对象。
 			obj[implementation](name, callback, this);
 			return this;
 		};
