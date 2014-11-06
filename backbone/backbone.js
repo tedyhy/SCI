@@ -227,6 +227,7 @@
 	// names `"change blur"` and jQuery-style event maps `{change: action}`
 	// in terms of the existing API.
 	/*
+	 * 递归器，用来处理事件 name 类型为 "object"，值为 "click focus blur" 类型的。
 	 * @this：当前要绑定事件的对象。
 	 * @action：事件动作，如：'on/off/trigger'
 	 * @name：事件类型名称。
@@ -383,7 +384,8 @@
 	_.extend(Model.prototype, Events, {
 
 		// A hash of attributes whose current and previous value differ.
-		// 存储值被改变的数据。
+		// 存储数据（当前值与之前的值不同的数据）。
+		// 这个用来存储，当连续改变实例数据的过程中数据的最新值。
 		changed: null,
 
 		// The value returned during the last failed validation.
@@ -401,7 +403,7 @@
 		initialize: function() {},
 
 		// Return a copy of the model's `attributes` object.
-		// 返回当前实例数据的copy，json格式。
+		// 返回当前实例数据的copy，json格式。使用了_.clone方法避免值引用带来的问题。
 		toJSON: function(options) {
 			return _.clone(this.attributes);
 		},
@@ -409,12 +411,13 @@
 		// Proxy `Backbone.sync` by default -- but override this if you need
 		// custom syncing semantics for *this* particular model.
 		// 调用Backbone.sync方法，一个映射。
+		// ???
 		sync: function() {
 			return Backbone.sync.apply(this, arguments);
 		},
 
 		// Get the value of an attribute.
-		// 获取某个属性的值。
+		// 获取实例数据某个属性的值。
 		get: function(attr) {
 			return this.attributes[attr];
 		},
@@ -422,13 +425,14 @@
 		// Get the HTML-escaped value of an attribute.
 		// 获取某个属性的值（经过html编码后），如：© = &copy; 空格 = &nbsp;
 		// 参照：http://www.jb51.net/onlineread/htmlchar.htm
+		// 使用了_.escape方法对属性值进行html编码。
 		escape: function(attr) {
 			return _.escape(this.get(attr));
 		},
 
 		// Returns `true` if the attribute contains a value that is not null
 		// or undefined.
-		// 返回boolean值，判断是否有值。
+		// 返回boolean值，判断实例属性中是否存在属性attr。
 		has: function(attr) {
 			return this.get(attr) != null;
 		},
@@ -436,55 +440,70 @@
 		// Set a hash of model attributes on the object, firing `"change"`. This is
 		// the core primitive operation of a model, updating the data and notifying
 		// anyone who needs to know about the change in state. The heart of the beast.
-		// 设置数据，触发此数据实例的change事件。它是数据model核心。//??????
+		// 设置实例数据，方法unset、clear等方法都基于此方法。
+		// 此方法会触发实例的change事件。它是Model模块的核心。
 		set: function(key, val, options) {
 			var attr, attrs, unset, changes, silent, changing, prev, current;
 			if (key == null) return this;
 
 			// Handle both `"key", value` and `{key: value}` -style arguments.
+			// 例如：obj.set({key1: value1, key2: value2, ...}, options)
 			if (typeof key === 'object') {
 				attrs = key;
 				options = val;
+			// 例如：obj.set(key1, value1, options)
 			} else {
 				(attrs = {})[key] = val;
 			}
 
 			options || (options = {});
 			// Run validation.
-			// 在设置属性值之前要做值校验。
+			// 在设置数据之前做属性值校验。如果校验失败，则返回false。
 			if (!this._validate(attrs, options)) return false;
 
 			// Extract attributes and options.
 			// 标记model数据状态。
-			unset = options.unset;
-			silent = options.silent;
-			changes = [];
-			changing = this._changing;
-			this._changing = true;
+			unset = options.unset;		// 实例方法unset、clear会用到的选项。
+			silent = options.silent;	// 静默设置。
+			changes = [];				// 当前数据的哪些数据正在被改变了。
+			changing = this._changing;	// 当前实例的数据是否正在被改变（true/false）。
+			this._changing = true;		// 将当前实例的数据改变状态置为true，表示当前实例的数据正在被改变。
 
+			// 当前实例的数据没有正在被改变，则初始化实例属性_previousAttributes和changed。
 			if (!changing) {
+				// 之前的数据。
 				this._previousAttributes = _.clone(this.attributes);
+				// 这个用来存储，当连续改变实例数据的过程中数据的最新值。
 				this.changed = {};
 			}
 
+			// 记录当前数据和之前数据。
+			// 如果 changing === true，则current和prev值初始化的时候是不一样。
+			// 如果 changing === false，则current和prev值初始化的时候是相同的。
 			current = this.attributes, prev = this._previousAttributes;
 
 			// Check for changes of `id`.
+			// 如果实例的数据属性中包含 this.idAttribute 属性，在设置实例的属性id。
 			if (this.idAttribute in attrs) this.id = attrs[this.idAttribute];
 
 			// For each `set` attribute, update or delete the current value.
+			// 循环设置数据attrs。使用_.isEqual判断两个值是否相等。
 			for (attr in attrs) {
 				val = attrs[attr];
+				// 当前改变了哪些数据
 				if (!_.isEqual(current[attr], val)) changes.push(attr);
+				// 更新当前实例，在被连续改变数据的过程中，数据的最新值。
 				if (!_.isEqual(prev[attr], val)) {
 					this.changed[attr] = val;
 				} else {
 					delete this.changed[attr];
 				}
+				// unset选项设置，在实例方法unset、clear中会用到。
 				unset ? delete current[attr] : current[attr] = val;
 			}
 
 			// Trigger all relevant attribute changes.
+			// 如果不是静默模式（即：options.silent !== true），则会触发实例上注册的事件 change。
 			if (!silent) {
 				if (changes.length) this._pending = options;
 				for (var i = 0, l = changes.length; i < l; i++) {
@@ -711,11 +730,15 @@
 		// returning `true` if all is well. Otherwise, fire an `"invalid"` event.
 		// 验证数据，验证失败会触发"invalid"事件。都验证通过才会返回true。
 		_validate: function(attrs, options) {
-			// 此判断的意思是，options中有validate为true，而且原型中必须有validate方法，否则直接返回。
+			// options中有选项validate为true，
+			// 而且原型中（即：实例中）必须有validate方法存在，否则直接返回true。
 			if (!options.validate || !this.validate) return true;
 			attrs = _.extend({}, this.attributes, attrs);
+			// 实例的validate方法会有返回值，如错误信息，将信息赋给实例属性validationError。
+			// 如果没有错误信息，则验证通过。
 			var error = this.validationError = this.validate(attrs, options) || null;
 			if (!error) return true;
+			// 如果验证失败，则会触发事件invalid。
 			this.trigger('invalid', this, error, _.extend(options, {
 				validationError: error
 			}));
