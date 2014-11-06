@@ -504,6 +504,8 @@
 
 			// Trigger all relevant attribute changes.
 			// 如果不是静默模式（即：options.silent !== true），则会触发实例上注册的事件 change。
+			// 首先你得注册实例的change事件，如：obj.on('change:xx', callback, context)。
+			// 触发事件 change 的过程中，回调会得到的参数有(当前实例, 老的数据, 选项)。
 			if (!silent) {
 				if (changes.length) this._pending = options;
 				for (var i = 0, l = changes.length; i < l; i++) {
@@ -514,6 +516,8 @@
 			// You might be wondering why there's a `while` loop here. Changes can
 			// be recursively nested within `"change"` events.
 			if (changing) return this;
+			// 当实例数据结束改变时执行。
+			// 如果不是静默模式，则会触发默认事件 change。回调会得到的参数有(当前实例, 选项)。
 			if (!silent) {
 				while (this._pending) {
 					options = this._pending;
@@ -528,6 +532,7 @@
 
 		// Remove an attribute from the model, firing `"change"`. `unset` is a noop
 		// if the attribute doesn't exist.
+		// 删除实例数据方法。主要是由选项 unset 控制。
 		unset: function(attr, options) {
 			return this.set(attr, void 0, _.extend({}, options, {
 				unset: true
@@ -535,6 +540,7 @@
 		},
 
 		// Clear all attributes on the model, firing `"change"`.
+		// 清空实例数据方法。主要是由选项 unset 控制。
 		clear: function(options) {
 			var attrs = {};
 			for (var key in this.attributes) attrs[key] = void 0;
