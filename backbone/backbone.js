@@ -822,14 +822,17 @@
 	};
 
 	// Define the Collection's inheritable methods.
+	// 为Collection实例添加事件系统。
 	_.extend(Collection.prototype, Events, {
 
 		// The default model for a collection is just a **Backbone.Model**.
 		// This should be overridden in most cases.
+		// 数据类型默认为 Backbone.Model 类型，大多情况下需要覆盖此属性。
 		model: Model,
 
 		// Initialize is an empty function by default. Override it with your own
 		// initialization logic.
+		// 需要时重载此函数即可。
 		initialize: function() {},
 
 		// The JSON representation of a Collection is an array of the
@@ -1081,6 +1084,7 @@
 		// Fetch the default set of models for this collection, resetting the
 		// collection when they arrive. If `reset: true` is passed, the response
 		// data will be passed through the `reset` method instead of `set`.
+		// ???
 		fetch: function(options) {
 			options = options ? _.clone(options) : {};
 			if (options.parse === void 0) options.parse = true;
@@ -1099,6 +1103,7 @@
 		// Create a new instance of a model in this collection. Add the model to the
 		// collection immediately, unless `wait: true` is passed, in which case we
 		// wait for the server to agree.
+		// ???
 		create: function(model, options) {
 			options = options ? _.clone(options) : {};
 			if (!(model = this._prepareModel(model, options))) return false;
@@ -1115,11 +1120,13 @@
 
 		// **parse** converts a response into a list of models to be added to the
 		// collection. The default implementation is just to pass it through.
+		// ???
 		parse: function(resp, options) {
 			return resp;
 		},
 
 		// Create a new collection with an identical list of models as this one.
+		// 克隆一个collection实例，用当前collection实例的model数据。
 		clone: function() {
 			return new this.constructor(this.models);
 		},
@@ -1178,6 +1185,8 @@
 	// Underscore methods that we want to implement on the Collection.
 	// 90% of the core usefulness of Backbone Collections is actually implemented
 	// right here:
+	// 将underscore大多方法集成到Collection实例上，这里涉及Backbone.Collection的90%方法接口。
+	// 参考 http://underscorejs.org
 	var methods = ['forEach', 'each', 'map', 'collect', 'reduce', 'foldl',
 		'inject', 'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select',
 		'reject', 'every', 'all', 'some', 'any', 'include', 'contains', 'invoke',
@@ -1187,6 +1196,7 @@
 	];
 
 	// Mix in each Underscore method as a proxy to `Collection#models`.
+	// 其核心是调用了underscore的方法。将当前collection实例的model数据作为方法的第一个参数。
 	_.each(methods, function(method) {
 		Collection.prototype[method] = function() {
 			var args = slice.call(arguments);
@@ -1199,6 +1209,7 @@
 	var attributeMethods = ['groupBy', 'countBy', 'sortBy', 'indexBy'];
 
 	// Use attributes instead of properties.
+	// collection实例排序方法。依然调用的是underscore方法。
 	_.each(attributeMethods, function(method) {
 		Collection.prototype[method] = function(value, context) {
 			var iterator = _.isFunction(value) ? value : function(model) {
