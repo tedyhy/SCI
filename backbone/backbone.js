@@ -1077,6 +1077,8 @@
 		},
 
 		// Pluck an attribute from each model in the collection.
+		// 参考 http://underscorejs.org/#invoke
+		// 即：对当前collection实例所拥有的model数据，应用数据所拥有的方法get，从数据里获取属性attr的值。
 		pluck: function(attr) {
 			return _.invoke(this.models, 'get', attr);
 		},
