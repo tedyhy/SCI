@@ -553,8 +553,10 @@
 		// If you specify an attribute name, determine if that attribute has changed.
 		// 判断属性值是否改变。
 		hasChanged: function(attr) {
-			if (attr == null) return !_.isEmpty(this.changed); // 判断model的attributes是否有改变
-			return _.has(this.changed, attr); // 判断model的某个属性值是否有改变
+			// 判断model的attributes是否有改变
+			if (attr == null) return !_.isEmpty(this.changed);
+			// 判断model的某个属性值是否有改变
+			return _.has(this.changed, attr);
 		},
 
 		// Return an object containing all the attributes that have changed, or
@@ -577,6 +579,7 @@
 
 		// Get the previous value of an attribute, recorded at the time the last
 		// `"change"` event was fired.
+		// 取最近一次（触发了实例change事件后的那次）实例数据的属性为attr的值。
 		previous: function(attr) {
 			if (attr == null || !this._previousAttributes) return null;
 			return this._previousAttributes[attr];
@@ -584,6 +587,7 @@
 
 		// Get all of the attributes of the model at the time of the previous
 		// `"change"` event.
+		// 取最近一次（触发了实例change事件后的那次）实例数据，json格式。
 		previousAttributes: function() {
 			return _.clone(this._previousAttributes);
 		},
