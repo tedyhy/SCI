@@ -598,6 +598,7 @@
 		// Fetch the model from the server. If the server's representation of the
 		// model differs from its current attributes, they will be overridden,
 		// triggering a `"change"` event.
+		// ???
 		fetch: function(options) {
 			options = options ? _.clone(options) : {};
 			if (options.parse === void 0) options.parse = true;
@@ -615,6 +616,7 @@
 		// Set a hash of model attributes, and sync the model to the server.
 		// If the server returns an attributes hash that differs, the model's
 		// state will be `set` again.
+		// ???
 		save: function(key, val, options) {
 			var attrs, method, xhr, attributes = this.attributes;
 
@@ -675,6 +677,7 @@
 		// Destroy this model on the server if it was already persisted.
 		// Optimistically removes the model from its collection, if it has one.
 		// If `wait: true` is passed, waits for the server to respond before removal.
+		// ???
 		destroy: function(options) {
 			options = options ? _.clone(options) : {};
 			var model = this;
@@ -704,6 +707,7 @@
 		// Default URL for the model's representation on the server -- if you're
 		// using Backbone's restful methods, override this to change the endpoint
 		// that will be called.
+		// ???
 		url: function() {
 			var base =
 				_.result(this, 'urlRoot') ||
@@ -732,7 +736,7 @@
 		},
 
 		// Check if the model is currently in a valid state.
-		// 验证当前所有数据，还是调用实例的_validate方法。
+		// 验证当前实例所有数据，还是调用当前实例的_validate方法去调用。
 		isValid: function(options) {
 			return this._validate({}, _.extend(options || {}, {
 				validate: true
@@ -765,7 +769,8 @@
 	var modelMethods = ['keys', 'values', 'pairs', 'invert', 'pick', 'omit'];
 
 	// Mix in each Underscore method as a proxy to `Model#attributes`.
-	// 将这些方法移植到model时，参数都加上了当前model的数据。
+	// 将这些方法移植到model时，这些方法的第一个参数都是当前model的数据。
+	// 其核心还是调用了underscore的相应的方法。
 	_.each(modelMethods, function(method) {
 		Model.prototype[method] = function() {
 			var args = slice.call(arguments);
