@@ -792,18 +792,25 @@
 	// Create a new **Collection**, perhaps to contain a specific type of `model`.
 	// If a `comparator` is specified, the Collection will maintain
 	// its models in sort order, as they're added and removed.
+	// 创建新的集合，包含明确类型的model，如果参数comparator被指定，则当前集合将按照comparator有序排列。
 	var Collection = Backbone.Collection = function(models, options) {
 		options || (options = {});
+		// 为Collection集合指定model数据类型和实例数据排序方式。
 		if (options.model) this.model = options.model;
 		if (options.comparator !== void 0) this.comparator = options.comparator;
+		// 重置collection属性。
 		this._reset();
+		// 初始化collection实例的时候会先调用实例方法initialize，进行一些初始化操作。
 		this.initialize.apply(this, arguments);
+		// 如果有model数据实例，则调用collection实例方法reset，重置collection实例model数据集合。
+		// 选项silent === true，不会触发collection实例上注册的reset事件。
 		if (models) this.reset(models, _.extend({
 			silent: true
 		}, options));
 	};
 
 	// Default options for `Collection#set`.
+	// collection实例上方法set、add的默认选项。
 	var setOptions = {
 		add: true,
 		remove: true,
@@ -1119,6 +1126,7 @@
 
 		// Private method to reset all internal state. Called when the collection
 		// is first initialized or reset.
+		// 内部方法，当初始化collection实例时、调用reset时，会用到此私有方法。
 		_reset: function() {
 			this.length = 0;
 			this.models = [];
