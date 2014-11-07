@@ -565,10 +565,13 @@
 		// persisted to the server. Unset attributes will be set to undefined.
 		// You can also pass an attributes object to diff against the model,
 		// determining if there *would be* a change.
-		// diff 是要查看值是否改变的属性集合对象。
+		// diff 是（要与当前实例数据相比较的）数据。比较之后，如果 diff 里的数据与当前实例数据不一致，
+		// 则说明当前实例数据已经被改变，最后会返回改变了的数据集合。
 		changedAttributes: function(diff) {
 			if (!diff) return this.hasChanged() ? _.clone(this.changed) : false;
 			var val, changed = false;
+			// 如果 this._changing === true 则，实例数据正在被改变，则返回 this._previousAttributes，
+			// 否则返回 this.attributes。
 			var old = this._changing ? this._previousAttributes : this.attributes;
 			for (var attr in diff) {
 				if (_.isEqual(old[attr], (val = diff[attr]))) continue;
