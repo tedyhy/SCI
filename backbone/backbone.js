@@ -837,6 +837,8 @@
 
 		// The JSON representation of a Collection is an array of the
 		// models' attributes.
+		// 调用collection实例的map方法（从underscore移植过来的方法）遍历当前collection实例。
+		// 为每个model数据应用同个方法，返回（由每个model数据json格式组成的）集合。
 		toJSON: function(options) {
 			return this.map(function(model) {
 				return model.toJSON(options);
@@ -844,11 +846,13 @@
 		},
 
 		// Proxy `Backbone.sync` by default.
+		// ???
 		sync: function() {
 			return Backbone.sync.apply(this, arguments);
 		},
 
 		// Add a model, or list of models to the set.
+		// 向当前collection实例增加一个数据model，或者一个数据列表集合。
 		add: function(models, options) {
 			return this.set(models, _.extend({
 				merge: false
@@ -856,6 +860,7 @@
 		},
 
 		// Remove a model, or a list of models from the set.
+		// 从当前collection实例中移除一个数据model，或者一个数据列表集合。
 		remove: function(models, options) {
 			var singular = !_.isArray(models);
 			models = singular ? [models] : _.clone(models);
@@ -997,6 +1002,7 @@
 		},
 
 		// Add a model to the end of the collection.
+		// 向当前collection实例栈末添加一个数据model。
 		push: function(model, options) {
 			return this.add(model, _.extend({
 				at: this.length
@@ -1004,6 +1010,7 @@
 		},
 
 		// Remove a model from the end of the collection.
+		// 从当前collection实例栈末移除一个数据model。
 		pop: function(options) {
 			var model = this.at(this.length - 1);
 			this.remove(model, options);
@@ -1011,6 +1018,7 @@
 		},
 
 		// Add a model to the beginning of the collection.
+		// 向当前collection实例的队列首部添加一个数据实例。
 		unshift: function(model, options) {
 			return this.add(model, _.extend({
 				at: 0
@@ -1018,6 +1026,7 @@
 		},
 
 		// Remove a model from the beginning of the collection.
+		// 从当前collection实例的队列首部移除一个数据实例。
 		shift: function(options) {
 			var model = this.at(0);
 			this.remove(model, options);
@@ -1025,6 +1034,8 @@
 		},
 
 		// Slice out a sub-array of models from the collection.
+		// this.models 是一个数组，存储collection实例所属的数据集合。
+		// 调用数组方法slice，从collection实例数据集合中取子数组集合。
 		slice: function() {
 			return slice.apply(this.models, arguments);
 		},
@@ -1036,6 +1047,7 @@
 		},
 
 		// Get the model at the given index.
+		// 通过索引从数据集合中返回数据model。
 		at: function(index) {
 			return this.models[index];
 		},
