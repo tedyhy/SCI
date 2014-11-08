@@ -1041,6 +1041,7 @@
 		},
 
 		// Get a model from the set by id.
+		// 通过id从collection实例集合数据中查找。
 		get: function(obj) {
 			if (obj == null) return void 0;
 			return this._byId[obj] || this._byId[obj.id] || this._byId[obj.cid];
@@ -1054,6 +1055,9 @@
 
 		// Return models with matching attributes. Useful for simple cases of
 		// `filter`.
+		// 从collection实例中查找（具有相同属性attrs）数据model，并返回。
+		// 参数first === true时，取所有匹配的数据model中的第一个（而非集合）。否则返回所有匹配的数据集合。
+		// 参数first === true时使用了underscore的find方法，如果first === false时使用了underscore的filter方法。
 		where: function(attrs, first) {
 			if (_.isEmpty(attrs)) return first ? void 0 : [];
 			return this[first ? 'find' : 'filter'](function(model) {
@@ -1064,8 +1068,9 @@
 			});
 		},
 
-		// Return the first model with matching attributes. Useful for simple cases
-		// of `find`.
+		// Return the first model with matching attributes. Useful for simple cases of `find`.
+		// 从collection实例中查找（具有相同属性attrs）数据model，并返回。
+		// 等同于 this.where(attrs, true)。
 		findWhere: function(attrs) {
 			return this.where(attrs, true);
 		},
@@ -1073,17 +1078,24 @@
 		// Force the collection to re-sort itself. You don't need to call this under
 		// normal circumstances, as the set will maintain sort order as each item
 		// is added.
+		// 如果为collection实例设置了comparator属性，则collection实例的数据集合将按照
+		// comparator进行排序。当选项silent不为true时（即非静默状态下），会触发collection实例上
+		// 注册的sort事件。
 		sort: function(options) {
+			// 木有comparator属性，则抛出错误。
 			if (!this.comparator) throw new Error('Cannot sort a set without a comparator');
 			options || (options = {});
 
 			// Run sort based on type of `comparator`.
+			// 如果属性comparator为字符串时，将会调用collection实例的sortBy方法进行排序，此时this为context。
 			if (_.isString(this.comparator) || this.comparator.length === 1) {
 				this.models = this.sortBy(this.comparator, this);
 			} else {
+				// 参考 http://underscorejs.org/#bind
 				this.models.sort(_.bind(this.comparator, this));
 			}
 
+			// 非静默状态下，会触发collection实例的sort事件。
 			if (!options.silent) this.trigger('sort', this, options);
 			return this;
 		},
