@@ -154,9 +154,10 @@ define(function(require) {
 			this.__activeElement = this.__getActive();
 
 			this.open = true;
+			// 指定浮层跟在哪个元素之后显示。
 			this.follow = anchor || this.follow;
 
-
+			// 初始化浮层元素
 			if (!this.__ready) {
 
 				popup.addClass(this.className);
@@ -170,14 +171,14 @@ define(function(require) {
 					popup.html(this.innerHTML);
 				}
 
-
+				// 如果不是ie6，则绑定resize事件。
 				if (!_isIE6) {
 					$(window).on('resize', this.__onresize = function() {
 						that.reset();
 					});
 				}
 
-
+				// 浮层元素准备好了
 				this.__ready = true;
 			}
 
@@ -261,7 +262,8 @@ define(function(require) {
 		},
 
 
-		/** 手动刷新位置 */
+		/** 手动刷新位置，如：window大小改变，要相应改变浮层的位置。 */
+		// ??????
 		reset: function() {
 
 			var elem = this.follow;
@@ -445,6 +447,7 @@ define(function(require) {
 
 
 		// 指定位置 @param    {HTMLElement, Event}  anchor
+		// 浮层将参照指定的位置anchor进行定位。
 		__follow: function(anchor) {
 
 			var $elem = anchor.parentNode && $(anchor);
