@@ -13,13 +13,15 @@ define(function(require) {
 
 	var _count = 0;
 	// 是否是ie6
+	// var div = document.createElement('div');
+	// var _isIE6 = !('minWidth' in div.style);
 	var _isIE6 = !('minWidth' in $('html')[0].style);
 	// 是否支持fixed，ie6不支持fixed
 	var _isFixed = !_isIE6;
 
 
 	function Popup() {
-
+		// 当前popup实例是否被删掉
 		this.destroyed = false;
 
 		// 新建弹层
@@ -263,7 +265,6 @@ define(function(require) {
 
 
 		/** 手动刷新位置，如：window大小改变，要相应改变浮层的位置。 */
-		// ??????
 		reset: function() {
 
 			var elem = this.follow;
