@@ -1,9 +1,11 @@
+// 一些正则匹配
 var rformElems = /^(?:input|select|textarea)$/i,
 	rkeyEvent = /^key/,
 	rmouseEvent = /^(?:mouse|contextmenu)|click/,
 	rfocusMorph = /^(?:focusinfocus|focusoutblur)$/,
 	rtypenamespace = /^([^.]*)(?:\.(.+)|)$/;
 
+// 返回值函数
 function returnTrue() {
 	return true;
 }
@@ -22,6 +24,7 @@ function safeActiveElement() {
  * Helper functions for managing events -- not part of the public interface.
  * Props to Dean Edwards' addEvent library for many of the ideas.
  */
+// 帮助管理事件的函数，没有对外的接口
 jQuery.event = {
 
 	global: {},
