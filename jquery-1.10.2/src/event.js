@@ -1,19 +1,19 @@
-// 一些正则匹配
+// 一些事件相关正则匹配
 var rformElems = /^(?:input|select|textarea)$/i,
 	rkeyEvent = /^key/,
 	rmouseEvent = /^(?:mouse|contextmenu)|click/,
 	rfocusMorph = /^(?:focusinfocus|focusoutblur)$/,
 	rtypenamespace = /^([^.]*)(?:\.(.+)|)$/;
 
-// 返回值函数
+// 返回值函数，返回布尔值true
 function returnTrue() {
 	return true;
 }
-
+// 返回值函数，返回布尔值false
 function returnFalse() {
 	return false;
 }
-
+// 返回当前聚焦dom
 function safeActiveElement() {
 	try {
 		return document.activeElement;
@@ -28,7 +28,7 @@ function safeActiveElement() {
 jQuery.event = {
 
 	global: {},
-
+	// 如：jQuery.event.add( this, types, fn, data, selector );
 	add: function( elem, types, handler, data, selector ) {
 		var tmp, events, t, handleObjIn,
 			special, eventHandle, handleObj,
@@ -41,6 +41,7 @@ jQuery.event = {
 		}
 
 		// Caller can pass in an object of custom data in lieu of the handler
+		// handler 可以是一个对象，包含属性：handler、selector、guid
 		if ( handler.handler ) {
 			handleObjIn = handler;
 			handler = handleObjIn.handler;
@@ -48,6 +49,7 @@ jQuery.event = {
 		}
 
 		// Make sure that the handler has a unique ID, used to find/remove it later
+		// 确保当前事件句柄handler有唯一ID，主要用于稍后找到/移除此句柄。
 		if ( !handler.guid ) {
 			handler.guid = jQuery.guid++;
 		}
@@ -506,6 +508,7 @@ jQuery.event = {
 	},
 
 	// Includes some event props shared by KeyEvent and MouseEvent
+	// 包含了一些键盘和鼠标事件属性
 	props: "altKey bubbles cancelable ctrlKey currentTarget eventPhase metaKey relatedTarget shiftKey target timeStamp view which".split(" "),
 
 	fixHooks: {},
@@ -515,6 +518,7 @@ jQuery.event = {
 		filter: function( event, original ) {
 
 			// Add which for key events
+			// 如果键盘事件对象不包含属性which，则增加which属性。此属性有兼容性：charCode、keyCode。
 			if ( event.which == null ) {
 				event.which = original.charCode != null ? original.charCode : original.keyCode;
 			}
@@ -900,41 +904,50 @@ jQuery.fn.extend({
 		var type, origFn;
 
 		// Types can be a map of types/handlers
+		// 类似这样：$('body').on({"click": fn1, "focus": fn2, "blur": fn3}, 'a', data, fn);
 		if ( typeof types === "object" ) {
 			// ( types-Object, selector, data )
 			if ( typeof selector !== "string" ) {
 				// ( types-Object, data )
+				// 类似这样：$('body').on({"click": fn1, "focus": fn2, "blur": fn3}, data, fn);
 				data = data || selector;
 				selector = undefined;
 			}
+			// 遍历对象迭代调用on绑定事件
 			for ( type in types ) {
 				this.on( type, selector, data, types[ type ], one );
 			}
 			return this;
 		}
 
+		// 类似这样：$('body').on("click", fn);
 		if ( data == null && fn == null ) {
 			// ( types, fn )
 			fn = selector;
 			data = selector = undefined;
 		} else if ( fn == null ) {
+			// 类似这样：$('body').on("click", "a", fn);
 			if ( typeof selector === "string" ) {
 				// ( types, selector, fn )
 				fn = data;
 				data = undefined;
 			} else {
+				// 类似这样：$('body').on("click", data, fn);
 				// ( types, data, fn )
 				fn = data;
 				data = selector;
 				selector = undefined;
 			}
 		}
+		// 类似这样：$('body').on("click", 'a', data, false);即：fn为布尔类型false。
 		if ( fn === false ) {
 			fn = returnFalse;
+		// 类似这样：$('body').on("click", 'a', data, 0);即：fn为非布尔类型false，如：fn === 0。
 		} else if ( !fn ) {
 			return this;
 		}
 
+		// 参数one是内部使用的参数
 		if ( one === 1 ) {
 			origFn = fn;
 			fn = function( event ) {
@@ -946,6 +959,7 @@ jQuery.fn.extend({
 			fn.guid = origFn.guid || ( origFn.guid = jQuery.guid++ );
 		}
 		return this.each( function() {
+			// 遍历jQuery对象，为每个jQuery对象绑定相关事件。
 			jQuery.event.add( this, types, fn, data, selector );
 		});
 	},
