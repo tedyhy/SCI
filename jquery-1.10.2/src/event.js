@@ -513,6 +513,7 @@ jQuery.event = {
 
 	fixHooks: {},
 
+	// 键盘事件钩子
 	keyHooks: {
 		props: "char charCode key keyCode".split(" "),
 		filter: function( event, original ) {
@@ -527,30 +528,38 @@ jQuery.event = {
 		}
 	},
 
+	// 鼠标事件钩子
+	// 参考http://www.cnblogs.com/MrBackKom/archive/2012/06/25/2562920.html
 	mouseHooks: {
 		props: "button buttons clientX clientY fromElement offsetX offsetY pageX pageY screenX screenY toElement".split(" "),
 		filter: function( event, original ) {
 			var body, eventDoc, doc,
-				button = original.button,
-				fromElement = original.fromElement;
+				button = original.button,	// 鼠标按键
+				fromElement = original.fromElement;	// 鼠标事件的关联元素（ie）
 
 			// Calculate pageX/Y if missing and clientX/Y available
+			// 如果 pageX/Y 属性丢失，而且 clientX/Y 属性可用，则重新计算属性 pageX/Y。
 			if ( event.pageX == null && original.clientX != null ) {
 				eventDoc = event.target.ownerDocument || document;
 				doc = eventDoc.documentElement;
 				body = eventDoc.body;
 
+				// 重新为 event.pageX/event.pageY 赋值
 				event.pageX = original.clientX + ( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) - ( doc && doc.clientLeft || body && body.clientLeft || 0 );
 				event.pageY = original.clientY + ( doc && doc.scrollTop  || body && body.scrollTop  || 0 ) - ( doc && doc.clientTop  || body && body.clientTop  || 0 );
 			}
 
 			// Add relatedTarget, if necessary
+			// 为事件对象event添加 relatedTarget 属性（兼容ie8-）
 			if ( !event.relatedTarget && fromElement ) {
 				event.relatedTarget = fromElement === event.target ? original.toElement : fromElement;
 			}
 
 			// Add which for click: 1 === left; 2 === middle; 3 === right
 			// Note: button is not normalized, so don't use it
+			// 为鼠标click事件对象添加 which 属性。标准浏览器为：1 === left; 2 === middle; 3 === right
+			// 参考http://zhidao.baidu.com/question/130386852.html
+			// ???
 			if ( !event.which && button !== undefined ) {
 				event.which = ( button & 1 ? 1 : ( button & 2 ? 3 : ( button & 4 ? 2 : 0 ) ) );
 			}
