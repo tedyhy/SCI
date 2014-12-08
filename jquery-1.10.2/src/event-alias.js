@@ -1,5 +1,6 @@
 // 将一些事件放到原型上，每个jquery对象可以直接调用事件方法，如：$('div').click(function(){})。
 // 实际上是调用了jquery对象上的on函数注册事件。没有参数，就是触发事件，如：$('div').trigger()。
+// focusin focusout select error contextmenu相对用的少。
 jQuery.each( ("blur focus focusin focusout load resize scroll unload click dblclick " +
 	"mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave " +
 	"change select submit keydown keypress keyup error contextmenu").split(" "), function( i, name ) {

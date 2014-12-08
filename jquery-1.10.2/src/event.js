@@ -33,15 +33,16 @@ jQuery.event = {
 		var tmp, events, t, handleObjIn,
 			special, eventHandle, handleObj,
 			handlers, type, namespaces, origType,
-			elemData = jQuery._data( elem );
+			elemData = jQuery._data( elem ); // 通过内部缓存获取元素数据 ???
 
 		// Don't attach events to noData or text/comment nodes (but allow plain objects)
+		// 不会为没有数据或者没有text、comment的节点添加事件，但是允许为普通对象绑定事件。 ???
 		if ( !elemData ) {
 			return;
 		}
 
 		// Caller can pass in an object of custom data in lieu of the handler
-		// handler 可以是一个对象，包含属性：handler、selector、guid
+		// 如果handler是个包含 handler、selector、guid 属性的对象。
 		if ( handler.handler ) {
 			handleObjIn = handler;
 			handler = handleObjIn.handler;
@@ -49,12 +50,13 @@ jQuery.event = {
 		}
 
 		// Make sure that the handler has a unique ID, used to find/remove it later
-		// 确保当前事件句柄handler有唯一ID，主要用于稍后找到/移除此句柄。
+		// 确保当前事件回调fn有唯一ID，主要用于稍后查找/删除回调fn。
 		if ( !handler.guid ) {
 			handler.guid = jQuery.guid++;
 		}
 
 		// Init the element's event structure and main handler, if this is the first
+		// 初始化元素事件对象 events。
 		if ( !(events = elemData.events) ) {
 			events = elemData.events = {};
 		}
@@ -67,6 +69,7 @@ jQuery.event = {
 					undefined;
 			};
 			// Add elem as a property of the handle fn to prevent a memory leak with IE non-native events
+			// 为回调eventHandle增加一个属性，保存当前dom元素，避免内存泄露。
 			eventHandle.elem = elem;
 		}
 
@@ -908,7 +911,7 @@ if ( !jQuery.support.focusinBubbles ) {
 }
 
 jQuery.fn.extend({
-
+	// one 参数内部用
 	on: function( types, selector, data, fn, /*INTERNAL*/ one ) {
 		var type, origFn;
 
@@ -948,15 +951,18 @@ jQuery.fn.extend({
 				selector = undefined;
 			}
 		}
-		// 类似这样：$('body').on("click", 'a', data, false);即：fn为布尔类型false。
+		// 类似这样：$('body').on("click", 'a', data, false);即：fn为布尔类型false。此时，回调是"returnFalse"。
 		if ( fn === false ) {
 			fn = returnFalse;
-		// 类似这样：$('body').on("click", 'a', data, 0);即：fn为非布尔类型false，如：fn === 0。
+		// 类似这样：$('body').on("click", 'a', data, 0);
+		// 即：fn有值且为非布尔类型，但是通过类型转换成false，如：fn === 0。
 		} else if ( !fn ) {
 			return this;
 		}
 
-		// 参数one是内部使用的参数
+		// 参数one是内部使用的参数，用来实现只绑定事件一次。
+		// one === 1 时，这个事件只用一次，用完就用off取消掉。实现了事件 one 的效果。
+		// 事实上jQuery的 one 事件就是通过此参数控制的。
 		if ( one === 1 ) {
 			origFn = fn;
 			fn = function( event ) {
@@ -965,10 +971,12 @@ jQuery.fn.extend({
 				return origFn.apply( this, arguments );
 			};
 			// Use same guid so caller can remove using origFn
+			// 将origFn回调的属性guid值赋给新生成的回调fn，使两者保持一致。
 			fn.guid = origFn.guid || ( origFn.guid = jQuery.guid++ );
 		}
 		return this.each( function() {
 			// 遍历jQuery对象，为每个jQuery对象绑定相关事件。
+			// 实质是通过 jQuery.event.add 为jQuery对象绑定事件。
 			jQuery.event.add( this, types, fn, data, selector );
 		});
 	},
