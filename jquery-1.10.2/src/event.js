@@ -24,7 +24,6 @@ function safeActiveElement() {
  * Helper functions for managing events -- not part of the public interface.
  * Props to Dean Edwards' addEvent library for many of the ideas.
  */
-// 帮助管理事件的函数，没有对外的接口
 jQuery.event = {
 
 	global: {},
@@ -33,7 +32,7 @@ jQuery.event = {
 		var tmp, events, t, handleObjIn,
 			special, eventHandle, handleObj,
 			handlers, type, namespaces, origType,
-			elemData = jQuery._data( elem ); // 通过内部缓存获取元素数据 ???
+			elemData = jQuery._data( elem ); // 获取缓存的元素相关事件数据 ???
 
 		// Don't attach events to noData or text/comment nodes (but allow plain objects)
 		// 不会为没有数据或者没有text、comment的节点添加事件，但是允许为普通对象绑定事件。 ???
@@ -56,12 +55,14 @@ jQuery.event = {
 		}
 
 		// Init the element's event structure and main handler, if this is the first
-		// 初始化元素事件对象 events。
+		// 如果元素缓存数据中没有 events 数据，则初始化元素事件对象 events。
 		if ( !(events = elemData.events) ) {
 			events = elemData.events = {};
 		}
+		// 如果元素缓存数据中没有 handle 回调，则初始化它。
 		if ( !(eventHandle = elemData.handle) ) {
 			eventHandle = elemData.handle = function( e ) {
+				// ???
 				// Discard the second event of a jQuery.event.trigger() and
 				// when an event is called after a page has unloaded
 				return typeof jQuery !== core_strundefined && (!e || jQuery.event.triggered !== e.type) ?
@@ -69,30 +70,38 @@ jQuery.event = {
 					undefined;
 			};
 			// Add elem as a property of the handle fn to prevent a memory leak with IE non-native events
-			// 为回调eventHandle增加一个属性，保存当前dom元素，避免内存泄露。
+			// 定义事件处理器对应的元素，用于防止IE非原生事件中的内存泄露。
 			eventHandle.elem = elem;
 		}
 
 		// Handle multiple events separated by a space
-		types = ( types || "" ).match( core_rnotwhite ) || [""];
+		// 类似这样的事件绑定：types = "click.aaa.bbb focus blur"
+		types = ( types || "" ).match( core_rnotwhite ) || [""]; // ["click.aaa.bbb", "focus", "blur"]
 		t = types.length;
+		// 遍历要绑定的事件数组
 		while ( t-- ) {
+			// tmp = ["click.aaa.bbb", "click", "aaa.bbb"]
 			tmp = rtypenamespace.exec( types[t] ) || [];
+			// tmp[1] = "click"
 			type = origType = tmp[1];
+			// namespaces = ["aaa", "bbb"] ??? 为什么要sort。
 			namespaces = ( tmp[2] || "" ).split( "." ).sort();
 
 			// There *must* be a type, no attaching namespace-only handlers
+			// 一定要有事件类型。
 			if ( !type ) {
 				continue;
 			}
 
 			// If event changes its type, use the special event handlers for the changed type
+			// 事件是否会改变当前状态，如果会则使用特殊事件 ???
 			special = jQuery.event.special[ type ] || {};
 
 			// If selector defined, determine special event api type, otherwise given type
 			type = ( selector ? special.delegateType : special.bindType ) || type;
 
 			// Update special based on newly reset type
+			// 再次更新对象 special。
 			special = jQuery.event.special[ type ] || {};
 
 			// handleObj is passed to all event handlers
@@ -103,14 +112,15 @@ jQuery.event = {
 				handler: handler,
 				guid: handler.guid,
 				selector: selector,
-				needsContext: selector && jQuery.expr.match.needsContext.test( selector ),
+				needsContext: selector && jQuery.expr.match.needsContext.test( selector ), //???
 				namespace: namespaces.join(".")
 			}, handleObjIn );
 
 			// Init the event handler queue if we're the first
+			// 第一次初始化回调队列（数组）。
 			if ( !(handlers = events[ type ]) ) {
 				handlers = events[ type ] = [];
-				handlers.delegateCount = 0;
+				handlers.delegateCount = 0; // 未处理的回调个数。
 
 				// Only use addEventListener/attachEvent if the special events handler returns false
 				if ( !special.setup || special.setup.call( elem, data, namespaces, eventHandle ) === false ) {
@@ -144,6 +154,7 @@ jQuery.event = {
 		}
 
 		// Nullify elem to prevent memory leaks in IE
+		// 将元素变量elem置为空，防止ie下内存泄露。
 		elem = null;
 	},
 
@@ -672,6 +683,7 @@ jQuery.removeEvent = document.removeEventListener ?
 		}
 	};
 
+// jQuery事件函数。
 jQuery.Event = function( src, props ) {
 	// Allow instantiation without the 'new' keyword
 	if ( !(this instanceof jQuery.Event) ) {
@@ -916,12 +928,12 @@ jQuery.fn.extend({
 		var type, origFn;
 
 		// Types can be a map of types/handlers
-		// 类似这样：$('body').on({"click": fn1, "focus": fn2, "blur": fn3}, 'a', data, fn);
+		// 类似这样：$('body').on({"click": fn1, "focus": fn2, "blur": fn3}, 'a', data);
 		if ( typeof types === "object" ) {
 			// ( types-Object, selector, data )
 			if ( typeof selector !== "string" ) {
 				// ( types-Object, data )
-				// 类似这样：$('body').on({"click": fn1, "focus": fn2, "blur": fn3}, data, fn);
+				// 类似这样：$('body').on({"click": fn1, "focus": fn2, "blur": fn3}, data);
 				data = data || selector;
 				selector = undefined;
 			}
