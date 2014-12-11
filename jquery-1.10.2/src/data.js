@@ -2,15 +2,17 @@ var rbrace = /(?:\{[\s\S]*\}|\[[\s\S]*\])$/,
 	rmultiDash = /([A-Z])/g;
 
 function internalData( elem, name, data, pvt /* Internal Use Only */ ){
+	// 判断一个元素是否能接受属性扩展
 	if ( !jQuery.acceptData( elem ) ) {
 		return;
 	}
 
 	var ret, thisCache,
-		internalKey = jQuery.expando,
+		internalKey = jQuery.expando, // 如："jQuery110209568656722549349"
 
 		// We have to handle DOM nodes and JS objects differently because IE6-7
 		// can't GC object references properly across the DOM-JS boundary
+		// 元素节点类型。
 		isNode = elem.nodeType,
 
 		// Only DOM nodes need the global jQuery cache; JS object data is
@@ -185,6 +187,7 @@ jQuery.extend({
 
 	// The following elements throw uncatchable exceptions if you
 	// attempt to add expando properties to them.
+	// 如果试图给下列元素添加扩展属性时，将抛出异常。
 	noData: {
 		"applet": true,
 		"embed": true,
@@ -206,6 +209,7 @@ jQuery.extend({
 	},
 
 	// For internal use only.
+	// 内部使用的方法。用来返回元素节点扩展属性值对象。
 	_data: function( elem, name, data ) {
 		return internalData( elem, name, data, true );
 	},
@@ -215,8 +219,10 @@ jQuery.extend({
 	},
 
 	// A method for determining if a DOM node can handle the data expando
+	// 一个方法用来确定一个 DOM 节点是否能够处理数据扩展。
 	acceptData: function( elem ) {
 		// Do not set data on non-element because it will not be cleared (#8335).
+		// 确定此元素节点类型为 1、9
 		if ( elem.nodeType && elem.nodeType !== 1 && elem.nodeType !== 9 ) {
 			return false;
 		}
