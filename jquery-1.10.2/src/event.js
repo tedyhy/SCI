@@ -683,7 +683,7 @@ jQuery.removeEvent = document.removeEventListener ?
 		}
 	};
 
-// jQuery事件函数。
+// jQuery事件回调函数的事件对象event的构造器。
 jQuery.Event = function( src, props ) {
 	// Allow instantiation without the 'new' keyword
 	if ( !(this instanceof jQuery.Event) ) {
@@ -719,13 +719,15 @@ jQuery.Event = function( src, props ) {
 
 // jQuery.Event is based on DOM3 Events as specified by the ECMAScript Language Binding
 // http://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
+// 参考 http://www.w3school.com.cn/jsref/dom_obj_event.asp
 jQuery.Event.prototype = {
-	isDefaultPrevented: returnFalse,
-	isPropagationStopped: returnFalse,
-	isImmediatePropagationStopped: returnFalse,
+	isDefaultPrevented: returnFalse, // 函数，判断是否调用过preventDefault()方法
+	isPropagationStopped: returnFalse, // 函数，判断是否调用过stopPropagation()方法
+	isImmediatePropagationStopped: returnFalse, // 函数，判断是否调用过stopImmediatePropagation()方法
 
+	// 取消元素事件的默认动作
 	preventDefault: function() {
-		var e = this.originalEvent;
+		var e = this.originalEvent; // 原生事件对象
 
 		this.isDefaultPrevented = returnTrue;
 		if ( !e ) {
@@ -733,31 +735,37 @@ jQuery.Event.prototype = {
 		}
 
 		// If preventDefault exists, run it on the original event
+		// 用原生的事件对象方法 event.preventDefault();
 		if ( e.preventDefault ) {
 			e.preventDefault();
 
 		// Support: IE
 		// Otherwise set the returnValue property of the original event to false
+		// ie下设置事件对象属性 event.returnValue = false;
 		} else {
 			e.returnValue = false;
 		}
 	},
+	// 取消事件冒泡
 	stopPropagation: function() {
-		var e = this.originalEvent;
+		var e = this.originalEvent; // 原生事件对象
 
 		this.isPropagationStopped = returnTrue;
 		if ( !e ) {
 			return;
 		}
 		// If stopPropagation exists, run it on the original event
+		// 用原生的事件对象方法 event.stopPropagation();
 		if ( e.stopPropagation ) {
 			e.stopPropagation();
 		}
 
 		// Support: IE
 		// Set the cancelBubble property of the original event to true
+		// ie下设置事件对象属性 event.cancelBubble = true;
 		e.cancelBubble = true;
 	},
+	// 该元素当前事件回调执行后，其后续的事件回调将不再执行，并取消事件冒泡
 	stopImmediatePropagation: function() {
 		this.isImmediatePropagationStopped = returnTrue;
 		this.stopPropagation();
@@ -923,7 +931,7 @@ if ( !jQuery.support.focusinBubbles ) {
 }
 
 jQuery.fn.extend({
-	// one 参数内部用
+	// “one”参数内部用
 	on: function( types, selector, data, fn, /*INTERNAL*/ one ) {
 		var type, origFn;
 
@@ -979,6 +987,7 @@ jQuery.fn.extend({
 			origFn = fn;
 			fn = function( event ) {
 				// Can use an empty set, since event contains the info
+				// 调用jQuery实例对象的off方法，取消事件绑定。注意参数为事件event对象。
 				jQuery().off( event );
 				return origFn.apply( this, arguments );
 			};
@@ -997,6 +1006,8 @@ jQuery.fn.extend({
 	},
 	off: function( types, selector, fn ) {
 		var handleObj, type;
+
+		// types 是事件event对象。???
 		if ( types && types.preventDefault && types.handleObj ) {
 			// ( event )  dispatched jQuery.Event
 			handleObj = types.handleObj;
@@ -1007,13 +1018,16 @@ jQuery.fn.extend({
 			);
 			return this;
 		}
+		// 类似这样：$('body').off({"click": fn1, "focus": fn2, "blur": fn3}, 'a');
 		if ( typeof types === "object" ) {
 			// ( types-object [, selector] )
+			// 遍历移除绑定的事件
 			for ( type in types ) {
 				this.off( type, selector, types[ type ] );
 			}
 			return this;
 		}
+		// 类似这样：$('body').off('click', fn) 或者 $('body').off('click', false)
 		if ( selector === false || typeof selector === "function" ) {
 			// ( types [, fn] )
 			fn = selector;
@@ -1023,6 +1037,8 @@ jQuery.fn.extend({
 			fn = returnFalse;
 		}
 		return this.each(function() {
+			// 遍历jQuery对象，为每个jQuery对象移除绑定事件。
+			// 实质是通过 jQuery.event.remove 为jQuery对象移除绑定事件。
 			jQuery.event.remove( this, types, fn, selector );
 		});
 	},
@@ -1032,9 +1048,13 @@ jQuery.fn.extend({
 			jQuery.event.trigger( type, data, this );
 		});
 	},
+	// 参考 http://www.w3school.com.cn/jquery/event_triggerhandler.asp
 	triggerHandler: function( type, data ) {
+		// 只取匹配的第一个元素
 		var elem = this[0];
 		if ( elem ) {
+			// 返回的是事件处理函数的返回值，而不是具有可链性的 jQuery 对象。
+			// 此外，如果没有处理程序被触发，则这个方法返回 undefined。
 			return jQuery.event.trigger( type, data, elem, true );
 		}
 	}
