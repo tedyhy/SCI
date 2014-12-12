@@ -1,6 +1,7 @@
 var rbrace = /(?:\{[\s\S]*\}|\[[\s\S]*\])$/,
 	rmultiDash = /([A-Z])/g;
 
+// internalData( elem, undefined, undefined, true );
 function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 	// 判断一个元素是否能接受属性扩展
 	if ( !jQuery.acceptData( elem ) ) {
@@ -8,7 +9,8 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 	}
 
 	var ret, thisCache,
-		internalKey = jQuery.expando, // 如："jQuery110209568656722549349"
+		// 如："jQuery110209568656722549349"
+		internalKey = jQuery.expando,
 
 		// We have to handle DOM nodes and JS objects differently because IE6-7
 		// can't GC object references properly across the DOM-JS boundary
@@ -17,11 +19,14 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 
 		// Only DOM nodes need the global jQuery cache; JS object data is
 		// attached directly to the object so GC can occur automatically
+		// 仅仅 DOM 对象需要用到全局的 jQuery 缓存对象 cache，而普通的对象不需要。
 		cache = isNode ? jQuery.cache : elem,
 
 		// Only defining an ID for JS objects if its cache already exists allows
 		// the code to shortcut on the same path as a DOM node with no cache
-		id = isNode ? elem[ internalKey ] : elem[ internalKey ] && internalKey;
+		// 如果是dom节点，则id为元素属性jQuery.expando的值，即：id = elem['jQuery110209568656722549349']
+		// 如果是普通对象，则 id = 'jQuery110209568656722549349'
+		id = isNode ? elem[ internalKey ] : elem[ internalKey ] && internalKey; // ??? 有问题
 
 	// Avoid doing any more work than we need to when trying to get data on an
 	// object that has no data at all
@@ -32,6 +37,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 	if ( !id ) {
 		// Only DOM nodes need a new unique ID for each element since their data
 		// ends up in the global cache
+		// 如果是dom元素，则从垃圾ids里随便取一个id（或者重新生成一个唯一id）给当前元素用。
 		if ( isNode ) {
 			id = elem[ internalKey ] = core_deletedIds.pop() || jQuery.guid++;
 		} else {
@@ -209,7 +215,8 @@ jQuery.extend({
 	},
 
 	// For internal use only.
-	// 内部使用的方法。用来返回元素节点扩展属性值对象。
+	// 内部使用的方法。
+	// 通过 internalData 方法，利用元素/普通对象的id从 $.cache 里取相关缓存数据。
 	_data: function( elem, name, data ) {
 		return internalData( elem, name, data, true );
 	},
@@ -227,9 +234,11 @@ jQuery.extend({
 			return false;
 		}
 
+		// 通过 jQuery.noData 方法来判断元素是否能够处理数据扩展。
 		var noData = elem.nodeName && jQuery.noData[ elem.nodeName.toLowerCase() ];
 
 		// nodes accept data unless otherwise specified; rejection can be conditional
+		// noData 的值为 true 或 "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"。
 		return !noData || noData !== true && elem.getAttribute("classid") === noData;
 	}
 });

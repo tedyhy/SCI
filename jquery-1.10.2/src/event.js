@@ -27,21 +27,48 @@ function safeActiveElement() {
 jQuery.event = {
 
 	global: {},
+	// elem为DOM元素节点 或 普通对象。
 	// 如：jQuery.event.add( this, types, fn, data, selector );
 	add: function( elem, types, handler, data, selector ) {
 		var tmp, events, t, handleObjIn,
 			special, eventHandle, handleObj,
 			handlers, type, namespaces, origType,
-			elemData = jQuery._data( elem ); // 获取缓存的元素相关事件数据 ???
+			// 通过 $._data 方法，利用元素/普通对象的id从 $.cache 里取相关缓存数据。
+			elemData = jQuery._data( elem );
 
 		// Don't attach events to noData or text/comment nodes (but allow plain objects)
-		// 不会为没有数据或者没有text、comment的节点添加事件，但是允许为普通对象绑定事件。 ???
+		// 允许为普通对象绑定事件。
+		// 不会为没有缓存数据或者是text、comment的节点绑定事件。
+		// elemData 对象内容如：
+		/**
+			elemData = {
+				events: {
+					click: [
+						{
+							data: undefined,
+							guid: 2,
+							handler: fn1,
+							namespace: "",
+							type: "click"
+						}
+					]
+				},
+				handle: fn
+			}
+		**/
 		if ( !elemData ) {
 			return;
 		}
 
 		// Caller can pass in an object of custom data in lieu of the handler
-		// 如果handler是个包含 handler、selector、guid 属性的对象。
+		// 如果handler是个包含 handler、selector、guid 属性的对象。如果handler是对象，则内容如下：
+		/**
+			handler = {
+				handler: fn
+				selector: 'a'
+				guid: 2
+			}
+		**/
 		if ( handler.handler ) {
 			handleObjIn = handler;
 			handler = handleObjIn.handler;
@@ -906,7 +933,7 @@ if ( !jQuery.support.changeBubbles ) {
 }
 
 // Create "bubbling" focus and blur events
-// 创建冒泡的 focus、blur 事件，即：focusin、focusout
+// 如果不支持 focusin、focusout 事件，则通过修改回调函数，用focus、blur事件模拟 focusin、focusout。
 if ( !jQuery.support.focusinBubbles ) {
 	jQuery.each({ focus: "focusin", blur: "focusout" }, function( orig, fix ) {
 
@@ -916,12 +943,15 @@ if ( !jQuery.support.focusinBubbles ) {
 				jQuery.event.simulate( fix, event.target, jQuery.event.fix( event ), true );
 			};
 
+		// 将 focusin、focusout事件方法特殊处理回调放入 jQuery.event.special。
 		jQuery.event.special[ fix ] = {
+			// 绑定事件
 			setup: function() {
 				if ( attaches++ === 0 ) {
 					document.addEventListener( orig, handler, true );
 				}
 			},
+			// 移除事件
 			teardown: function() {
 				if ( --attaches === 0 ) {
 					document.removeEventListener( orig, handler, true );

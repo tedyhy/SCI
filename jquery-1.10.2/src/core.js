@@ -31,7 +31,8 @@ var
 	class2type = {},
 
 	// List of deleted data cache ids, so we can reuse them
-	// 空数组，用于提供数组方法，如：push
+	// 1.空数组，用于提供数组方法，如：push
+	// 2.用于存储被删除的缓存ids，方便重用。
 	core_deletedIds = [],
 
 	core_version = "@VERSION",
@@ -414,7 +415,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 jQuery.extend({
 	// Unique for each copy of jQuery on the page
 	// Non-digits removed to match rinlinejQuery
-	// 当前页面jquery版本唯一标识，可能存在多个版本jquery（如，使用$.noConflict()）
+	// 当前页面 jQuery 版本唯一标识，可能存在多个版本 jQuery（如，使用$.noConflict()）
 	expando: "jQuery" + ( core_version + Math.random() ).replace( /\D/g, "" ),
 
 	// 解决冲突
