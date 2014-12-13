@@ -5,15 +5,15 @@ var rformElems = /^(?:input|select|textarea)$/i,
 	rfocusMorph = /^(?:focusinfocus|focusoutblur)$/,
 	rtypenamespace = /^([^.]*)(?:\.(.+)|)$/;
 
-// 返回值函数，返回布尔值true
+// 函数，返回布尔值true
 function returnTrue() {
 	return true;
 }
-// 返回值函数，返回布尔值false
+// 函数，返回布尔值false
 function returnFalse() {
 	return false;
 }
-// 返回当前聚焦dom
+// 安全返回当前聚焦dom
 function safeActiveElement() {
 	try {
 		return document.activeElement;
@@ -24,6 +24,7 @@ function safeActiveElement() {
  * Helper functions for managing events -- not part of the public interface.
  * Props to Dean Edwards' addEvent library for many of the ideas.
  */
+// 事件处理方法，如：添加事件回调、移除事件回调、触发事件回调。
 jQuery.event = {
 
 	global: {},
@@ -98,6 +99,7 @@ jQuery.event = {
 			};
 			// Add elem as a property of the handle fn to prevent a memory leak with IE non-native events
 			// 定义事件处理器对应的元素，用于防止IE非原生事件中的内存泄露。
+			// 即：elemData.handle.elem = elem;
 			eventHandle.elem = elem;
 		}
 
@@ -111,7 +113,7 @@ jQuery.event = {
 			tmp = rtypenamespace.exec( types[t] ) || [];
 			// tmp[1] = "click"
 			type = origType = tmp[1];
-			// namespaces = ["aaa", "bbb"] ??? 为什么要sort。
+			// namespaces = ["aaa", "bbb"] ??? 为什么要sort。???
 			namespaces = ( tmp[2] || "" ).split( "." ).sort();
 
 			// There *must* be a type, no attaching namespace-only handlers
@@ -121,14 +123,15 @@ jQuery.event = {
 			}
 
 			// If event changes its type, use the special event handlers for the changed type
-			// 事件是否会改变当前状态，如果会则使用特殊事件 ???
+			// 取特殊事件的数据对象。 ???
 			special = jQuery.event.special[ type ] || {};
 
 			// If selector defined, determine special event api type, otherwise given type
+			// ???
 			type = ( selector ? special.delegateType : special.bindType ) || type;
 
 			// Update special based on newly reset type
-			// 再次更新对象 special。
+			// 取特殊事件的数据对象。
 			special = jQuery.event.special[ type ] || {};
 
 			// handleObj is passed to all event handlers
@@ -181,7 +184,7 @@ jQuery.event = {
 		}
 
 		// Nullify elem to prevent memory leaks in IE
-		// 将元素变量elem置为空，防止ie下内存泄露。
+		// 将元素变量elem置为空，防止ie下出现内存泄露。
 		elem = null;
 	},
 
@@ -689,12 +692,15 @@ jQuery.event = {
 	}
 };
 
+// 移除dom元素上绑定的事件，兼容标准浏览器和ie。
 jQuery.removeEvent = document.removeEventListener ?
+	// 标准浏览器
 	function( elem, type, handle ) {
 		if ( elem.removeEventListener ) {
 			elem.removeEventListener( type, handle, false );
 		}
 	} :
+	// ie
 	function( elem, type, handle ) {
 		var name = "on" + type;
 
@@ -702,6 +708,7 @@ jQuery.removeEvent = document.removeEventListener ?
 
 			// #8545, #7054, preventing memory leaks for custom events in IE6-8
 			// detachEvent needed property on element, by name of that event, to properly expose it to GC
+			// 如果dom元素不支持此事件，则把元素的此属性置为null。
 			if ( typeof elem[ name ] === core_strundefined ) {
 				elem[ name ] = null;
 			}
