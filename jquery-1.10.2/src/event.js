@@ -509,17 +509,20 @@ jQuery.event = {
 	},
 
 	fix: function( event ) {
+		// 如果事件对象event有属性jQuery.expando，如："jQuery110206474665417335927"。
+		// 则说明此事件对象是经过修复的，所以直接返回事件对象event。
 		if ( event[ jQuery.expando ] ) {
 			return event;
 		}
 
 		// Create a writable copy of the event object and normalize some properties
 		var i, prop, copy,
-			type = event.type,
-			originalEvent = event,
-			fixHook = this.fixHooks[ type ];
+			type = event.type,	// 事件类型。
+			originalEvent = event,	// 创建原始事件对象copy。
+			fixHook = this.fixHooks[ type ]; // 从this.fixHooks里取当前事件类型的相关Hooks缓存。
 
 		if ( !fixHook ) {
+			// 通过正则判断是那种事件类型。
 			this.fixHooks[ type ] = fixHook =
 				rmouseEvent.test( type ) ? this.mouseHooks :
 				rkeyEvent.test( type ) ? this.keyHooks :
@@ -558,6 +561,14 @@ jQuery.event = {
 	// 包含了一些键盘和鼠标事件属性
 	props: "altKey bubbles cancelable ctrlKey currentTarget eventPhase metaKey relatedTarget shiftKey target timeStamp view which".split(" "),
 
+	// 缓存修复过的鼠标或键盘事件，缓存的内容是keyHooks、mouseHooks。内容如下：
+	/*
+		this.fixHooks = {
+			'click': this.mouseHooks,
+			'keyup': this.keyHooks,
+			...
+		}
+	*/
 	fixHooks: {},
 
 	// 键盘事件钩子
@@ -566,7 +577,7 @@ jQuery.event = {
 		filter: function( event, original ) {
 
 			// Add which for key events
-			// 如果键盘事件对象不包含属性which，则增加which属性。此属性有兼容性：charCode、keyCode。
+			// 如果键盘事件对象不包含属性which，则增加which属性。此属性有兼容性：charCode(IE)、keyCode。
 			if ( event.which == null ) {
 				event.which = original.charCode != null ? original.charCode : original.keyCode;
 			}
@@ -582,7 +593,7 @@ jQuery.event = {
 		filter: function( event, original ) {
 			var body, eventDoc, doc,
 				button = original.button,	// 鼠标按键
-				fromElement = original.fromElement;	// 鼠标事件的关联元素（ie）
+				fromElement = original.fromElement;	// 鼠标事件的关联元素（ie），标准浏览器为original.relatedTarget。
 
 			// Calculate pageX/Y if missing and clientX/Y available
 			// 如果 pageX/Y 属性丢失，而且 clientX/Y 属性可用，则重新计算属性 pageX/Y。
@@ -597,7 +608,7 @@ jQuery.event = {
 			}
 
 			// Add relatedTarget, if necessary
-			// 为事件对象event添加 relatedTarget 属性（兼容ie8-）
+			// ie下为事件对象event添加 relatedTarget 属性（兼容ie8-）
 			if ( !event.relatedTarget && fromElement ) {
 				event.relatedTarget = fromElement === event.target ? original.toElement : fromElement;
 			}
@@ -741,7 +752,6 @@ jQuery.Event = function( src, props ) {
 			兼容性参考 https://developer.mozilla.org/zh-CN/docs/Web/API/event.defaultPrevented
 			2.src.getPreventDefault是一个方法，即以前的非标准的已经被废弃的方法，返回布尔值，同样是判断当前事件的默认动作是否被取消。
 		*/
-		
 		this.isDefaultPrevented = ( src.defaultPrevented || src.returnValue === false ||
 			src.getPreventDefault && src.getPreventDefault() ) ? returnTrue : returnFalse;
 
@@ -756,9 +766,11 @@ jQuery.Event = function( src, props ) {
 	}
 
 	// Create a timestamp if incoming event doesn't have one
+	// 如果原生事件对象里木有属性timestamp，则创建一个。
 	this.timeStamp = src && src.timeStamp || jQuery.now();
 
 	// Mark it as fixed
+	// 一个标记，说明此事件对象是被处理过的。
 	this[ jQuery.expando ] = true;
 };
 
@@ -819,6 +831,8 @@ jQuery.Event.prototype = {
 };
 
 // Create mouseenter/leave events using mouseover/out and event-time checks
+// 用mouseover/out来模拟mouseenter/leave，从而实现mouseenter/leave也能冒泡的功能。
+// mouseenter/leave和mouseover/out最大的区别就是mouseenter/leave不能冒泡。因此要用mouseover/out来模拟。
 jQuery.each({
 	mouseenter: "mouseover",
 	mouseleave: "mouseout"
@@ -830,14 +844,17 @@ jQuery.each({
 		handle: function( event ) {
 			var ret,
 				target = this,
-				related = event.relatedTarget,
-				handleObj = event.handleObj;
+				related = event.relatedTarget, // 鼠标事件相关联dom元素。
+				handleObj = event.handleObj; // 事件相关信息对象。
 
 			// For mousenter/leave call the handler if related is outside the target.
 			// NB: No relatedTarget if the mouse left/entered the browser window
+			// 这个判断就决定了mouseenter/leave只有当鼠标移动到真正的target dom元素上时才会触发事件。区别了mouseover/out。
 			if ( !related || (related !== target && !jQuery.contains( target, related )) ) {
+				// 回调执行前，事件对象event.type值为mouseenter/leave。
 				event.type = handleObj.origType;
 				ret = handleObj.handler.apply( this, arguments );
+				// 执行完毕回调后，将事件对象event.type置为mouseover/out。
 				event.type = fix;
 			}
 			return ret;
