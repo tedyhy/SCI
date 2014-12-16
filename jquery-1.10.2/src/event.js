@@ -25,6 +25,7 @@ function safeActiveElement() {
  * Props to Dean Edwards' addEvent library for many of the ideas.
  */
 // 事件处理方法，如：添加事件回调、移除事件回调、触发事件回调。
+// 参考 http://www.cnblogs.com/aaronjs/p/3481075.html
 jQuery.event = {
 
 	global: {},
@@ -147,7 +148,7 @@ jQuery.event = {
 			}, handleObjIn );
 
 			// Init the event handler queue if we're the first
-			// 第一次初始化回调队列（数组）。
+			// 第一次使用时初始化回调队列（数组）。
 			if ( !(handlers = events[ type ]) ) {
 				handlers = events[ type ] = [];
 				handlers.delegateCount = 0; // 未处理的回调个数。
@@ -173,6 +174,7 @@ jQuery.event = {
 			}
 
 			// Add to the element's handler list, delegates in front
+			// 向回调列表堆栈中新增回调函数。
 			if ( selector ) {
 				handlers.splice( handlers.delegateCount++, 0, handleObj );
 			} else {
@@ -180,11 +182,12 @@ jQuery.event = {
 			}
 
 			// Keep track of which events have ever been used, for event optimization
+			// 表示事件曾经使用过，用于事件优化。
 			jQuery.event.global[ type ] = true;
 		}
 
 		// Nullify elem to prevent memory leaks in IE
-		// 将元素变量elem置为空，防止ie下出现内存泄露。
+		// 设置为null避免IE中循环引用导致的内存泄露。
 		elem = null;
 	},
 
@@ -720,17 +723,25 @@ jQuery.removeEvent = document.removeEventListener ?
 // jQuery事件回调函数的事件对象event的构造器。
 jQuery.Event = function( src, props ) {
 	// Allow instantiation without the 'new' keyword
+	// 检测this是不是Event对象，如果不是，new一个Event对象出来，这样就避免了外部new对象。
 	if ( !(this instanceof jQuery.Event) ) {
 		return new jQuery.Event( src, props );
 	}
 
 	// Event object
+	// 原生事件对象
 	if ( src && src.type ) {
 		this.originalEvent = src;
 		this.type = src.type;
 
 		// Events bubbling up the document may have been marked as prevented
 		// by a handler lower down the tree; reflect the correct value.
+		// 为 jQuery Event 事件对象新增属性isDefaultPrevented，判断当前事件的默认动作是否被取消，返回值是布尔型。
+		/*	1.src.defaultPrevented 返回一个布尔值,表明当前事件的默认动作是否被取消,也就是是否执行了 event.preventDefault()方法。
+			兼容性参考 https://developer.mozilla.org/zh-CN/docs/Web/API/event.defaultPrevented
+			2.src.getPreventDefault是一个方法，即以前的非标准的已经被废弃的方法，返回布尔值，同样是判断当前事件的默认动作是否被取消。
+		*/
+		
 		this.isDefaultPrevented = ( src.defaultPrevented || src.returnValue === false ||
 			src.getPreventDefault && src.getPreventDefault() ) ? returnTrue : returnFalse;
 
@@ -800,6 +811,7 @@ jQuery.Event.prototype = {
 		e.cancelBubble = true;
 	},
 	// 该元素当前事件回调执行后，其后续的事件回调将不再执行，并取消事件冒泡
+	// 参考 http://www.365mini.com/page/jquery-event-stopimmediatepropagation.htm
 	stopImmediatePropagation: function() {
 		this.isImmediatePropagationStopped = returnTrue;
 		this.stopPropagation();
@@ -834,6 +846,7 @@ jQuery.each({
 });
 
 // IE submit delegation
+// IE < 9 不支持submitBubbles。
 if ( !jQuery.support.submitBubbles ) {
 
 	jQuery.event.special.submit = {
@@ -881,6 +894,7 @@ if ( !jQuery.support.submitBubbles ) {
 }
 
 // IE change delegation and checkbox/radio fix
+// IE < 9 不支持changeBubbles。
 if ( !jQuery.support.changeBubbles ) {
 
 	jQuery.event.special.change = {
@@ -952,7 +966,7 @@ if ( !jQuery.support.focusinBubbles ) {
 
 		// 将 focusin、focusout事件方法特殊处理回调放入 jQuery.event.special。
 		jQuery.event.special[ fix ] = {
-			// 绑定事件
+			// 主要是在Firefox中模拟focusin和focusout事件的，因为各大主流浏览器只有他不支持这两个事件。
 			setup: function() {
 				if ( attaches++ === 0 ) {
 					document.addEventListener( orig, handler, true );
