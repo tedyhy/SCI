@@ -114,7 +114,8 @@ jQuery.event = {
 			tmp = rtypenamespace.exec( types[t] ) || [];
 			// tmp[1] = "click"
 			type = origType = tmp[1];
-			// namespaces = ["aaa", "bbb"] ??? 为什么要sort。???
+			// namespaces = ["aaa", "bbb"]
+			// 为什么要sort。???
 			namespaces = ( tmp[2] || "" ).split( "." ).sort();
 
 			// There *must* be a type, no attaching namespace-only handlers
@@ -124,7 +125,7 @@ jQuery.event = {
 			}
 
 			// If event changes its type, use the special event handlers for the changed type
-			// 取特殊事件的数据对象。 ???
+			// 取特殊事件的数据对象。
 			special = jQuery.event.special[ type ] || {};
 
 			// If selector defined, determine special event api type, otherwise given type
@@ -143,7 +144,7 @@ jQuery.event = {
 				handler: handler,
 				guid: handler.guid,
 				selector: selector,
-				needsContext: selector && jQuery.expr.match.needsContext.test( selector ), //???
+				needsContext: selector && jQuery.expr.match.needsContext.test( selector ), // 正则验证是否需要context。
 				namespace: namespaces.join(".")
 			}, handleObjIn );
 
@@ -154,6 +155,7 @@ jQuery.event = {
 				handlers.delegateCount = 0; // 未处理的回调个数。
 
 				// Only use addEventListener/attachEvent if the special events handler returns false
+				// 如果木有方法setup或者setup返回false，则仅仅使用addEventListener/attachEvent为元素elem绑定事件。
 				if ( !special.setup || special.setup.call( elem, data, namespaces, eventHandle ) === false ) {
 					// Bind the global event handler to the element
 					if ( elem.addEventListener ) {
@@ -182,7 +184,7 @@ jQuery.event = {
 			}
 
 			// Keep track of which events have ever been used, for event optimization
-			// 表示事件曾经使用过，用于事件优化。
+			// 表示事件曾经使用过，用于事件优化。基本上没用。
 			jQuery.event.global[ type ] = true;
 		}
 
