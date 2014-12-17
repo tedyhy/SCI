@@ -540,12 +540,14 @@ jQuery.event = {
 
 		// Support: IE<9
 		// Fix target property (#1925)
+		// IE<9事件对象无target属性，只有srcElement。
 		if ( !event.target ) {
 			event.target = originalEvent.srcElement || document;
 		}
 
 		// Support: Chrome 23+, Safari?
 		// Target should not be a text node (#504, #13143)
+		// event.target不应该是一个文本节点。如果是文本节点，就找文本节点的父节点。
 		if ( event.target.nodeType === 3 ) {
 			event.target = event.target.parentNode;
 		}
@@ -558,7 +560,7 @@ jQuery.event = {
 	},
 
 	// Includes some event props shared by KeyEvent and MouseEvent
-	// 包含了一些键盘和鼠标事件属性
+	// 包含了一些键盘和鼠标事件共同基本属性
 	props: "altKey bubbles cancelable ctrlKey currentTarget eventPhase metaKey relatedTarget shiftKey target timeStamp view which".split(" "),
 
 	// 缓存修复过的鼠标或键盘事件，缓存的内容是keyHooks、mouseHooks。内容如下：
