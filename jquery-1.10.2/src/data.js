@@ -2,7 +2,8 @@ var rbrace = /(?:\{[\s\S]*\}|\[[\s\S]*\])$/,
 	rmultiDash = /([A-Z])/g;
 
 // internalData( elem, undefined, undefined, true );
-// 参数pvt内部使用，布尔型。
+// 参数pvt内部使用，布尔型。当 name 为对象或函数时，如果 pvt===true，则将name值扩展到 cache[ id ] 中。
+// 如果 pvt!==true，则将name值扩展到 cache[ id ].data 中。
 function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 	// 判断一个元素是否能接受属性扩展
 	if ( !jQuery.acceptData( elem ) ) {
@@ -85,6 +86,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 	// jQuery data() is stored in a separate object inside the object's internal data
 	// cache in order to avoid key collisions between internal data and user-defined
 	// data.
+	// 如果 pvt!==true，则判断thisCache里有木有data属性，如果木有，则将thisCache.data置为空对象。
 	if ( !pvt ) {
 		if ( !thisCache.data ) {
 			thisCache.data = {};
@@ -93,12 +95,14 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 		thisCache = thisCache.data;
 	}
 
+	// data 有值，即：$('a').data('k', v);
 	if ( data !== undefined ) {
 		thisCache[ jQuery.camelCase( name ) ] = data;
 	}
 
 	// Check for both converted-to-camel and non-converted data property names
 	// If a data property was specified
+	// 即：$('a').data('k');
 	if ( typeof name === "string" ) {
 
 		// First Try to find as-is property data
