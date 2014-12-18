@@ -2,6 +2,7 @@ var rbrace = /(?:\{[\s\S]*\}|\[[\s\S]*\])$/,
 	rmultiDash = /([A-Z])/g;
 
 // internalData( elem, undefined, undefined, true );
+// 参数pvt内部使用，布尔型。
 function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 	// 判断一个元素是否能接受属性扩展
 	if ( !jQuery.acceptData( elem ) ) {
@@ -14,22 +15,35 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 
 		// We have to handle DOM nodes and JS objects differently because IE6-7
 		// can't GC object references properly across the DOM-JS boundary
-		// 元素节点类型。
+		// 判断是不是元素节点类型。
 		isNode = elem.nodeType,
 
 		// Only DOM nodes need the global jQuery cache; JS object data is
 		// attached directly to the object so GC can occur automatically
-		// 仅仅 DOM 对象需要用到全局的 jQuery 缓存对象 cache，而普通的对象不需要。
+		// 仅仅 DOM 对象需要用到全局的 jQuery 缓存对象 cache，而普通的对象不需要，本身即可。
+		/* $.cache数据格式如下：
+			$.cache = {
+				7: {
+					events: {
+						click: [],
+						mousedown: [],
+						mousemove: []
+					},
+					handle: fn
+				}
+			}
+		*/
 		cache = isNode ? jQuery.cache : elem,
 
 		// Only defining an ID for JS objects if its cache already exists allows
 		// the code to shortcut on the same path as a DOM node with no cache
 		// 如果是dom节点，则id为元素属性jQuery.expando的值，即：id = elem['jQuery110209568656722549349']
 		// 如果是普通对象，则 id = 'jQuery110209568656722549349'
-		id = isNode ? elem[ internalKey ] : elem[ internalKey ] && internalKey; // ??? 有问题
+		id = isNode ? elem[ internalKey ] : elem[ internalKey ] && internalKey; // 如：elem[ internalKey ] === true
 
 	// Avoid doing any more work than we need to when trying to get data on an
 	// object that has no data at all
+	// ??? 判断不理解
 	if ( (!id || !cache[id] || (!pvt && !cache[id].data)) && data === undefined && typeof name === "string" ) {
 		return;
 	}
@@ -41,18 +55,23 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 		if ( isNode ) {
 			id = elem[ internalKey ] = core_deletedIds.pop() || jQuery.guid++;
 		} else {
-			id = internalKey;
+			id = internalKey; // 普通对象的id，如："jQuery110209568656722549349"
 		}
 	}
 
+	// 没有缓存数据
 	if ( !cache[ id ] ) {
 		// Avoid exposing jQuery metadata on plain JS objects when the object
 		// is serialized using JSON.stringify
+		// 如果是dom元素，则数据为空对象。如果是普通对象，则数据为包含"toJSON"方法的对象
+		// （为了防止此对象JSON序列化时暴露了jQuery metadata数据，如id）。
 		cache[ id ] = isNode ? {} : { toJSON: jQuery.noop };
 	}
 
 	// An object can be passed to jQuery.data instead of a key/value pair; this gets
 	// shallow copied over onto the existing cache
+	// 如果name为对象或者函数，且参数 pvt===true，则将name值扩展到 cache[ id ] 中。
+	// 如果参数 pvt!==true，则将name值扩展到 cache[ id ].data 中。
 	if ( typeof name === "object" || typeof name === "function" ) {
 		if ( pvt ) {
 			cache[ id ] = jQuery.extend( cache[ id ], name );
@@ -99,6 +118,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 }
 
 function internalRemoveData( elem, name, pvt ) {
+	// 判断一个元素是否能接受属性扩展
 	if ( !jQuery.acceptData( elem ) ) {
 		return;
 	}
@@ -189,6 +209,7 @@ function internalRemoveData( elem, name, pvt ) {
 }
 
 jQuery.extend({
+	// 为jQuery事件绑定提供的信息缓存。
 	cache: {},
 
 	// The following elements throw uncatchable exceptions if you
@@ -206,10 +227,13 @@ jQuery.extend({
 		return !!elem && !isEmptyDataObject( elem );
 	},
 
+	// jQuery.data( this, key );
+	// jQuery.data( elem, key, data );
 	data: function( elem, name, data ) {
 		return internalData( elem, name, data );
 	},
 
+	// jQuery.removeData( this, key );
 	removeData: function( elem, name ) {
 		return internalRemoveData( elem, name );
 	},
@@ -217,6 +241,7 @@ jQuery.extend({
 	// For internal use only.
 	// 内部使用的方法。
 	// 通过 internalData 方法，利用元素/普通对象的id从 $.cache 里取相关缓存数据。
+	// 如：jQuery._data( elem );
 	_data: function( elem, name, data ) {
 		return internalData( elem, name, data, true );
 	},
@@ -226,24 +251,26 @@ jQuery.extend({
 	},
 
 	// A method for determining if a DOM node can handle the data expando
-	// 一个方法用来确定一个 DOM 节点是否能够处理数据扩展。
+	// 一个方法用来确定一个DOM节点（或普通对象）是否能够处理数据扩展。
 	acceptData: function( elem ) {
 		// Do not set data on non-element because it will not be cleared (#8335).
-		// 确定此元素节点类型为 1、9
+		// 如果是dom元素，则必须确定此元素节点类型为 1、9才行。
 		if ( elem.nodeType && elem.nodeType !== 1 && elem.nodeType !== 9 ) {
 			return false;
 		}
 
-		// 通过 jQuery.noData 方法来判断元素是否能够处理数据扩展。
+		// 通过 jQuery.noData 方法来判断元素（或普通对象）是否能够处理数据扩展。
+		// 这里主要是判断 jQuery.noData 对象中的3个类型
 		var noData = elem.nodeName && jQuery.noData[ elem.nodeName.toLowerCase() ];
 
 		// nodes accept data unless otherwise specified; rejection can be conditional
-		// noData 的值为 true 或 "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"。
+		// noData 的值为 undefined 或 true 或 "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"。
 		return !noData || noData !== true && elem.getAttribute("classid") === noData;
 	}
 });
 
 jQuery.fn.extend({
+	// 例如：$('a').data('k', v);
 	data: function( key, value ) {
 		var attrs, name,
 			data = null,
@@ -294,7 +321,7 @@ jQuery.fn.extend({
 			// Try to fetch any internally stored data first
 			elem ? dataAttr( elem, key, jQuery.data( elem, key ) ) : null;
 	},
-
+	// 例如：$('a').removeData('k');
 	removeData: function( key ) {
 		return this.each(function() {
 			jQuery.removeData( this, key );
@@ -302,9 +329,11 @@ jQuery.fn.extend({
 	}
 });
 
+// dataAttr( elem, name, data[ name ] );
 function dataAttr( elem, key, data ) {
 	// If nothing was found internally, try to fetch any
 	// data from the HTML5 data-* attribute
+	// 如果从元素节点上没有找到任何数据，则尝试从元素的 html5 data-* 属性查找数据。
 	if ( data === undefined && elem.nodeType === 1 ) {
 
 		var name = "data-" + key.replace( rmultiDash, "-$1" ).toLowerCase();
@@ -312,6 +341,15 @@ function dataAttr( elem, key, data ) {
 		data = elem.getAttribute( name );
 
 		if ( typeof data === "string" ) {
+			/*
+				类型转换：
+				"true"=>true,
+				"false"=>false,
+				"null"=>null,
+				"567"=>567,
+				"567.0"=>"0567.0",
+				"{"a":1,"b":2}"=>{"a":1,"b":2}
+			*/
 			try {
 				data = data === "true" ? true :
 					data === "false" ? false :

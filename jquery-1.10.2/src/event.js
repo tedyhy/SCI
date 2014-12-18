@@ -36,6 +36,7 @@ jQuery.event = {
 			special, eventHandle, handleObj,
 			handlers, type, namespaces, origType,
 			// 通过 $._data 方法，利用元素/普通对象的id从 $.cache 里取相关缓存数据。
+			// 方法来自 data.js。
 			elemData = jQuery._data( elem );
 
 		// Don't attach events to noData or text/comment nodes (but allow plain objects)
