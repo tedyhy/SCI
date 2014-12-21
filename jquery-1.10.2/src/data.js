@@ -38,13 +38,14 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 
 		// Only defining an ID for JS objects if its cache already exists allows
 		// the code to shortcut on the same path as a DOM node with no cache
-		// 如果是dom节点，则id为元素属性jQuery.expando的值，即：id = elem['jQuery110209568656722549349']
-		// 如果是普通对象，则 id = 'jQuery110209568656722549349'
-		id = isNode ? elem[ internalKey ] : elem[ internalKey ] && internalKey; // 如：elem[ internalKey ] === true
+		// 如果是dom节点，则id为元素属性jQuery.expando的值，即：id = elem['jQuery110209568656722549349']；
+		// 如果是普通对象，则 id = 'jQuery110209568656722549349'；
+		// 判断的意思是：如果 elem[ internalKey ] 有值则 id = internalkey，即'jQuery110209568656722549349'。
+		id = isNode ? elem[ internalKey ] : elem[ internalKey ] && internalKey;
 
 	// Avoid doing any more work than we need to when trying to get data on an
 	// object that has no data at all
-	// ??? 判断不理解
+	// (没有id || cache中木有相关缓存 || (pvt!==true && 缓存中木有属性data)) && data参数为空 && name类型为字符串。
 	if ( (!id || !cache[id] || (!pvt && !cache[id].data)) && data === undefined && typeof name === "string" ) {
 		return;
 	}
@@ -268,7 +269,7 @@ jQuery.extend({
 		var noData = elem.nodeName && jQuery.noData[ elem.nodeName.toLowerCase() ];
 
 		// nodes accept data unless otherwise specified; rejection can be conditional
-		// noData 的值为 undefined 或 true 或 "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"。
+		// noData 的值为 undefined 或 true 或 "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"。???
 		return !noData || noData !== true && elem.getAttribute("classid") === noData;
 	}
 });
