@@ -53,7 +53,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 	if ( !id ) {
 		// Only DOM nodes need a new unique ID for each element since their data
 		// ends up in the global cache
-		// 如果是dom元素，则从垃圾ids里随便取一个id（或者重新生成一个唯一id）给当前元素用。
+		// 如果是dom元素，则从ids垃圾池中取一个id（或者重新生成一个唯一id）给当前元素用。
 		if ( isNode ) {
 			id = elem[ internalKey ] = core_deletedIds.pop() || jQuery.guid++;
 		} else {
@@ -67,6 +67,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 		// is serialized using JSON.stringify
 		// 如果是dom元素，则数据为空对象。如果是普通对象，则数据为包含"toJSON"方法的对象
 		// （为了防止此对象JSON序列化时暴露了jQuery metadata数据，如id）。
+		// "toJSON"的调用场景???
 		cache[ id ] = isNode ? {} : { toJSON: jQuery.noop };
 	}
 
@@ -107,6 +108,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 	if ( typeof name === "string" ) {
 
 		// First Try to find as-is property data
+		// 首先找最开始的name，如："data-url"，如果木有数据，则找驼峰式命名规则的name，如："data-url"->"dataUrl"。
 		ret = thisCache[ name ];
 
 		// Test for null|undefined property data
