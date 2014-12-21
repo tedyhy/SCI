@@ -696,10 +696,12 @@ jQuery.extend({
 				if ( data ) {
 					if ( data.events ) {
 						for ( type in data.events ) {
+							// 特殊事件特殊处理。
 							if ( special[ type ] ) {
 								jQuery.event.remove( elem, type );
 
 							// This is a shortcut to avoid jQuery.event.remove's overhead
+							// 简单的移除事件。
 							} else {
 								jQuery.removeEvent( elem, type, data.handle );
 							}
@@ -707,6 +709,7 @@ jQuery.extend({
 					}
 
 					// Remove cache only if it was not already removed by jQuery.event.remove
+					// dom上事件移除后，可以删除dom相关缓存。
 					if ( cache[ id ] ) {
 
 						delete cache[ id ];
@@ -714,16 +717,21 @@ jQuery.extend({
 						// IE does not allow us to delete expando properties from nodes,
 						// nor does it have a removeAttribute function on Document nodes;
 						// we must handle all of these cases
+						// 移除dom上得属性internalKey有好几种情况，每种情况都要考虑到。
+						// 1.如果dom支持 delete div.test，则使用 delete elem[ internalKey ]。
 						if ( deleteExpando ) {
 							delete elem[ internalKey ];
 
+						// 如果dom上有方法 removeAttribute，则使用此方法删除dom属性（如："jQuery110209568656722549349"）。
 						} else if ( typeof elem.removeAttribute !== core_strundefined ) {
 							elem.removeAttribute( internalKey );
 
+						// 如果上面两种都不支持，则给dom属性（如："jQuery110209568656722549349"）赋值为null。
 						} else {
 							elem[ internalKey ] = null;
 						}
 
+						// 回收id到ids垃圾池。
 						core_deletedIds.push( id );
 					}
 				}

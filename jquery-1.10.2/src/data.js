@@ -4,6 +4,7 @@ var rbrace = /(?:\{[\s\S]*\}|\[[\s\S]*\])$/,
 // internalData( elem, undefined, undefined, true );
 // 参数pvt内部使用，布尔型。当 name 为对象或函数时，如果 pvt===true，则将name值扩展到 cache[ id ] 中。
 // 如果 pvt!==true，则将name值扩展到 cache[ id ].data 中。
+// 重点：参数 pvt 其实是控制数据缓存在 cache[ id ] 或 cache[ id ].data 中。不管elem是dom元素还是普通对象。
 function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 	// 判断一个元素是否能接受属性扩展
 	if ( !jQuery.acceptData( elem ) ) {
@@ -139,10 +140,12 @@ function internalRemoveData( elem, name, pvt ) {
 
 	// If there is already no cache entry for this object, there is no
 	// purpose in continuing
+	// 如果 cache[ id ] 不存在，则返回。
 	if ( !cache[ id ] ) {
 		return;
 	}
 
+	// 如果有参数name。
 	if ( name ) {
 
 		thisCache = pvt ? cache[ id ] : cache[ id ].data;
@@ -150,14 +153,17 @@ function internalRemoveData( elem, name, pvt ) {
 		if ( thisCache ) {
 
 			// Support array or space separated string names for data keys
+			// data keys 支持数组或空格隔开的字符串name。如：name = ["a", "b"] 或 "a b"。
 			if ( !jQuery.isArray( name ) ) {
 
 				// try the string as a key before any manipulation
+				// 首先尝试将name作为一个字符串key去处理。
 				if ( name in thisCache ) {
 					name = [ name ];
 				} else {
 
 					// split the camel cased version by spaces unless a key with the spaces exists
+					// 如果驼峰式name木有值，则尝试用空格分隔字符串key成数组。
 					name = jQuery.camelCase( name );
 					if ( name in thisCache ) {
 						name = [ name ];
@@ -172,6 +178,7 @@ function internalRemoveData( elem, name, pvt ) {
 				// Since there is no way to tell _how_ a key was added, remove
 				// both plain key and camelCase key. #12786
 				// This will only penalize the array argument path.
+				// 将数组name中每个key都改成驼峰式命名。
 				name = name.concat( jQuery.map( name, jQuery.camelCase ) );
 			}
 
@@ -182,6 +189,7 @@ function internalRemoveData( elem, name, pvt ) {
 
 			// If there is no data left in the cache, we want to continue
 			// and let the cache object itself get destroyed
+			// 如果 thisCache 不为空对象，则不删除 thisCache。
 			if ( pvt ? !isEmptyDataObject(thisCache) : !jQuery.isEmptyObject(thisCache) ) {
 				return;
 			}
@@ -189,22 +197,26 @@ function internalRemoveData( elem, name, pvt ) {
 	}
 
 	// See jQuery.data for more information
+	// 如果 pvt!==true，则从$.cache中删除当前dom相关整个缓存的数据 cache[ id ].data。
 	if ( !pvt ) {
 		delete cache[ id ].data;
 
 		// Don't destroy the parent cache unless the internal data object
 		// had been the only thing left in it
+		// 如果 cache[ id ] 中有属性值，则不能清除 cache[ id ]。
 		if ( !isEmptyDataObject( cache[ id ] ) ) {
 			return;
 		}
 	}
 
 	// Destroy the cache
+	// 如果是dom节点，且 cache[ id ] 中木有属性值，则清除 cache[ id ]。
 	if ( isNode ) {
 		jQuery.cleanData( [ elem ], true );
 
 	// Use delete when supported for expandos or `cache` is not a window per isWindow (#10080)
 	/* jshint eqeqeq: false */
+	// 如果dom支持 delete div.test 或者 cache不是一个window对象。
 	} else if ( jQuery.support.deleteExpando || cache != cache.window ) {
 		/* jshint eqeqeq: true */
 		delete cache[ id ];
