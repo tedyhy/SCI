@@ -213,6 +213,7 @@ function internalRemoveData( elem, name, pvt ) {
 
 	// Destroy the cache
 	// 如果是dom节点，且 cache[ id ] 中木有属性值，则清除 cache[ id ]。
+	// manipulation.js
 	if ( isNode ) {
 		jQuery.cleanData( [ elem ], true );
 
@@ -224,13 +225,14 @@ function internalRemoveData( elem, name, pvt ) {
 		delete cache[ id ];
 
 	// When all else fails, null
+	// 如果前两种情况都不支持，则将缓存置空。
 	} else {
 		cache[ id ] = null;
 	}
 }
 
 jQuery.extend({
-	// 为jQuery事件绑定提供的信息缓存。
+	// 为jQuery事件绑定、dom（或普通元素）缓存数据提供的缓存对象。
 	cache: {},
 
 	// The following elements throw uncatchable exceptions if you
@@ -247,6 +249,7 @@ jQuery.extend({
 		"object": "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
 	},
 
+	// 判断dom元素或者普通对象是否有数据缓存。
 	hasData: function( elem ) {
 		elem = elem.nodeType ? jQuery.cache[ elem[jQuery.expando] ] : elem[ jQuery.expando ];
 		return !!elem && !isEmptyDataObject( elem );
@@ -254,23 +257,25 @@ jQuery.extend({
 
 	// jQuery.data( this, key );
 	// jQuery.data( elem, key, data );
+	// 取缓存数据或存储缓存数据。
 	data: function( elem, name, data ) {
 		return internalData( elem, name, data );
 	},
 
 	// jQuery.removeData( this, key );
+	// 移除缓存的数据。
 	removeData: function( elem, name ) {
 		return internalRemoveData( elem, name );
 	},
 
 	// For internal use only.
-	// 内部使用的方法。
-	// 通过 internalData 方法，利用元素/普通对象的id从 $.cache 里取相关缓存数据。
-	// 如：jQuery._data( elem );
+	// 通过 internalData 方法，利用元素/普通对象的id从 $.cache 里取或存储相关缓存数据。
+	// 与 $.data 方法最大的区别是，参数 pvt===true，即：缓存的数据没有存储到 cache[ id ].data 上，而是存储在 cache[ id ] 上。
 	_data: function( elem, name, data ) {
 		return internalData( elem, name, data, true );
 	},
 
+	// 与 $.removeData 方法最大的区别是，参数 pvt===true，即：移除 cache[ id ] 上缓存的数据。
 	_removeData: function( elem, name ) {
 		return internalRemoveData( elem, name, true );
 	},
@@ -306,6 +311,7 @@ jQuery.fn.extend({
 		// so implement the relevant behavior ourselves
 
 		// Gets all values
+		// ???
 		if ( key === undefined ) {
 			if ( this.length ) {
 				data = jQuery.data( elem );
@@ -329,6 +335,7 @@ jQuery.fn.extend({
 		}
 
 		// Sets multiple values
+		// 类似这样：$('a').data({"a": 1, "b": 2});
 		if ( typeof key === "object" ) {
 			return this.each(function() {
 				jQuery.data( this, key );
@@ -338,12 +345,14 @@ jQuery.fn.extend({
 		return arguments.length > 1 ?
 
 			// Sets one value
+			// 类似这样：$('a').data("a", 1);
 			this.each(function() {
 				jQuery.data( this, key, value );
 			}) :
 
 			// Gets one value
 			// Try to fetch any internally stored data first
+			// 类似这样：$('a').data("a");
 			elem ? dataAttr( elem, key, jQuery.data( elem, key ) ) : null;
 	},
 	// 例如：$('a').removeData('k');
@@ -358,16 +367,18 @@ jQuery.fn.extend({
 function dataAttr( elem, key, data ) {
 	// If nothing was found internally, try to fetch any
 	// data from the HTML5 data-* attribute
-	// 如果从元素节点上没有找到任何数据，则尝试从元素的 html5 data-* 属性查找数据。
+	// 如果缓存中木有此元素相关缓存数据，则尝试从此元素节点上的 html5 data-* 属性查找数据。
 	if ( data === undefined && elem.nodeType === 1 ) {
 
+		// 即："ABC" => "data-a-b-c"
 		var name = "data-" + key.replace( rmultiDash, "-$1" ).toLowerCase();
 
 		data = elem.getAttribute( name );
 
+		// 如果dom节点上的属性值为字符串，则返回属性值。
 		if ( typeof data === "string" ) {
 			/*
-				类型转换：
+				类型转换，如：
 				"true"=>true,
 				"false"=>false,
 				"null"=>null,
@@ -380,12 +391,14 @@ function dataAttr( elem, key, data ) {
 					data === "false" ? false :
 					data === "null" ? null :
 					// Only convert to a number if it doesn't change the string
+					// 将字符串转换为数字。
 					+data + "" === data ? +data :
 					rbrace.test( data ) ? jQuery.parseJSON( data ) :
 						data;
 			} catch( e ) {}
 
 			// Make sure we set the data so it isn't changed later
+			// 将修改过的数据保存到缓存中。
 			jQuery.data( elem, key, data );
 
 		} else {
@@ -397,6 +410,7 @@ function dataAttr( elem, key, data ) {
 }
 
 // checks a cache object for emptiness
+// 检查缓存对象是否为空，如：{data: {}, toJSON: function(){}} 或 {toJSON: function(){}}
 function isEmptyDataObject( obj ) {
 	var name;
 	for ( name in obj ) {

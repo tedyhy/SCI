@@ -90,6 +90,7 @@ var
 
 	// Used by jQuery.camelCase as callback to replace()
 	// 用于方法jQuery.camelCase的替换方法
+	// 即正则替换："a-bc"=>"aBc"
 	fcamelCase = function( all, letter ) {
 		return letter.toUpperCase();
 	},

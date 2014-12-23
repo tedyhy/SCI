@@ -678,6 +678,7 @@ jQuery.extend({
 		return safe;
 	},
 
+	// 清理当前dom元素相关缓存数据。
 	cleanData: function( elems, /* internal */ acceptData ) {
 		var elem, type, id, data,
 			i = 0,
