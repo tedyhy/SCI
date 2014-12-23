@@ -338,44 +338,50 @@ jQuery.fn = jQuery.prototype = {
 // Give the init function the jQuery prototype for later instantiation
 jQuery.fn.init.prototype = jQuery.fn;
 
-// jQuery 和 jQuery原型上共有的用于扩展对象的方法。
-/* ex:
- * deep == true 是深copy，如：http://www.cnblogs.com/RascallySnake/archive/2010/05/07/1729563.html
+// jQuery 和 jQuery原型上共有的方法，用于扩展对象属性。
+// 参考 http://www.cnblogs.com/RascallySnake/archive/2010/05/07/1729563.html
+/* 如:
+ * deep == true 是深copy，
  * jQuery.extend({})、jQuery.extend(true) 扩展到jQuery对象上
  * jQuery.extend(true, {}, {}) 后面的对象扩展到第一个对象上
  */
 jQuery.extend = jQuery.fn.extend = function() {
 	var src, copyIsArray, copy, name, options, clone,
-		target = arguments[0] || {},
-		i = 1, // 记录参数长度
+		target = arguments[0] || {}, // 取第一个参数
+		i = 1, // 遍历循环参数长度的起始值。
 		length = arguments.length,
 		deep = false;
 
 	// Handle a deep copy situation
-	// ex: jQuery.extend(true, {a: 1})
+	// 如果第一个参数为布尔型，如: jQuery.extend(true, {a: 1})。则判断是否是深copy。
 	if ( typeof target === "boolean" ) {
 		deep = target;
 		target = arguments[1] || {};
 		// skip the boolean and the target
+		// 跳过第一个参数和第一个对象target，即：遍历参数时从第二个开始。
 		i = 2;
 	}
 
 	// Handle case when target is a string or something (possible in deep copy)
+	// 如果target参数不是对象或函数，则默认为空对象。
 	if ( typeof target !== "object" && !jQuery.isFunction(target) ) {
 		target = {};
 	}
 
 	// extend jQuery itself if only one argument is passed
-	// ex：jQuery.extend({a: 1})，如果参数只有一个对象，那就默认把对象扩展到this对象上。
+	// 如果参数只有一个对象，那就默认把对象扩展到this对象上。如：jQuery.extend({a: 1})、jQuery.extend(true, {a: 1})。
 	if ( length === i ) {
 		target = this;
 		--i; // 从target开始算起
 	}
 
+	// 遍历参数
 	for ( ; i < length; i++ ) {
 		// Only deal with non-null/undefined values
+		// 如果参数为空对象，则不处理。
 		if ( (options = arguments[ i ]) != null ) {
 			// Extend the base object
+			// 遍历参数对象的属性。
 			for ( name in options ) {
 				src = target[ name ];
 				copy = options[ name ];
@@ -387,19 +393,24 @@ jQuery.extend = jQuery.fn.extend = function() {
 				}
 
 				// Recurse if we're merging plain objects or arrays
+				// 如果是深copy，且 options[ name ] 是普通对象或数组，则递归merge。
 				if ( deep && copy && ( jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)) ) ) {
+					// 如果 options[ name ] 是数组。
 					if ( copyIsArray ) {
 						copyIsArray = false;
 						clone = src && jQuery.isArray(src) ? src : [];
 
+					// 如果 options[ name ] 是普通对象。
 					} else {
 						clone = src && jQuery.isPlainObject(src) ? src : {};
 					}
 
 					// Never move original objects, clone them
+					// 不处理原始对象，只clone它们。
 					target[ name ] = jQuery.extend( deep, clone, copy );
 
 				// Don't bring in undefined values
+				// 如果值为未定义的，不会赋值。
 				} else if ( copy !== undefined ) {
 					target[ name ] = copy;
 				}

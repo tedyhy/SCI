@@ -42,6 +42,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 		// 如果是dom节点，则id为元素属性jQuery.expando的值，即：id = elem['jQuery110209568656722549349']；
 		// 如果是普通对象，则 id = 'jQuery110209568656722549349'；
 		// 判断的意思是：如果 elem[ internalKey ] 有值则 id = internalkey，即'jQuery110209568656722549349'。
+		// 参考 http://blog.163.com/wangxiaoxia1221@126/blog/static/107680174201192622359827/
 		id = isNode ? elem[ internalKey ] : elem[ internalKey ] && internalKey;
 
 	// Avoid doing any more work than we need to when trying to get data on an
@@ -51,6 +52,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 		return;
 	}
 
+	// data !== undefined || typeof name !== "string"
 	if ( !id ) {
 		// Only DOM nodes need a new unique ID for each element since their data
 		// ends up in the global cache
@@ -62,7 +64,7 @@ function internalData( elem, name, data, pvt /* Internal Use Only */ ){
 		}
 	}
 
-	// 没有缓存数据
+	// data !== undefined || typeof name !== "string"
 	if ( !cache[ id ] ) {
 		// Avoid exposing jQuery metadata on plain JS objects when the object
 		// is serialized using JSON.stringify
@@ -235,9 +237,13 @@ jQuery.extend({
 	// attempt to add expando properties to them.
 	// 如果试图给下列元素添加扩展属性时，将抛出异常。
 	noData: {
+		// java web小程序
 		"applet": true,
+		// 参考 http://www.w3school.com.cn/html5/html5_embed.asp
 		"embed": true,
 		// Ban all objects except for Flash (which handle expandos)
+		// 参考 http://bufanliu.iteye.com/blog/200590
+		// 此flash object能添加扩展属性。
 		"object": "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
 	},
 
