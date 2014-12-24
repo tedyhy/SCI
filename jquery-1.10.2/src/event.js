@@ -117,7 +117,7 @@ jQuery.event = {
 			type = origType = tmp[1];
 			// namespaces = ["aaa", "bbb"]
 			// 为什么要sort。???
-			namespaces = ( tmp[2] || "" ).split( "." ).sort();
+			namespaces = ( tmp[2] || "" ).split( "." ).sort(); // ["aaa", "bbb"]
 
 			// There *must* be a type, no attaching namespace-only handlers
 			// 一定要有事件类型。
@@ -139,13 +139,14 @@ jQuery.event = {
 
 			// handleObj is passed to all event handlers
 			handleObj = jQuery.extend({
-				type: type,
-				origType: origType,
-				data: data,
-				handler: handler,
-				guid: handler.guid,
-				selector: selector,
-				needsContext: selector && jQuery.expr.match.needsContext.test( selector ), // 正则验证是否需要context。
+				type: type, // 经过特殊事件对象special处理后的事件类型type。
+				origType: origType, // 最初绑定的事件类型。
+				data: data, // 绑定的数据。
+				handler: handler, // 事件回调函数体。
+				guid: handler.guid, // 事件回调guid。
+				selector: selector, // 选择器。
+				// 正则验证当前选择器是否需要context。此正则出自sizzle.js。
+				needsContext: selector && jQuery.expr.match.needsContext.test( selector ),
 				namespace: namespaces.join(".")
 			}, handleObjIn );
 
@@ -207,14 +208,17 @@ jQuery.event = {
 		}
 
 		// Once for each type.namespace in types; type may be omitted
-		types = ( types || "" ).match( core_rnotwhite ) || [""];
+		// 类似这样的事件绑定：types = "click.aaa.bbb focus blur"
+		types = ( types || "" ).match( core_rnotwhite ) || [""]; // ["click.aaa.bbb", "focus", "blur"]
 		t = types.length;
 		while ( t-- ) {
+			// tmp = ["click.aaa.bbb", "click", "aaa.bbb"]
 			tmp = rtypenamespace.exec( types[t] ) || [];
-			type = origType = tmp[1];
-			namespaces = ( tmp[2] || "" ).split( "." ).sort();
+			type = origType = tmp[1]; // "click"
+			namespaces = ( tmp[2] || "" ).split( "." ).sort(); // ["aaa", "bbb"]
 
 			// Unbind all events (on this namespace, if provided) for the element
+			// 如果没有解绑事件，则递归遍历dom上相关事件并移除。
 			if ( !type ) {
 				for ( type in events ) {
 					jQuery.event.remove( elem, type + types[ t ], handler, selector, true );
@@ -259,6 +263,7 @@ jQuery.event = {
 		}
 
 		// Remove the expando if it's no longer used
+		// 如果 elemData 里的events为空，则删除 events 对象和 handle 回调。
 		if ( jQuery.isEmptyObject( events ) ) {
 			delete elemData.handle;
 
@@ -268,6 +273,7 @@ jQuery.event = {
 		}
 	},
 
+	// jQuery.event.trigger( type, data, this );
 	trigger: function( event, data, elem, onlyHandlers ) {
 		var handle, ontype, cur,
 			bubbleType, special, tmp, i,
@@ -278,6 +284,7 @@ jQuery.event = {
 		cur = tmp = elem = elem || document;
 
 		// Don't do events on text and comment nodes
+		// 如果元素节点是 text或者comment，则不触发事件回调。
 		if ( elem.nodeType === 3 || elem.nodeType === 8 ) {
 			return;
 		}
