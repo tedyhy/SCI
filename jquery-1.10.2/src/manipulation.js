@@ -1,7 +1,9 @@
+// 创建文档片段方法。
 function createSafeFragment( document ) {
 	var list = nodeNames.split( "|" ),
 		safeFrag = document.createDocumentFragment();
 
+	// 
 	if ( safeFrag.createElement ) {
 		while ( list.length ) {
 			safeFrag.createElement(
@@ -12,8 +14,10 @@ function createSafeFragment( document ) {
 	return safeFrag;
 }
 
+// html5 节点元素。
 var nodeNames = "abbr|article|aside|audio|bdi|canvas|data|datalist|details|figcaption|figure|footer|" +
 		"header|hgroup|mark|meter|nav|output|progress|section|summary|time|video",
+	// 匹配 ' jQuery110209568656722549349="null"' 或 ' jQuery110209568656722549349="66"'
 	rinlinejQuery = / jQuery\d+="(?:null|\d+)"/g,
 	rnoshimcache = new RegExp("<(?:" + nodeNames + ")[\\s/>]", "i"),
 	rleadingWhitespace = /^\s+/,
@@ -44,7 +48,9 @@ var nodeNames = "abbr|article|aside|audio|bdi|canvas|data|datalist|details|figca
 		// unless wrapped in a div with non-breaking characters in front of it.
 		_default: jQuery.support.htmlSerialize ? [ 0, "", "" ] : [ 1, "X<div>", "</div>"  ]
 	},
+	// 创建文档片段。
 	safeFragment = createSafeFragment( document ),
+	// 在文档片段里新增一个子节点div。
 	fragmentDiv = safeFragment.appendChild( document.createElement("div") );
 
 wrapMap.optgroup = wrapMap.option;
