@@ -43,13 +43,18 @@ function vendorPropName( style, name ) {
 	return origName;
 }
 
+// 判断元素是否显示。
 function isHidden( elem, el ) {
 	// isHidden might be called from jQuery#filter function;
 	// in that case, element will be second argument
+	// 如：this.filter( isHidden ).css( "opacity", 0 ).show()。此时元素取第二个参数el。
 	elem = el || elem;
+	// 判断一个元素是否显示：1.样式属性"display"==="none" 2.当前元素是否存在于当前文档document内。
 	return jQuery.css( elem, "display" ) === "none" || !jQuery.contains( elem.ownerDocument, elem );
 }
 
+// 控制元素显示隐藏。参数 show 是布尔值，控制元素显示或隐藏。
+// showHide( this, true ) 或 showHide( this );
 function showHide( elements, show ) {
 	var display, elem, hidden,
 		values = [],
@@ -58,11 +63,14 @@ function showHide( elements, show ) {
 
 	for ( ; index < length; index++ ) {
 		elem = elements[ index ];
+		// 如果元素木有属性 style，则直接跳过。
 		if ( !elem.style ) {
 			continue;
 		}
 
+		// 如果当前元素的缓存数据里有属性"olddisplay"值，则存储到局部变量 values[ index ] 里。
 		values[ index ] = jQuery._data( elem, "olddisplay" );
+		// 元素当前的 display 样式值。
 		display = elem.style.display;
 		if ( show ) {
 			// Reset the inline display of this element to learn if it is
@@ -104,7 +112,9 @@ function showHide( elements, show ) {
 	return elements;
 }
 
+// jQuery对象原型方法：css、show、hide、toggle。
 jQuery.fn.extend({
+	// 为元素设置样式。
 	css: function( name, value ) {
 		return jQuery.access( this, function( elem, name, value ) {
 			var len, styles,
@@ -127,17 +137,23 @@ jQuery.fn.extend({
 				jQuery.css( elem, name );
 		}, name, value, arguments.length > 1 );
 	},
+	// 显示元素。
 	show: function() {
 		return showHide( this, true );
 	},
+	// 隐藏元素。
 	hide: function() {
 		return showHide( this );
 	},
+	// toggle 状态切换。
 	toggle: function( state ) {
+		// 如：$('a').toggle(true);
+		// 如果 state 是布尔值，则根据 state 来显示或隐藏元素。
 		if ( typeof state === "boolean" ) {
 			return state ? this.show() : this.hide();
 		}
 
+		// 如果木有参数 state，则根据元素当前状态来设置。
 		return this.each(function() {
 			if ( isHidden( this ) ) {
 				jQuery( this ).show();
@@ -470,14 +486,16 @@ function getWidthOrHeight( elem, name, extra ) {
 }
 
 // Try to determine the default display value of an element
+// 尽力确定元素的默认显示值。
 function css_defaultDisplay( nodeName ) {
 	var doc = document,
-		display = elemdisplay[ nodeName ];
+		display = elemdisplay[ nodeName ]; // elemdisplay = { BODY: "block" },
 
 	if ( !display ) {
 		display = actualDisplay( nodeName, doc );
 
 		// If the simple way fails, read from inside an iframe
+		// 如果这种简单的方式失败了，则使用iframe。
 		if ( display === "none" || !display ) {
 			// Use the already-created iframe if possible
 			iframe = ( iframe ||
@@ -491,10 +509,12 @@ function css_defaultDisplay( nodeName ) {
 			doc.close();
 
 			display = actualDisplay( nodeName, doc );
+			// 参考 http://www.w3school.com.cn/jquery/manipulation_detach.asp
 			iframe.detach();
 		}
 
 		// Store the correct default display
+		// 存储当前元素默认样式"display"值到局部变量 elemdisplay。
 		elemdisplay[ nodeName ] = display;
 	}
 
@@ -502,6 +522,7 @@ function css_defaultDisplay( nodeName ) {
 }
 
 // Called ONLY from within css_defaultDisplay
+// 此方法仅在 css_defaultDisplay 方法中使用。用来确定元素默认的样式属性"display"值。
 function actualDisplay( name, doc ) {
 	var elem = jQuery( doc.createElement( name ) ).appendTo( doc.body ),
 		display = jQuery.css( elem[0], "display" );

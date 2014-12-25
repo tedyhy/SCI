@@ -931,13 +931,26 @@ jQuery.extend({
 
 	// Multifunctional method to get and set values of a collection
 	// The value/s can optionally be executed if it's a function
-	// http://sunnylost.com/article/jquery.access.html
+	// 参考 http://sunnylost.com/article/jquery.access.html
+	/*
+	   例如：$('div').height(100);
+	   elems 就是要循环的节点集合。
+	   fn 是需要对节点进行操作的函数。
+	   key 是属性名，例如 height(字符串)。
+	   value 是值，例如 100。
+	   chainable 表示是否链式执行，对于 get 类方法，我们会获得一个返回值，例如字符串、数字等等，这时候是不需要链式执行的；
+	   		而对于 set 类方法，通常需要如此，例如：$('#test').height(100).width(100).css('color', 'red');
+	   emptyGet 用于节点集合中没有元素时返回的默认值。
+	   raw 为 true，表明 value 是个函数。
+	*/
 	access: function( elems, fn, key, value, chainable, emptyGet, raw ) {
 		var i = 0,
 			length = elems.length,
 			bulk = key == null;
 
 		// Sets many values
+		// 如果key是一个对象，则说明要链式调用key里的css方法设置样式。
+		// 例如：key = {height: 100, width: 200};
 		if ( jQuery.type( key ) === "object" ) {
 			chainable = true;
 			for ( i in key ) {
@@ -945,6 +958,7 @@ jQuery.extend({
 			}
 
 		// Sets one value
+		// value 存在，表明是 set 类方法，所以依然是允许链式调用。
 		} else if ( value !== undefined ) {
 			chainable = true;
 
@@ -952,13 +966,16 @@ jQuery.extend({
 				raw = true;
 			}
 
+			// key == null
 			if ( bulk ) {
 				// Bulk operations run against the entire set
+				// 参数 value 不是函数。
 				if ( raw ) {
 					fn.call( elems, value );
 					fn = null;
 
 				// ...except when executing function values
+				// 参数 value 是函数。
 				} else {
 					bulk = fn;
 					fn = function( elem, key, value ) {
@@ -975,6 +992,7 @@ jQuery.extend({
 		}
 
 		return chainable ?
+			// 如果是链式，则返回元素集合 elems。
 			elems :
 
 			// Gets
@@ -983,6 +1001,7 @@ jQuery.extend({
 				length ? fn( elems[0], key ) : emptyGet;
 	},
 
+	// 获取当前时间戳。
 	now: function() {
 		return ( new Date() ).getTime();
 	},
