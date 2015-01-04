@@ -18,9 +18,14 @@ var iframe, getStyles, curCSS,
 	},
 
 	cssExpand = [ "Top", "Right", "Bottom", "Left" ],
-	cssPrefixes = [ "Webkit", "O", "Moz", "ms" ];
+	cssPrefixes = [ "Webkit", "O", "Moz", "ms" ]; // 浏览器厂商前缀
 
 // return a css property mapped to a potentially vendor prefixed property
+// 根据不同浏览器的前缀，重新生成css样式属性。
+// style = elem.style;
+// name 为驼峰式属性名。
+// 如：vendorPropName(document.body.style, 'animation') => "WebkitAnimation";
+// 此方法的作用就是，自动帮助生成对应的dom样式属性（针对不同浏览器厂商），如css3的transform。
 function vendorPropName( style, name ) {
 
 	// shortcut for names that are not vendor prefixed
@@ -29,6 +34,7 @@ function vendorPropName( style, name ) {
 	}
 
 	// check for vendor prefixed names
+	// 检查浏览器厂商前缀名
 	var capName = name.charAt(0).toUpperCase() + name.slice(1),
 		origName = name,
 		i = cssPrefixes.length;
@@ -209,8 +215,8 @@ jQuery.extend({
 
 		// Make sure that we're working with the right name
 		var ret, type, hooks,
-			origName = jQuery.camelCase( name ),
-			style = elem.style;
+			origName = jQuery.camelCase( name ), // 将属性名变为驼峰式。
+			style = elem.style; // 取元素属性 style。
 
 		name = jQuery.cssProps[ origName ] || ( jQuery.cssProps[ origName ] = vendorPropName( style, origName ) );
 
