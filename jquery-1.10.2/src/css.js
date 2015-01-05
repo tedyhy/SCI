@@ -53,7 +53,13 @@ function vendorPropName( style, name ) {
 function isHidden( elem, el ) {
 	// isHidden might be called from jQuery#filter function;
 	// in that case, element will be second argument
-	// 如：this.filter( isHidden ).css( "opacity", 0 ).show()。此时元素取第二个参数el。
+	/*
+		fadeTo: function( speed, to, easing, callback ) {
+			// show any hidden elements after setting opacity to 0
+			return this.filter( isHidden ).css( "opacity", 0 ).show(); // 此时元素取第二个参数el。
+			...
+		}
+	*/
 	elem = el || elem;
 	// 判断一个元素是否显示：1.样式属性"display"==="none" 2.当前元素是否存在于当前文档document内。
 	return jQuery.css( elem, "display" ) === "none" || !jQuery.contains( elem.ownerDocument, elem );
@@ -309,21 +315,32 @@ jQuery.extend({
 
 // NOTE: we've included the "window" in window.getComputedStyle
 // because jsdom on node.js will break without it.
+// ie9+支持。
+// 参考 http://www.cnblogs.com/yunfour/archive/2012/02/25/2367895.html。
+// http://www.zhangxinxu.com/wordpress/2012/05/getcomputedstyle-js-getpropertyvalue-currentstyle/
 if ( window.getComputedStyle ) {
 	getStyles = function( elem ) {
 		return window.getComputedStyle( elem, null );
 	};
 
+	/*
+		elem dom元素。
+		name 样式属性名称。
+		_computed 是计算后的元素的样式值。
+	*/
 	curCSS = function( elem, name, _computed ) {
 		var width, minWidth, maxWidth,
 			computed = _computed || getStyles( elem ),
 
 			// getPropertyValue is only needed for .css('filter') in IE9, see #12537
+			// getPropertyValue 方法仅仅被用在IE9中取dom元素的filter属性值，其他样式属性值都用 computed[ name ] 取。
 			ret = computed ? computed.getPropertyValue( name ) || computed[ name ] : undefined,
+			// dom元素的style属性值集合。
 			style = elem.style;
 
+		// 也即：ret不是undefined。
 		if ( computed ) {
-
+			// 如果样式属性name的值为空字符串，且此dom元素不再其所属文档中，则使用方法 jQuery.style 获取其样式值。
 			if ( ret === "" && !jQuery.contains( elem.ownerDocument, elem ) ) {
 				ret = jQuery.style( elem, name );
 			}
@@ -352,6 +369,7 @@ if ( window.getComputedStyle ) {
 
 		return ret;
 	};
+	// ie<9 支持。
 } else if ( document.documentElement.currentStyle ) {
 	getStyles = function( elem ) {
 		return elem.currentStyle;
