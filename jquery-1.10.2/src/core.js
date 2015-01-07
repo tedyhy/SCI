@@ -941,7 +941,7 @@ jQuery.extend({
 	   chainable 表示是否链式执行，对于 get 类方法，我们会获得一个返回值，例如字符串、数字等等，这时候是不需要链式执行的；
 	   		而对于 set 类方法，通常需要如此，例如：$('#test').height(100).width(100).css('color', 'red');
 	   emptyGet 用于节点集合中没有元素时返回的默认值。
-	   raw 为 true，表明 value 是个函数。
+	   raw 为 true，表明 value 不是个函数。
 	*/
 	access: function( elems, fn, key, value, chainable, emptyGet, raw ) {
 		var i = 0,
@@ -949,8 +949,8 @@ jQuery.extend({
 			bulk = key == null;
 
 		// Sets many values
-		// 如果key是一个对象，则说明要链式调用key里的css方法设置样式。
-		// 例如：key = {height: 100, width: 200};
+		// 如果key是一个对象，则说明要链式调用key里的css方法设置样式。然后递归调用方法 jQuery.access。
+		// 例如：key = {height: '100px', width: '+=200px'};
 		if ( jQuery.type( key ) === "object" ) {
 			chainable = true;
 			for ( i in key ) {
@@ -962,11 +962,12 @@ jQuery.extend({
 		} else if ( value !== undefined ) {
 			chainable = true;
 
+			// 如果参数 value 不是函数，则 raw = true。
 			if ( !jQuery.isFunction( value ) ) {
 				raw = true;
 			}
 
-			// key == null
+			// key == null => bulk===true
 			if ( bulk ) {
 				// Bulk operations run against the entire set
 				// 参数 value 不是函数。

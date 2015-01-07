@@ -137,6 +137,7 @@ jQuery.fn.extend({
 				map = {},
 				i = 0;
 
+			// name是数组。
 			if ( jQuery.isArray( name ) ) {
 				styles = getStyles( elem );
 				len = name.length;
@@ -298,6 +299,7 @@ jQuery.extend({
 			origName = jQuery.camelCase( name );
 
 		// Make sure that we're working with the right name
+		// 确保样式名称是正确的。
 		name = jQuery.cssProps[ origName ] || ( jQuery.cssProps[ origName ] = vendorPropName( elem.style, origName ) );
 
 		// gets hook for the prefixed version
