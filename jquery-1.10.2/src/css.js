@@ -127,7 +127,11 @@ function showHide( elements, show ) {
 // jQuery对象原型方法：css、show、hide、toggle。
 jQuery.fn.extend({
 	// 为元素设置样式。
+	// 例如：$('div').width('width', '+=12px');
 	css: function( name, value ) {
+		// core.js
+		// access: function( elems, fn, key, value, chainable, emptyGet, raw ) {
+		// arguments.length > 1 表明，如果此方法有1个以上参数则是设置dom元素的样式，chainable===true，需要链式方式。
 		return jQuery.access( this, function( elem, name, value ) {
 			var len, styles,
 				map = {},
@@ -179,8 +183,10 @@ jQuery.fn.extend({
 jQuery.extend({
 	// Add in style property hooks for overriding the default
 	// behavior of getting and setting a style property
+	// css 样式钩子，覆盖 设置/获取 的默认行为。
 	cssHooks: {
 		opacity: {
+			// 获取样式值。
 			get: function( elem, computed ) {
 				if ( computed ) {
 					// We should always get a number back from opacity
@@ -207,12 +213,14 @@ jQuery.extend({
 
 	// Add in properties whose names you wish to fix before
 	// setting or getting the value
+	// 在 设置/获取 dom元素样式前 fix 其属性名。
 	cssProps: {
 		// normalize float css property
 		"float": jQuery.support.cssFloat ? "cssFloat" : "styleFloat"
 	},
 
 	// Get and set the style property on a DOM Node
+	// 为dom节点元素设置样式，或者获取dom节点样式。
 	style: function( elem, name, value, extra ) {
 		// Don't set styles on text and comment nodes
 		if ( !elem || elem.nodeType === 3 || elem.nodeType === 8 || !elem.style ) {
@@ -224,6 +232,8 @@ jQuery.extend({
 			origName = jQuery.camelCase( name ), // 将属性名变为驼峰式。
 			style = elem.style; // 取元素属性 style。
 
+		// jQuery.cssProps fix样式属性名称。
+		// 如果根据浏览器厂商纠正了样式属性名称，则缓存到对象 jQuery.cssProps 中。
 		name = jQuery.cssProps[ origName ] || ( jQuery.cssProps[ origName ] = vendorPropName( style, origName ) );
 
 		// gets hook for the prefixed version
@@ -231,10 +241,12 @@ jQuery.extend({
 		hooks = jQuery.cssHooks[ name ] || jQuery.cssHooks[ origName ];
 
 		// Check if we're setting a value
+		// 设置dom元素样式。
 		if ( value !== undefined ) {
 			type = typeof value;
 
 			// convert relative number strings (+= or -=) to relative numbers. #7345
+			// 类似这样：$('a').css('width', '+=13')
 			if ( type === "string" && (ret = rrelNum.exec( value )) ) {
 				value = ( ret[1] + 1 ) * ret[2] + parseFloat( jQuery.css( elem, name ) );
 				// Fixes bug #9237
@@ -267,13 +279,16 @@ jQuery.extend({
 				} catch(e) {}
 			}
 
+		// 获取dom元素样式。
 		} else {
 			// If a hook was provided get the non-computed value from there
+			// 调用钩子方法get获取dom元素样式（非计算过的）。
 			if ( hooks && "get" in hooks && (ret = hooks.get( elem, false, extra )) !== undefined ) {
 				return ret;
 			}
 
 			// Otherwise just get the value from the style object
+			// 否则只从dom元素属性style中取样式值。
 			return style[ name ];
 		}
 	},
@@ -317,7 +332,7 @@ jQuery.extend({
 // because jsdom on node.js will break without it.
 // ie9+支持。
 // 参考 http://www.cnblogs.com/yunfour/archive/2012/02/25/2367895.html。
-// http://www.zhangxinxu.com/wordpress/2012/05/getcomputedstyle-js-getpropertyvalue-currentstyle/
+// 参考 http://www.zhangxinxu.com/wordpress/2012/05/getcomputedstyle-js-getpropertyvalue-currentstyle/
 if ( window.getComputedStyle ) {
 	getStyles = function( elem ) {
 		return window.getComputedStyle( elem, null );
@@ -333,6 +348,7 @@ if ( window.getComputedStyle ) {
 			computed = _computed || getStyles( elem ),
 
 			// getPropertyValue is only needed for .css('filter') in IE9, see #12537
+			// http://bugs.jquery.com/ticket/12537
 			// getPropertyValue 方法仅仅被用在IE9中取dom元素的filter属性值，其他样式属性值都用 computed[ name ] 取。
 			ret = computed ? computed.getPropertyValue( name ) || computed[ name ] : undefined,
 			// dom元素的style属性值集合。
@@ -342,13 +358,14 @@ if ( window.getComputedStyle ) {
 		if ( computed ) {
 			// 如果样式属性name的值为空字符串，且此dom元素不再其所属文档中，则使用方法 jQuery.style 获取其样式值。
 			if ( ret === "" && !jQuery.contains( elem.ownerDocument, elem ) ) {
-				ret = jQuery.style( elem, name );
+				ret = jQuery.style( elem, name ); // ???
 			}
 
 			// A tribute to the "awesome hack by Dean Edwards"
 			// Chrome < 17 and Safari 5.0 uses "computed value" instead of "used value" for margin-right
 			// Safari 5.1.7 (at least) returns percentage for a larger set of values, but width seems to be reliably pixels
 			// this is against the CSSOM draft spec: http://dev.w3.org/csswg/cssom/#resolved-values
+			// ???
 			if ( rnumnonpx.test( ret ) && rmargin.test( name ) ) {
 
 				// Remember the original values
@@ -394,6 +411,7 @@ if ( window.getComputedStyle ) {
 		// but a number that has a weird ending, we need to convert it to pixels
 		// but not position css attributes, as those are proportional to the parent element instead
 		// and we can't measure the parent instead because it might trigger a "stacking dolls" problem
+		// ???
 		if ( rnumnonpx.test( ret ) && !rposition.test( name ) ) {
 
 			// Remember the original values

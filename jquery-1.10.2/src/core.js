@@ -934,10 +934,10 @@ jQuery.extend({
 	// 参考 http://sunnylost.com/article/jquery.access.html
 	/*
 	   例如：$('div').height(100);
-	   elems 就是要循环的节点集合。
+	   elems 就是匹配的元素节点集合。
 	   fn 是需要对节点进行操作的函数。
-	   key 是属性名，例如 height(字符串)。
-	   value 是值，例如 100。
+	   key 是属性名，例如 'height'。
+	   value 是样式值，例如 '+=100px'。
 	   chainable 表示是否链式执行，对于 get 类方法，我们会获得一个返回值，例如字符串、数字等等，这时候是不需要链式执行的；
 	   		而对于 set 类方法，通常需要如此，例如：$('#test').height(100).width(100).css('color', 'red');
 	   emptyGet 用于节点集合中没有元素时返回的默认值。

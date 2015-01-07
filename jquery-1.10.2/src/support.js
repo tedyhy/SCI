@@ -50,6 +50,7 @@ jQuery.support = (function( support ) {
 
 	// Verify style float existence
 	// (IE uses styleFloat instead of cssFloat)
+	// 验证样式float是否存在。IE 用 "styleFloat" 代替 "cssFloat"。
 	support.cssFloat = !!a.style.cssFloat;
 
 	// Check the default checkbox/radio value ("" on WebKit; "on" elsewhere)
