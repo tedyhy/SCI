@@ -8,6 +8,7 @@ jQuery.support = (function( support ) {
 	div.innerHTML = "  <link/><table></table><a href='/a'>a</a><input type='checkbox'/>";
 
 	// Finish early in limited (non-browser) environments
+	// 非浏览器环境下直接返回空对象。
 	all = div.getElementsByTagName("*") || [];
 	a = div.getElementsByTagName("a")[ 0 ];
 	if ( !a || !a.style || !all.length ) {
@@ -15,6 +16,7 @@ jQuery.support = (function( support ) {
 	}
 
 	// First batch of tests
+	// 准备dom节点 select、option、input
 	select = document.createElement("select");
 	opt = select.appendChild( document.createElement("option") );
 	input = div.getElementsByTagName("input")[ 0 ];
@@ -25,10 +27,12 @@ jQuery.support = (function( support ) {
 	support.getSetAttribute = div.className !== "t";
 
 	// IE strips leading whitespace when .innerHTML is used
+	// IE6-8下使用 .innerHTML 时，会自动删除内容开头空白。
 	support.leadingWhitespace = div.firstChild.nodeType === 3;
 
 	// Make sure that tbody elements aren't automatically inserted
 	// IE will insert them into empty tables
+	// IE下，将自动向空table里插入节点tbody。
 	support.tbody = !div.getElementsByTagName("tbody").length;
 
 	// Make sure that link elements get serialized correctly by innerHTML
@@ -37,6 +41,7 @@ jQuery.support = (function( support ) {
 
 	// Get the style information from getAttribute
 	// (IE uses .cssText instead)
+	// IE 用 .cssText 代替用方法 getAttribute 取dom元素属性style。
 	support.style = /top/.test( a.getAttribute("style") );
 
 	// Make sure that URLs aren't manipulated
@@ -239,10 +244,13 @@ jQuery.support = (function( support ) {
 		body.removeChild( container );
 
 		// Null elements to avoid leaks in IE
+		// 清空dom元素变量，避免IE下内存泄露。
 		container = div = tds = marginDiv = null;
 	});
 
 	// Null elements to avoid leaks in IE
+	// 清空dom元素变量，避免IE下内存泄露。
+	// http://www.cnblogs.com/meteoric_cry/archive/2010/09/14/1825951.html
 	all = select = fragment = opt = a = input = null;
 
 	return support;
