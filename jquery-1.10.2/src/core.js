@@ -937,7 +937,7 @@ jQuery.extend({
 	   elems 就是匹配的元素节点集合，jQuery对象。
 	   fn 是需要对节点进行操作的函数。
 	   key 是属性名，例如 'height'。
-	   value 是样式值，例如 '+=100px'。
+	   value 是样式值或函数，例如 '+=100px'。
 	   chainable 表示是否链式执行，对于 get 类方法，我们会获得一个返回值，例如字符串、数字等等，这时候是不需要链式执行的；
 	   		而对于 set 类方法，通常需要如此，例如：$('#test').height(100).width(100).css('color', 'red');
 	   emptyGet 用于节点集合中没有元素时返回的默认值。
@@ -949,9 +949,19 @@ jQuery.extend({
 			bulk = key == null;
 
 		// Sets many values
+		// (1) 处理设置元素样式集合的情况。
 		// 如果key是一个对象，则说明要链式调用key里的css方法设置样式。然后递归调用方法 jQuery.access。
-		// 例如：key = {height: '100px', width: '+=200px'};
 		// 例如：$('div').css({height: '100px', width: '+=200px'});
+		/*
+			$( 'div' ).css({
+			    width: function( index, value ) {
+			    	return parseFloat( value ) * 1.2;
+			    },
+			    height: function( index, value ) {
+			    	return parseFloat( value ) * 1.2;
+			    }
+			});
+		*/
 		if ( jQuery.type( key ) === "object" ) {
 			chainable = true;
 			for ( i in key ) {
@@ -960,7 +970,9 @@ jQuery.extend({
 			}
 
 		// Sets one value
+		// (2) 处理单个设置元素样式的情况。
 		// value 存在，表明是 set 类方法，所以依然是允许链式调用。
+		// 例如：$('div').css('width', '+=120px');
 		} else if ( value !== undefined ) {
 			chainable = true;
 
@@ -972,13 +984,14 @@ jQuery.extend({
 			// key == null => bulk===true
 			if ( bulk ) {
 				// Bulk operations run against the entire set
-				// 参数 value 不是函数。
+				// 参数 value 不是函数。执行回调 fn。如：function( elem, name, value ) {...}。
 				if ( raw ) {
 					fn.call( elems, value );
 					fn = null;
 
 				// ...except when executing function values
 				// 参数 value 是函数。
+				// 例如：key = "width", value = function( index, value ) { return parseFloat( value ) * 1.2; };
 				} else {
 					bulk = fn;
 					fn = function( elem, key, value ) {
@@ -995,10 +1008,13 @@ jQuery.extend({
 		}
 
 		return chainable ?
-			// 如果是链式，则返回元素集合 elems。
+			// 如果是链式，则返回元素集合 elems（jQuery对象）。
 			elems :
 
 			// Gets
+			// (3) 处理获取元素样式的情况。
+			// key == null => bulk===true
+			// bulk ? fn.call( elems ) : ( length ? fn( elems[0], key ) : emptyGet );
 			bulk ?
 				fn.call( elems ) :
 				length ? fn( elems[0], key ) : emptyGet;

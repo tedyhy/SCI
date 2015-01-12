@@ -127,6 +127,7 @@ function showHide( elements, show ) {
 // jQuery对象原型方法：css、show、hide、toggle。
 jQuery.fn.extend({
 	// 为元素设置样式。
+	// 参考：http://api.jquery.com/css/
 	// 例如：$('div').css('width', '+=12px');
 	// 例如：$('div').css({height: '100px', width: '+=200px'});
 	css: function( name, value ) {
