@@ -127,7 +127,8 @@ function showHide( elements, show ) {
 // jQuery对象原型方法：css、show、hide、toggle。
 jQuery.fn.extend({
 	// 为元素设置样式。
-	// 例如：$('div').width('width', '+=12px');
+	// 例如：$('div').css('width', '+=12px');
+	// 例如：$('div').css({height: '100px', width: '+=200px'});
 	css: function( name, value ) {
 		// core.js
 		// access: function( elems, fn, key, value, chainable, emptyGet, raw ) {
@@ -138,11 +139,13 @@ jQuery.fn.extend({
 				i = 0;
 
 			// name是数组。
+			// 例如：$('div').css(["width", "height", "color", "background-color"]);
 			if ( jQuery.isArray( name ) ) {
 				styles = getStyles( elem );
 				len = name.length;
 
 				for ( ; i < len; i++ ) {
+					// jQuery.css = function( elem, name, extra, styles ) {...}
 					map[ name[ i ] ] = jQuery.css( elem, name[ i ], false, styles );
 				}
 
@@ -150,8 +153,8 @@ jQuery.fn.extend({
 			}
 
 			return value !== undefined ?
-				jQuery.style( elem, name, value ) :
-				jQuery.css( elem, name );
+				jQuery.style( elem, name, value ) : // 设置样式值
+				jQuery.css( elem, name ); // 取样式值
 		}, name, value, arguments.length > 1 );
 	},
 	// 显示元素。
@@ -199,6 +202,7 @@ jQuery.extend({
 	},
 
 	// Don't automatically add "px" to these possibly-unitless properties
+	// 只返回数值。
 	cssNumber: {
 		"columnCount": true,
 		"fillOpacity": true,
@@ -299,24 +303,28 @@ jQuery.extend({
 			origName = jQuery.camelCase( name );
 
 		// Make sure that we're working with the right name
-		// 确保样式名称是正确的。
+		// 确保样式名称是正确的。通过 cssProps 对象过滤。
 		name = jQuery.cssProps[ origName ] || ( jQuery.cssProps[ origName ] = vendorPropName( elem.style, origName ) );
 
 		// gets hook for the prefixed version
 		// followed by the unprefixed version
+		// 通过 cssHooks 对象过滤。
 		hooks = jQuery.cssHooks[ name ] || jQuery.cssHooks[ origName ];
 
 		// If a hook was provided get the computed value from there
+		// 如果有 hooks ，且有get方法，则执行get方法。
 		if ( hooks && "get" in hooks ) {
 			val = hooks.get( elem, true, extra );
 		}
 
 		// Otherwise, if a way to get the computed value exists, use that
+		// 如果 val 无值，则调用方法 curCSS。
 		if ( val === undefined ) {
 			val = curCSS( elem, name, styles );
 		}
 
 		//convert "normal" to computed value
+		// 如果值为 "normal"，则从对象 cssNormalTransform 中取默认值。
 		if ( val === "normal" && name in cssNormalTransform ) {
 			val = cssNormalTransform[ name ];
 		}

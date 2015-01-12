@@ -934,7 +934,7 @@ jQuery.extend({
 	// 参考 http://sunnylost.com/article/jquery.access.html
 	/*
 	   例如：$('div').height(100);
-	   elems 就是匹配的元素节点集合。
+	   elems 就是匹配的元素节点集合，jQuery对象。
 	   fn 是需要对节点进行操作的函数。
 	   key 是属性名，例如 'height'。
 	   value 是样式值，例如 '+=100px'。
@@ -951,9 +951,11 @@ jQuery.extend({
 		// Sets many values
 		// 如果key是一个对象，则说明要链式调用key里的css方法设置样式。然后递归调用方法 jQuery.access。
 		// 例如：key = {height: '100px', width: '+=200px'};
+		// 例如：$('div').css({height: '100px', width: '+=200px'});
 		if ( jQuery.type( key ) === "object" ) {
 			chainable = true;
 			for ( i in key ) {
+				// 递归调用方法 jQuery.access。
 				jQuery.access( elems, fn, i, key[i], true, emptyGet, raw );
 			}
 
