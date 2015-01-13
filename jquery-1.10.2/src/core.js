@@ -932,6 +932,8 @@ jQuery.extend({
 	// Multifunctional method to get and set values of a collection
 	// The value/s can optionally be executed if it's a function
 	// 参考 http://sunnylost.com/article/jquery.access.html
+	// 参考 http://www.tuicool.com/articles/aU32Uj
+	// 参考 http://www.cnblogs.com/NNUF/archive/2012/11/02/2746261.html
 	/*
 	   例如：$('div').height(100);
 	   elems 就是匹配的元素节点集合，jQuery对象。
@@ -945,7 +947,7 @@ jQuery.extend({
 	*/
 	access: function( elems, fn, key, value, chainable, emptyGet, raw ) {
 		var i = 0,
-			length = elems.length,
+			length = elems.length, // elems为jQuery对象。
 			bulk = key == null;
 
 		// Sets many values
@@ -982,15 +984,17 @@ jQuery.extend({
 			}
 
 			// key == null => bulk===true
+			// 判断key值是否为null或者undefined，key若为空值，bulk===true。
 			if ( bulk ) {
 				// Bulk operations run against the entire set
-				// 参数 value 不是函数。执行回调 fn。如：function( elem, name, value ) {...}。
+				// 参数 value 不是函数或者强制 raw = true。则执行回调 fn，如：function( elem, name, value ) {...}。
+				// 可能是以下调用：$('#box').attr( null, {abc:'def',a:'1'} )。
 				if ( raw ) {
 					fn.call( elems, value );
 					fn = null;
 
 				// ...except when executing function values
-				// 参数 value 是函数。
+				// 参数 value 是函数。将 fn 包装之，改变原来 fn 的作用域和参数
 				// 例如：key = "width", value = function( index, value ) { return parseFloat( value ) * 1.2; };
 				} else {
 					bulk = fn;
@@ -1000,6 +1004,7 @@ jQuery.extend({
 				}
 			}
 
+			// 如果 fn 存在，遍历匹配的 jQuery 对象，分别执行 set 操作
 			if ( fn ) {
 				for ( ; i < length; i++ ) {
 					fn( elems[i], key, raw ? value : value.call( elems[i], i, fn( elems[i], key ) ) );
