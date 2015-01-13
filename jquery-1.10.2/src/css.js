@@ -153,6 +153,7 @@ jQuery.fn.extend({
 				return map;
 			}
 
+			// 例如：$('div').css("background-color");
 			return value !== undefined ?
 				jQuery.style( elem, name, value ) : // 设置样式值
 				jQuery.css( elem, name ); // 取样式值
@@ -175,7 +176,9 @@ jQuery.fn.extend({
 		}
 
 		// 如果木有参数 state，则根据元素当前状态来设置。
+		// this 为 jQuery 对象。
 		return this.each(function() {
+			// this 为 dom 元素。
 			if ( isHidden( this ) ) {
 				jQuery( this ).show();
 			} else {
@@ -195,6 +198,7 @@ jQuery.extend({
 			get: function( elem, computed ) {
 				if ( computed ) {
 					// We should always get a number back from opacity
+					// 对于属性opaity总是要返回值，默认为1。
 					var ret = curCSS( elem, "opacity" );
 					return ret === "" ? "1" : ret;
 				}
@@ -203,7 +207,7 @@ jQuery.extend({
 	},
 
 	// Don't automatically add "px" to these possibly-unitless properties
-	// 只返回数值。
+	// 只返回数值，不要为这些无单位样式属性值添加单位 "px"。
 	cssNumber: {
 		"columnCount": true,
 		"fillOpacity": true,
@@ -222,13 +226,15 @@ jQuery.extend({
 	// 在 设置/获取 dom元素样式前 fix 其属性名。
 	cssProps: {
 		// normalize float css property
+		// 规范化样式属性 float。
 		"float": jQuery.support.cssFloat ? "cssFloat" : "styleFloat"
 	},
 
 	// Get and set the style property on a DOM Node
-	// 为dom节点元素设置样式，或者获取dom节点样式。
+	// 为dom节点元素设置样式。
 	style: function( elem, name, value, extra ) {
 		// Don't set styles on text and comment nodes
+		// 不要在文本/注释节点上设置样式。
 		if ( !elem || elem.nodeType === 3 || elem.nodeType === 8 || !elem.style ) {
 			return;
 		}
@@ -299,6 +305,7 @@ jQuery.extend({
 		}
 	},
 
+	// 获取dom节点样式值。
 	css: function( elem, name, extra, styles ) {
 		var num, val, hooks,
 			origName = jQuery.camelCase( name );
