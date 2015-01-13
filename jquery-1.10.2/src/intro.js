@@ -11,6 +11,10 @@
  *
  * Date: @DATE
  */
+ /*
+  * 匿名函数自执行，传window参数的意义，避免去js最顶部查找window，参数就相当于局部变量。有利于压缩
+  *undefined参数的意义，为避免被修改。 属于window下的一个属性，不是保留字和关键字，可以被修改。
+  */
 (function( window, undefined ) {
 
 // Can't do this because several apps including ASP.NET trace
