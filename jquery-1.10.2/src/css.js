@@ -198,7 +198,7 @@ jQuery.extend({
 			get: function( elem, computed ) {
 				if ( computed ) {
 					// We should always get a number back from opacity
-					// 对于属性opaity总是要返回值，默认为1。
+					// 对于属性 opaity 总是要返回值，默认为1。
 					var ret = curCSS( elem, "opacity" );
 					return ret === "" ? "1" : ret;
 				}
@@ -306,12 +306,17 @@ jQuery.extend({
 	},
 
 	// 获取dom节点样式值。
+	// 如：jQuery.css( elem, name );
+	// name = "background-color" 或者 backgroundColor。
+	// styles 为计算后的样式集合。
 	css: function( elem, name, extra, styles ) {
 		var num, val, hooks,
+			// 转换成驼峰式属性名称。
+			// 如：$('div').css('background-color') 或 $('div').css('backgroundColor')。
 			origName = jQuery.camelCase( name );
 
 		// Make sure that we're working with the right name
-		// 确保样式名称是正确的。通过 cssProps 对象过滤。
+		// 确保样式名称 name 是正确的。并通过 cssProps 对象过滤。
 		name = jQuery.cssProps[ origName ] || ( jQuery.cssProps[ origName ] = vendorPropName( elem.style, origName ) );
 
 		// gets hook for the prefixed version
@@ -328,6 +333,7 @@ jQuery.extend({
 		// Otherwise, if a way to get the computed value exists, use that
 		// 如果 val 无值，则调用方法 curCSS。
 		if ( val === undefined ) {
+			// curCSS = function( elem, name, _computed ) {...}
 			val = curCSS( elem, name, styles );
 		}
 
