@@ -1,0 +1,132 @@
+<!--
+  kissy 构建文件，开启每个组件的构建
+  @author yiminghe@gmail.com
+-->
+<project name="all.build" xmlns:ac="antlib:net.sf.antcontrib">
+
+    <import file="config.xml"/>
+
+    <target name="build">
+        <!--
+          各个组件构建
+          https://issues.apache.org/bugzilla/show_bug.cgi?id=33061 oom
+        -->
+        <subant target="" failonerror="true"
+                buildpath="${kissy.src.dir}/seed"
+                inheritall="false"/>
+
+        <subant target="" failonerror="true"
+                buildpath="${kissy.src.dir}/xtemplate"
+                inheritall="false"/>
+
+        <subant target="" failonerror="true" inheritall="false">
+            <fileset dir="${kissy.src.dir}"
+                     excludesfile="${kissy.src.dir}/xtemplate/build.xml"
+                     includes="*/build.xml"/>
+        </subant>
+    </target>
+
+    <target name="sync">
+        <input addproperty="git.commit.message">
+            git commit message :
+        </input>
+        <ac:if>
+
+            <ac:not>
+                <equals arg1="${git.commit.message}" arg2="">
+                </equals>
+            </ac:not>
+
+            <ac:then>
+
+                <exec executable="cmd"
+                      failonerror="true">
+                    <arg line="/c cd ../"/>
+                </exec>
+
+                <exec executable="cmd"
+                      failonerror="true">
+                    <arg line="/c git add ."/>
+                </exec>
+                <exec executable="cmd" failonerror="true">
+                    <arg line="/c git commit -am '${git.commit.message}'"/>
+                </exec>
+
+            </ac:then>
+        </ac:if>
+
+        <exec executable="cmd" failonerror="true">
+            <arg line="/c git push ${git.origin} ${git.dev}:${git.dev}"/>
+        </exec>
+
+        <exec executable="cmd" failonerror="true">
+            <arg line="/c git push ${git.remote} ${git.dev}:${git.dev}"/>
+        </exec>
+    </target>
+
+
+    <target name="sync-dev">
+        <input addproperty="git.commit.message">
+            git commit message :
+        </input>
+        <ac:if>
+
+            <ac:not>
+                <equals arg1="${git.commit.message}" arg2="">
+                </equals>
+            </ac:not>
+
+            <ac:then>
+
+                <exec executable="cmd"
+                      failonerror="true">
+                    <arg line="/c git add ."/>
+                </exec>
+                <exec executable="cmd" failonerror="true">
+                    <arg line="/c git commit -am '${git.commit.message}'"/>
+                </exec>
+
+            </ac:then>
+        </ac:if>
+
+        <exec executable="cmd" failonerror="true">
+            <arg line="/c git push ${git.origin} ${git.dev}:${git.dev}"/>
+        </exec>
+
+        <exec executable="cmd" failonerror="true">
+            <arg line="/c git push ${git.remote} ${git.dev}:${git.dev}"/>
+        </exec>
+
+    </target>
+
+    <target name="update-version">
+        <replaceregexp match="v\d.\d\d"
+                       replace="v${version}"
+                       flags="g"
+                       encoding="${charset}"
+                       byline="true">
+            <fileset dir="${kissy.build.dir}" includes="${js-css.files}"/>
+        </replaceregexp>
+
+        <replaceregexp match="kissy/k/\d.\d.\d/"
+                       replace="kissy/k/${cdn.version}/"
+                       flags="g"
+                       encoding="${charset}"
+                       byline="true">
+            <fileset dir="${kissy.build.dir}" includes="${js-css.files}"/>
+        </replaceregexp>
+
+        <replaceregexp match="version:\s*['&quot;]\d.\d\d['&quot;]"
+                       replace="version:'${version}'"
+                       flags="g"
+                       encoding="${charset}"
+                       byline="true">
+            <fileset dir="${kissy.build.dir}" includes="${js-css.files}"/>
+        </replaceregexp>
+    </target>
+
+    <target name="clean">
+        <delete dir="${kissy.build.dir}"/>
+    </target>
+
+</project>

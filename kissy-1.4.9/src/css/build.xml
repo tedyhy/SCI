@@ -1,0 +1,26 @@
+<project name="css.build" default="build" basedir=".">
+
+    <property name="component.name" value="css"/>
+
+    <import file="../common.xml"/>
+
+    <target name="concat-css">
+        <copy todir="${component.src.dir.tmp}">
+            <fileset dir="assets/"
+                     excludes="**/variables.css,
+                     **/reset-mixin.css,
+                     **/mixins.css,
+                     **/flying-swing.css,
+                     **/grids.css,
+                     **/common.css,
+                     **/icons-mixin.css"
+                     includes="**/*.css"/>
+        </copy>
+        <concat destfile="${component.src.dir.tmp}/dpl/base.css" encoding="${charset}" outputencoding="${charset}">
+            <path location="assets/dpl/reset.css"/>
+            <path location="assets/dpl/flying-swing.css"/>
+            <path location="assets/dpl/grids.css"/>
+            <path location="assets/dpl/common.css"/>
+        </concat>
+    </target>
+</project>

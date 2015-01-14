@@ -1,0 +1,16 @@
+<div id="{{id}}"
+ class="{{getBaseCssClasses ""}}
+{{#each elCls}}
+ {{.}}  
+{{/each}}
+"
+
+{{#each elAttrs}} 
+ {{xindex}}="{{.}}"
+{{/each}}
+
+style="
+{{#each elStyle}} 
+ {{xindex}}:{{.}};
+{{/each}}
+">

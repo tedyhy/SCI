@@ -1,0 +1,50 @@
+<project name="editor/theme.build" default="build" basedir=".">
+    <property name="component.name" value="editor/theme"/>
+
+    <import file="../../../common.xml"/>
+
+    <property name="smart-sprites.basedir" location="${tools.dir}/smart-sprites/"/>
+
+    <taskdef resource="smartsprites.xml">
+        <classpath>
+            <fileset dir="${smart-sprites.basedir}/lib">
+                <include name="*.jar"/>
+            </fileset>
+        </classpath>
+    </taskdef>
+
+    <target name="concat-css">
+        <copy todir="${component.src.dir.tmp}">
+            <fileset dir="assets" includes="**/*"/>
+        </copy>
+
+        <concat destfile="${component.src.dir.tmp}/cool/editor-pkg.css"
+                encoding="${charset}" outputencoding="${charset}">
+            <path location="${component.src.dir.tmp}/editor-common.css"/>
+            <fileset dir="${component.src.dir.tmp}/cool" includes="**/*.css"/>
+        </concat>
+
+        <smartsprites cssfilesuffix="-sprite"
+                      spritepngie6="true"
+                      loglevel="info">
+            <fileset file="${component.src.dir.tmp}/cool/editor-pkg.css"/>
+        </smartsprites>
+
+        <copy tofile="${component.src.dir.tmp}/cool/editor.css">
+            <path location="${component.src.dir.tmp}/cool/editor-pkg-sprite.css"/>
+        </copy>
+
+        <replace token="./cool.png"
+                 file="${component.src.dir.tmp}/cool/editor.css"
+                 value="http://gtms02.alicdn.com/tps/i2/T1whP8FGhXXXbFdFYq-24-597.png"
+                 encoding="${charset}"/>
+
+        <replace token="./cool-ie6.png"
+                 file="${component.src.dir.tmp}/cool/editor.css"
+                 value="http://gtms01.alicdn.com/tps/i1/T1AV66FFNaXXbFdFYq-24-597.png"
+                 encoding="${charset}"/>
+
+        <delete dir="${component.src.dir.tmp}/cool/"
+                excludes="editor.css,editor-pkg-sprite.css,cool.png,cool-ie6.png,text-bg.png"></delete>
+    </target>
+</project>
