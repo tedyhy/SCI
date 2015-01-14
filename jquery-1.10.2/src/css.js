@@ -258,7 +258,7 @@ jQuery.extend({
 			type = typeof value;
 
 			// convert relative number strings (+= or -=) to relative numbers. #7345
-			// 类似这样：$('a').css('width', '+=13')
+			// 类似这样：$('a').css('width', '+=13px')。
 			if ( type === "string" && (ret = rrelNum.exec( value )) ) {
 				value = ( ret[1] + 1 ) * ret[2] + parseFloat( jQuery.css( elem, name ) );
 				// Fixes bug #9237
@@ -266,11 +266,13 @@ jQuery.extend({
 			}
 
 			// Make sure that NaN and null values aren't set. See: #7116
+			// 确保要设置的属性值不为 null、NaN。
 			if ( value == null || type === "number" && isNaN( value ) ) {
 				return;
 			}
 
 			// If a number was passed in, add 'px' to the (except for certain CSS properties)
+			// 如果 value 是数值，并且不是集合 jQuery.cssNumber 中的属性，将默认加上单位 "px"。
 			if ( type === "number" && !jQuery.cssNumber[ origName ] ) {
 				value += "px";
 			}
