@@ -635,24 +635,28 @@ if ( !jQuery.support.opacity ) {
 	jQuery.cssHooks.opacity = {
 		get: function( elem, computed ) {
 			// IE uses filters for opacity
-			// ???已经不支持opacity了，为啥还要用正则 ropacity呢???
+			// ropacity = /opacity\s*=\s*([^)]*)/
+			// 如：elem.style.filter = "alpha(opacity = 55.5)"。
 			return ropacity.test( (computed && elem.currentStyle ? elem.currentStyle.filter : elem.style.filter) || "" ) ?
+				// 55.5 => 0.555
 				( 0.01 * parseFloat( RegExp.$1 ) ) + "" :
 				computed ? "1" : "";
 		},
 
 		set: function( elem, value ) {
-			var style = elem.style,
-				currentStyle = elem.currentStyle,
-				opacity = jQuery.isNumeric( value ) ? "alpha(opacity=" + value * 100 + ")" : "",
-				filter = currentStyle && currentStyle.filter || style.filter || "";
+			var style = elem.style, // 未计算样式值。
+				currentStyle = elem.currentStyle, // 计算后的样式值。
+				opacity = jQuery.isNumeric( value ) ? "alpha(opacity=" + value * 100 + ")" : "", // 0.555 => 55.5
+				filter = currentStyle && currentStyle.filter || style.filter || ""; // filter样式值。
 
 			// IE has trouble with opacity if it does not have layout
 			// Force it by setting the zoom level
+			// IE下设置filter时，如果没有触发haslayout会引发问题，所以强制给元素设置zoom，触发haslayout。
 			style.zoom = 1;
 
 			// if setting opacity to 1, and no other filters exist - attempt to remove filter attribute #6652
 			// if value === "", then remove inline opacity #12685
+			// ralpha = /alpha\([^)]*\)/i
 			if ( ( value >= 1 || value === "" ) &&
 					jQuery.trim( filter.replace( ralpha, "" ) ) === "" &&
 					style.removeAttribute ) {
@@ -669,6 +673,7 @@ if ( !jQuery.support.opacity ) {
 			}
 
 			// otherwise, set new filter values
+			// 最后，设置新的filter值。
 			style.filter = ralpha.test( filter ) ?
 				filter.replace( ralpha, opacity ) :
 				filter + " " + opacity;

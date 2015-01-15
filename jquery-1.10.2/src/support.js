@@ -1,3 +1,4 @@
+// 参考 https://mathiasbynens.be/demo/jquery-support
 jQuery.support = (function( support ) {
 
 	var all, a, input, select, fragment, opt, eventName, isSupported, i,
@@ -20,10 +21,11 @@ jQuery.support = (function( support ) {
 	select = document.createElement("select");
 	opt = select.appendChild( document.createElement("option") );
 	input = div.getElementsByTagName("input")[ 0 ];
-
+	// 为 a 元素设置样式。
 	a.style.cssText = "top:1px;float:left;opacity:.5";
 
 	// Test setAttribute on camelCase class. If it works, we need attrFixes when doing get/setAttribute (ie6/7)
+	// 测试ie下 setAttribute 方法兼容性问题。如果下面成立，则说明（ie6/7）下我们需要为 get/setAttribute 方法做兼容性处理。
 	support.getSetAttribute = div.className !== "t";
 
 	// IE strips leading whitespace when .innerHTML is used
@@ -60,6 +62,7 @@ jQuery.support = (function( support ) {
 	support.cssFloat = !!a.style.cssFloat;
 
 	// Check the default checkbox/radio value ("" on WebKit; "on" elsewhere)
+	// 检查 checkbox/radio 的默认值（WebKit内核浏览器默认为空字符串，其他地方都为“on”字符串）。
 	support.checkOn = !!input.value;
 
 	// Make sure that a selected-by-default option has a working selected property.
@@ -202,7 +205,9 @@ jQuery.support = (function( support ) {
 
 		// Use window.getComputedStyle because jsdom on node.js will break without it.
 		if ( window.getComputedStyle ) {
+			// safari下返回 "1%"，因此等于false。而其他浏览器会转换成像素值。
 			support.pixelPosition = ( window.getComputedStyle( div, null ) || {} ).top !== "1%";
+			// IE下，如果是怪异模式，width不等于 "4px"，需要减去padding、border。
 			support.boxSizingReliable = ( window.getComputedStyle( div, null ) || { width: "4px" } ).width === "4px";
 
 			// Check if div with explicit width and no margin-right incorrectly
