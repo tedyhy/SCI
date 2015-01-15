@@ -51,6 +51,7 @@ jQuery.support = (function( support ) {
 	// Make sure that element opacity exists
 	// (IE uses filter instead)
 	// Use a regex to work around a WebKit issue. See #5145
+	// 确保元素属性 opacity 存在，即支持样式 opacity。ie下用filter代替，其他浏览器用 opacity。
 	support.opacity = /^0.5/.test( a.style.opacity );
 
 	// Verify style float existence

@@ -630,10 +630,12 @@ jQuery.each([ "height", "width" ], function( i, name ) {
 	};
 });
 
+// 如果浏览器不支持dom元素属性 opacity（IE 支持filter）。
 if ( !jQuery.support.opacity ) {
 	jQuery.cssHooks.opacity = {
 		get: function( elem, computed ) {
 			// IE uses filters for opacity
+			// ???已经不支持opacity了，为啥还要用正则 ropacity呢???
 			return ropacity.test( (computed && elem.currentStyle ? elem.currentStyle.filter : elem.style.filter) || "" ) ?
 				( 0.01 * parseFloat( RegExp.$1 ) ) + "" :
 				computed ? "1" : "";
