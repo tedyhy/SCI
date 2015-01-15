@@ -196,6 +196,7 @@ jQuery.extend({
 		opacity: {
 			// 获取样式值。
 			get: function( elem, computed ) {
+				// 取计算过的样式。
 				if ( computed ) {
 					// We should always get a number back from opacity
 					// 对于属性 opaity 总是要返回值，默认为1。
@@ -231,7 +232,7 @@ jQuery.extend({
 	},
 
 	// Get and set the style property on a DOM Node
-	// 为dom节点元素设置样式。
+	// 1.为dom元素设置样式值。2.获取dom元素样式值（非计算过的样式）。
 	style: function( elem, name, value, extra ) {
 		// Don't set styles on text and comment nodes
 		// 不要在文本/注释节点上设置样式。
@@ -293,21 +294,21 @@ jQuery.extend({
 				} catch(e) {}
 			}
 
-		// 获取dom元素样式。
+		// 获取dom元素样式（取非计算过的样式）。
 		} else {
 			// If a hook was provided get the non-computed value from there
-			// 调用钩子方法get获取dom元素样式（非计算过的）。
+			// 调用钩子方法get获取dom元素样式（取非计算过的样式）。
 			if ( hooks && "get" in hooks && (ret = hooks.get( elem, false, extra )) !== undefined ) {
 				return ret;
 			}
 
 			// Otherwise just get the value from the style object
-			// 否则只从dom元素属性style中取样式值。
+			// 否则只能从dom元素的style中取样式值。
 			return style[ name ];
 		}
 	},
 
-	// 获取dom节点样式值。
+	// 获取dom元素样式值（计算过后的样式值）。
 	// 如：jQuery.css( elem, name );
 	// name = "background-color" 或者 backgroundColor。
 	// styles 为计算后的样式集合。
@@ -366,8 +367,9 @@ if ( window.getComputedStyle ) {
 
 	/*
 		elem dom元素。
-		name 样式属性名称。
+		name 样式属性名称（驼峰式）。
 		_computed 是计算后的元素的样式值。
+		如：val = curCSS( elem, name, styles );
 	*/
 	curCSS = function( elem, name, _computed ) {
 		var width, minWidth, maxWidth,
@@ -376,22 +378,23 @@ if ( window.getComputedStyle ) {
 			// getPropertyValue is only needed for .css('filter') in IE9, see #12537
 			// http://bugs.jquery.com/ticket/12537
 			// getPropertyValue 方法仅仅被用在IE9中取dom元素的filter属性值，其他样式属性值都用 computed[ name ] 取。
+			// 也即，优先使用 getPropertyValue 方法获取dom元素样式属性值。如果木有此方法，可以直接 computed[ name ] 取。
 			ret = computed ? computed.getPropertyValue( name ) || computed[ name ] : undefined,
 			// dom元素的style属性值集合。
 			style = elem.style;
 
 		// 也即：ret不是undefined。
 		if ( computed ) {
-			// 如果样式属性name的值为空字符串，且此dom元素不再其所属文档中，则使用方法 jQuery.style 获取其样式值。
+			// 如果样式值为空字符串，且此元素不在其所属文档中，则使用方法 jQuery.style 获取其样式值。
 			if ( ret === "" && !jQuery.contains( elem.ownerDocument, elem ) ) {
-				ret = jQuery.style( elem, name ); // ???
+				ret = jQuery.style( elem, name ); // 获取dom元素（非计算过的）样式值。
 			}
 
 			// A tribute to the "awesome hack by Dean Edwards"
 			// Chrome < 17 and Safari 5.0 uses "computed value" instead of "used value" for margin-right
 			// Safari 5.1.7 (at least) returns percentage for a larger set of values, but width seems to be reliably pixels
 			// this is against the CSSOM draft spec: http://dev.w3.org/csswg/cssom/#resolved-values
-			// ???
+			// 如果值ret为非"px"结尾，且以"margin"开头的值。???
 			if ( rnumnonpx.test( ret ) && rmargin.test( name ) ) {
 
 				// Remember the original values
