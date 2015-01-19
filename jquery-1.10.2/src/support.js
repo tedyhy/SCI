@@ -26,12 +26,13 @@ jQuery.support = (function( support ) {
 	input = div.getElementsByTagName("input")[ 0 ];
 	// cssText：设置样式
     // 说明：在IE中最后一个分号会被删掉,可以添加一个分号来解决这个问题。
-    // 例如: Element.style.cssText += ’;width:100px;height:100px;top:100px;left:100px;’
+    // 例如: Element.style.cssText += ';width:100px;height:100px;top:100px;left:100px;'。
 	a.style.cssText = "top:1px;float:left;opacity:.5";
 
 	// Test setAttribute on camelCase class. If it works, we need attrFixes when doing get/setAttribute (ie6/7)
-	// 验证一些属性（如：className）是否支持使用get/setAttribute方法，不支持返回true，支持返回false，
-    // 通过setAttribute添加class值是否成功来检测,IE6~7支持，其他浏览器不支持div.setAttribute( "className", "t" )。
+    // 参考 http://www.bkjia.com/Javascript/329354.html
+    // 首先，标准浏览器直接使用原始属性名；其次，IE6/7非以上列举的属性仍然用原始属性名；
+    // 最后这些特殊属性（与JS关键字同名如for，class）使用fixAttr。
 	support.getSetAttribute = div.className !== "t";
 
 	// IE strips leading whitespace when .innerHTML is used
