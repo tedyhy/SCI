@@ -4,35 +4,42 @@
 (function(global, undefined) {
 
 	// Avoid conflicting when `sea.js` is loaded multiple times
+	// 当`sea.js`重复加载时避免冲突。
 	if (global.seajs) {
 		return
 	}
 
+	// 暴露全局变量 seajs => window.seajs = {}。
 	var seajs = global.seajs = {
 		// The current version of Sea.js being used
+		// 当前版本
 		version: "2.2.1"
 	}
 
+	// 缓存数据接口
 	var data = seajs.data = {}
 
 
 	/**
 	 * util-lang.js - The minimal language enhancement
 	 */
-
+	// 语言增强工具集
+	// 判断数据类型
 	function isType(type) {
 		return function(obj) {
 			return {}.toString.call(obj) == "[object " + type + "]"
 		}
 	}
 
-	var isObject = isType("Object")
-	var isString = isType("String")
-	var isArray = Array.isArray || isType("Array")
-	var isFunction = isType("Function")
+	var isObject = isType("Object") // 判断是否是"Object"类型
+	var isString = isType("String") // 判断是否是"String"类型
+	var isArray = Array.isArray || isType("Array") // 判断是否是"Array"类型
+	var isFunction = isType("Function") // 判断是否是"Function"类型
 
+	// 初始化cid
 	var _cid = 0
 
+	// 生成cid
 	function cid() {
 		return _cid++
 	}
@@ -41,35 +48,44 @@
 	/**
 	 * util-events.js - The minimal events support
 	 */
-
+	// 事件系统工具集
+	// 事件缓存接口
 	var events = data.events = {}
 
 	// Bind event
+	// 绑定事件
 	seajs.on = function(name, callback) {
 		var list = events[name] || (events[name] = [])
-		list.push(callback)
+		list.push(callback) // 回调入栈
 		return seajs
 	}
 
 	// Remove event. If `callback` is undefined, remove all callbacks for the
 	// event. If `event` and `callback` are both undefined, remove all callbacks
 	// for all events
+	// 移除绑定的事件。
+	// 1.`callback`未定义，则移除此事件所有回调。
+	// 2.`event` && `callback` 都未定义，则移除事件缓存里所有回调。
 	seajs.off = function(name, callback) {
 		// Remove *all* events
+		// 即：(!name && !callback)
 		if (!(name || callback)) {
-			events = data.events = {}
+			events = data.events = {} // 清空事件缓存里所有回调
 			return seajs
 		}
 
+		// 取事件name相关回调
 		var list = events[name]
 		if (list) {
 			if (callback) {
+				// 如果有回调参数，则遍历回调集合查找回调参数，并将此回调参数从集合中移除。
 				for (var i = list.length - 1; i >= 0; i--) {
 					if (list[i] === callback) {
 						list.splice(i, 1)
 					}
 				}
 			} else {
+				// 如果木有回调参数，则删除与事件name相关的回调集合。
 				delete events[name]
 			}
 		}
@@ -79,15 +95,19 @@
 
 	// Emit event, firing all bound callbacks. Callbacks receive the same
 	// arguments as `emit` does, apart from the event name
+	// 触发事件。触发事件name相关的回调集合中的所有回调。
 	var emit = seajs.emit = function(name, data) {
 		var list = events[name],
 			fn
 
+		// 取事件name相关回调集合。
 		if (list) {
 			// Copy callback lists to prevent modification
+			// clone一份事件回调集合，避免在原回调集合中直接修改。
 			list = list.slice()
 
 			// Execute event callbacks
+			// 遍历执行事件回调。
 			while ((fn = list.shift())) {
 				fn(data)
 			}
@@ -100,32 +120,40 @@
 	/**
 	 * util-path.js - The utilities for operating path such as id, uri
 	 */
+	// 文件路径（path）处理工具集
 
+	// 一些正则
+	// 目录名称，如："abc/"
 	var DIRNAME_RE = /[^?#]*\//
-
+	// 一个点点，如："/./"
 	var DOT_RE = /\/\.\//g
+	// 双点点，如："/abc/../"
 	var DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//
+	// 双斜线，如："a//"
 	var DOUBLE_SLASH_RE = /([^:/])\/\//g
 
 	// Extract the directory portion of a path
 	// dirname("a/b/c.js?t=123#xx/zz") ==> "a/b/"
 	// ref: http://jsperf.com/regex-vs-split/2
+	// 根据路径（path）获取目录名，如：dirname("a/b/c.js?t=123#xx/zz") ==> "a/b/"
 	function dirname(path) {
 		return path.match(DIRNAME_RE)[0]
 	}
 
 	// Canonicalize a path
 	// realpath("http://test.com/a//./b/../c") ==> "http://test.com/a/c"
+	// 规范化路径（path），结合绝对路径、相对路径，从而获取其真实路径。
+	// 如：realpath("http://test.com/a//./b/../c") ==> "http://test.com/a/c"
 	function realpath(path) {
-		// /a/b/./c/./d ==> /a/b/c/d
+		// 1. /a/b/./c/./d ==> /a/b/c/d
 		path = path.replace(DOT_RE, "/")
 
-		// a/b/c/../../d  ==>  a/b/../d  ==>  a/d
+		// 2. a/b/c/../../d  ==>  a/b/../d  ==>  a/d
 		while (path.match(DOUBLE_DOT_RE)) {
 			path = path.replace(DOUBLE_DOT_RE, "/")
 		}
 
-		// a//b/c  ==>  a/b/c
+		// 3. a//b/c  ==>  a/b/c
 		path = path.replace(DOUBLE_SLASH_RE, "$1/")
 
 		return path
