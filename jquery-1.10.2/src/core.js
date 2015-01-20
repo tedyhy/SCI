@@ -52,11 +52,13 @@ var
 	jQuery = function( selector, context ) {
 		// The jQuery object is actually just the init constructor 'enhanced'
 		// jQuery 方法其实是 jQuery.fn.init 构造器的强化
-		return new jQuery.fn.init( selector, context, rootjQuery );
+		//返回的是一个对象，
+		return new jQuery.fn.init(selector, context, rootjQuery);
 	},
 
 	// Used for matching numbers
-	// 用于匹配数字，包括科学计数法，如：-123.34e-23
+	// 用于匹配数字，包括正数负数小数点科学计数法，如：-123.34e-23
+	// 在css的方法中会用到
 	core_pnum = /[+-]?(?:\d*\.|)\d+(?:[eE][+-]?\d+|)/.source,
 
 	// Used for splitting on whitespace
@@ -70,13 +72,13 @@ var
 	// A simple way to check for HTML strings
 	// Prioritize #id over <tag> to avoid XSS via location.hash (#9521)
 	// Strict HTML recognition (#11290: must start with <)
-	// 用于检测是否为HTML标签或ID
+	// 用于检测是否为HTML标签或ID ，如：<p> abcd  #id
 	rquickExpr = /^(?:\s*(<[\w\W]+>)[^>]*|#([\w-]*))$/,
 
 	// Match a standalone tag
 	// 匹配标签，如：<div>、<div></div>、<input />
 	rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
-
+ 
 	// JSON RegExp
 	// JSON 相关正则
 	rvalidchars = /^[\],:{}\s]*$/,
@@ -85,11 +87,12 @@ var
 	rvalidtokens = /"[^"\\\r\n]*"|true|false|null|-?(?:\d+\.|)\d+(?:[eE][+-]?\d+|)/g,
 
 	// Matches dashed string for camelizing
+	//css3样式正则
 	rmsPrefix = /^-ms-/,
 	rdashAlpha = /-([\da-z])/gi,
 
 	// Used by jQuery.camelCase as callback to replace()
-	// 用于方法jQuery.camelCase的替换方法
+	// 用于方法jQuery.camelCase的替换方法，转驼峰的回调函数
 	// 即正则替换："a-bc"=>"aBc"
 	fcamelCase = function( all, letter ) {
 		return letter.toUpperCase();
@@ -127,19 +130,22 @@ var
 jQuery.fn = jQuery.prototype = {
 	// The current version of jQuery being used
 	jquery: core_version,
-
+	// constructor指向的修正
 	constructor: jQuery,
 
-	// jquery对象构造器，入口
-	init: function( selector, context, rootjQuery ) {
+	// jquery对象构造器，入口 
+	//selector 选择器 context 限制条件，执行上下文 rootjQuery 根节点
+	init: function( selector, context, rootjQuery ) {//  初始化参数的管理
 		var match, elem;
 
 		// HANDLE: $(""), $(null), $(undefined), $(false)
+		// 对错误的选择元素进行处理，直接返回。
 		if ( !selector ) {
 			return this;
 		}
 
 		// Handle HTML strings
+		// 传html 片段 eg:$('<div>')  $('<p>abc</p>')
 		if ( typeof selector === "string" ) {
 			if ( selector.charAt(0) === "<" && selector.charAt( selector.length - 1 ) === ">" && selector.length >= 3 ) {
 				// Assume that strings that start and end with <> are HTML and skip the regex check
@@ -150,6 +156,7 @@ jQuery.fn = jQuery.prototype = {
 			}
 
 			// Match html or make sure no context is specified for #id
+			// 创建标签和id
 			if ( match && (match[1] || !context) ) {
 
 				// HANDLE: $(html) -> $(array)
@@ -157,6 +164,8 @@ jQuery.fn = jQuery.prototype = {
 					context = context instanceof jQuery ? context[0] : context;
 
 					// scripts is true for back-compat
+					// script 是否能填充进来
+					// merge 对json进行合并
 					jQuery.merge( this, jQuery.parseHTML(
 						match[1],
 						context && context.nodeType ? context.ownerDocument || context : document,
@@ -164,8 +173,9 @@ jQuery.fn = jQuery.prototype = {
 					) );
 
 					// HANDLE: $(html, props)
-					if ( rsingleTag.test( match[1] ) && jQuery.isPlainObject( context ) ) {
-						for ( match in context ) {
+					// 创建标签直接加属性 eg：$('<li>',{title: '123',html:'4567'}).appendTo('ul');
+					if ( rsingleTag.test( match[1] ) && jQuery.isPlainObject( context ) ) {// 满足单标签，并且必须是一个自变量
+						for ( match in context ) {// 对json进行 循环
 							// Properties of context are called as methods if possible
 							if ( jQuery.isFunction( this[ match ] ) ) {
 								this[ match ]( context[ match ] );
@@ -180,11 +190,13 @@ jQuery.fn = jQuery.prototype = {
 					return this;
 
 				// HANDLE: $(#id)
+				// id的操作
 				} else {
 					elem = document.getElementById( match[2] );
 
 					// Check parentNode to catch when Blackberry 4.6 returns
 					// nodes that are no longer in the document #6963
+					// 在黑莓4.6的情况下，不能只判断元素，看有没有父级
 					if ( elem && elem.parentNode ) {
 						// Handle the case where IE and Opera return items
 						// by name instead of ID
@@ -203,6 +215,7 @@ jQuery.fn = jQuery.prototype = {
 				}
 
 			// HANDLE: $(expr, $(...))
+			// 当执行上下文不存在时或是一个jquery对象 eg:document  $(document)
 			} else if ( !context || context.jquery ) {
 				return ( context || rootjQuery ).find( selector );
 
@@ -213,23 +226,31 @@ jQuery.fn = jQuery.prototype = {
 			}
 
 		// HANDLE: $(DOMElement)
+		// 传dom元素 eg: $(this) $(document)
+
 		} else if ( selector.nodeType ) {
-			this.context = this[0] = selector;
+			this.context = this[0] = selector;//选择到得节点赋到json的第0个元素上
 			this.length = 1;
 			return this;
 
 		// HANDLE: $(function)
 		// Shortcut for document ready
+		// 传函数function eg: $(function(){})
+		//简写的方式最终还是调用的$(document).ready(function(){});
 		} else if ( jQuery.isFunction( selector ) ) {
 			return rootjQuery.ready( selector );
 		}
 
-		if ( selector.selector !== undefined ) {
+		if ( selector.selector !== undefined ) {// 传参是不是jquery对象
 			this.selector = selector.selector;
 			this.context = selector.context;
 		}
-
+		// 传数组或者json eg $([]) $({})
 		return jQuery.makeArray( selector, this );
+		//makeArray 把类数组转成真正数组
+		/*
+
+		*/
 	},
 
 	// Start with an empty selector
@@ -240,13 +261,13 @@ jQuery.fn = jQuery.prototype = {
 
 	// 转换成数组
 	toArray: function() {
-		return core_slice.call( this );
+		return core_slice.call( this );// 截取到一部分数组
 	},
 
 	// Get the Nth element in the matched element set OR
 	// Get the whole matched element set as a clean array
 	// 从集合中获取某个DOM元素或者所有匹配的DOM元素，支持正负数字：3， -2。返回的是dom元素。
-	get: function( num ) {
+	get: function( num ) { // 转原生的集合
 		return num == null ?
 
 			// Return a 'clean' array
