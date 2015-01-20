@@ -31,13 +31,29 @@ jQuery.support = (function( support ) {
 
 	// Test setAttribute on camelCase class. If it works, we need attrFixes when doing get/setAttribute (ie6/7)
     // 参考 http://www.bkjia.com/Javascript/329354.html
-    // 首先，标准浏览器直接使用原始属性名；其次，IE6/7非以上列举的属性仍然用原始属性名；
-    // 最后这些特殊属性（与JS关键字同名如for，class）使用fixAttr。
+    // 首先，标准浏览器直接使用原始属性名。其次，IE6/7非以下列举的属性仍然用原始属性名。
+    // 最后，这些特殊属性（与JS关键字同名如for、class）使用fixAttr。
+    /* 	var fixAttr = {
+			tabindex: 'tabIndex',
+			readonly: 'readOnly',
+			'for': 'htmlFor',
+			'class': 'className',
+			maxlength: 'maxLength',
+			cellspacing: 'cellSpacing',
+			cellpadding: 'cellPadding',
+			rowspan: 'rowSpan',
+			colspan: 'colSpan',
+			usemap: 'useMap',
+			frameborder: 'frameBorder',
+			contenteditable: 'contentEditable'
+		}
+	*/
+	// 如果为true，说明是标准浏览器，为false，说明是ie6/7。
 	support.getSetAttribute = div.className !== "t";
 
 	// IE strips leading whitespace when .innerHTML is used
-	// 检测节点类型是否为文本节点。如果为true，则说明是在非IE环境下，第一个儿子节点为空白字符，nodeName为"#text"。
-	// 如果为false，则说明是IE下，第一个儿子节点为link元素，nodeName为"link"，nodeType为1。
+	// 检测节点类型是否为文本节点。如果为true，则说明是在非IE环境下，第一个儿子节点为空白节点，nodeName为"#text"。
+	// 如果为false，则说明是IE下，第一个儿子节点不是空白节点，nodeName不是"#text"，nodeType为1。
 	// 使用innerHTML，IE会自动剔除HTML代码头部的空白符。
 	support.leadingWhitespace = div.firstChild.nodeType === 3;
 
@@ -49,13 +65,13 @@ jQuery.support = (function( support ) {
 
 	// Make sure that link elements get serialized correctly by innerHTML
 	// This requires a wrapper element in IE
-	// 验证innerHTML插入链接元素是否可被序列化，成功则返回true，失败返回false。
+	// 验证innerHTML插入链接元素link是否可被序列化，成功则返回true，失败返回false。
     // 所谓序列化是指：可被读取的一种存储标准，在IE6~8中返回false。
 	support.htmlSerialize = !!div.getElementsByTagName("link").length;
 
 	// Get the style information from getAttribute
 	// (IE uses .cssText instead)
-	// IE 用 .cssText 代替用方法 getAttribute 取dom元素属性style。
+	// IE 可以用 .cssText 代替用方法 getAttribute 取dom元素属性style。
 	support.style = /top/.test( a.getAttribute("style") );
 
 	// Make sure that URLs aren't manipulated
@@ -96,6 +112,8 @@ jQuery.support = (function( support ) {
 	// Where outerHTML is undefined, this still works
 	// 验证是否支持html5节点复制，成功返回ture，失败返回false。
     // 失败：复制的节点cloneNode(true).innerHTML返回一个空字符串。
+    // 参考 http://blog.csdn.net/cheng5128/article/details/5598892
+    // 参考 http://www.cnblogs.com/rubylouvre/archive/2012/05/02/2478461.html
 	support.html5Clone = document.createElement("nav").cloneNode( true ).outerHTML !== "<:nav></:nav>";
 
 	// Will be defined later
@@ -123,7 +141,7 @@ jQuery.support = (function( support ) {
 	select.disabled = true;
 	// (2)获取下拉列表子元素的disabled是否为true。
 	// 测试：IE FF Chrome Safair Opera 的opt.disabled都为false，说明option不会被设置为disabled。
-	// 其他：部分webkit会被设置为disabled,需要老版本的chrome支持。
+	// 其他：部分webkit（如：老版本的chrome）会被设置为disabled。
 	support.optDisabled = !opt.disabled;
 
 	// Support: IE<9
@@ -136,14 +154,14 @@ jQuery.support = (function( support ) {
 	}
 
 	// Check if we can trust getAttribute("value")
-	// 检测用setAttribute方法设置input的value属性，通过getAttribute方法获取value属性值是否一致。
+	// 检测用setAttribute方法设置input的value属性，通过getAttribute方法获取value属性值从而判断值是否一致。
     // 在IE6~9和opera中返回false，其他返回true。
 	input = document.createElement("input");
 	input.setAttribute( "value", "" );
 	support.input = input.getAttribute( "value" ) === "";
 
 	// Check if an input maintains its value after becoming a radio
-	// 检测input元素被设置为radio类型后，是否仍然保持原先的值保持成功返回true，失败返回false。
+	// 检测input元素被设置为radio类型后，是否仍然保持原先的值，成功返回true，失败返回false。
 	input.value = "t";
 	input.setAttribute( "type", "radio" );
 	support.radioValue = input.value === "t";
@@ -153,20 +171,20 @@ jQuery.support = (function( support ) {
 	input.setAttribute( "checked", "t" );
 	input.setAttribute( "name", "t" );
 
-	// 创建一个文档片段。
+	// 创建一个文档片段，把input放到片段里。
 	fragment = document.createDocumentFragment();
 	fragment.appendChild( input );
 
 	// Check if a disconnected checkbox will retain its checked
 	// value of true after appended to the DOM (IE6/7)
-	// 检测(使用setAttribute)被添加到DOM中的checkbox是否仍然保留原先的选中状态成功返回true，失败返回false。
+	// 检测(使用setAttribute)被添加到DOM中的checkbox是否仍然保留原先的选中状态，成功返回true，失败返回false。
     // 在IE6~7中，返回false。
     // 其他：（1） safair下 若先未设置"名称"，返回true。 
     // 其他：（2） safair下 若设置"名称"，则返回false。
 	support.appendChecked = input.checked;
 
 	// WebKit doesn't clone checked state correctly in fragments
-	// 检测fragment中的checkbox的选中状态能否被复制，成功返回true,失败返回false
+	// 检测fragment片段中的checkbox的选中状态能否被复制，成功返回true,失败返回false。
     // 在IE6~7中，失败返回false
     // 其他：（1） safair下 若先设置"名称"后"选中"返回true
     // 其他：（2） safair下 若先设置"选中"后"名称"返回false
@@ -176,7 +194,9 @@ jQuery.support = (function( support ) {
 	// Opera does not clone events (and typeof div.attachEvent === undefined).
 	// IE9-10 clones events bound via attachEvent, but they don't trigger with .click()
 	// Opera不能克隆事件，并且 typeof div.attachEvent === undefined。
-    // IE9-10 克隆元素时会克隆元素通过 attachEvent 绑定的事件，但是他们不能通过方法 .click() 触发。
+    // IE9-10 中有方法attachEvent，会走这一段事件绑定，而且克隆元素时会克隆（元素）通过 attachEvent 绑定的事件，
+    // 但是他们不通过方法 .click() 触发绑定的事件，因此会返回true。
+    // IE6~8克隆元素时也会克隆事件，也会执行绑定的click事件，返回false。
     // (1)IE的注册事件
 	if ( div.attachEvent ) {
 		div.attachEvent( "onclick", function() {
@@ -188,15 +208,16 @@ jQuery.support = (function( support ) {
 
 	// Support: IE<9 (lack submit/change bubble), Firefox 17+ (lack focusin event)
 	// Beware of CSP restrictions (https://developer.mozilla.org/en/Security/CSP)
-	// 参考 http://blog.csdn.net/xxb2008/article/details/9145059
-	// IE<9 不支持 submitBubbles 和 changeBubbles。
-	// ie均支持focusinBubbles。FF都不支持focusinBubbles。
+	// IE<9 不支持 submitBubbles 和 changeBubbles（即，IE678不支持 submit/change 事件冒泡）。
+	// ie均支持focusinBubbles，FF都不支持focusinBubbles（即，因为IE都支持focusin事件，但是FF都不支持focusin事件）。
+	// ???
 	for ( i in { submit: true, change: true, focusin: true }) {
 		div.setAttribute( eventName = "on" + i, "t" );
 
 		support[ i + "Bubbles" ] = eventName in window || div.attributes[ eventName ].expando === false;
 	}
 
+	// IE9的问题，对于克隆的元素清除掉其 backgroundClip 时，其原型的 backgroundClip 也会被清除。
 	div.style.backgroundClip = "content-box";
 	div.cloneNode( true ).style.backgroundClip = "";
 	support.clearCloneStyle = div.style.backgroundClip === "content-box";
@@ -209,6 +230,7 @@ jQuery.support = (function( support ) {
 	support.ownLast = i !== "0";
 
 	// Run tests that need a body at doc ready
+	// 在 domReady 后做一些测试。
 	jQuery(function() {
 		var container, marginDiv, tds,
 			divReset = "padding:0;margin:0;border:0;display:block;box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;",
@@ -216,6 +238,7 @@ jQuery.support = (function( support ) {
 
 		if ( !body ) {
 			// Return for frameset docs that don't have a body
+			// 如果没有 body ，直接返回。
 			return;
 		}
 
