@@ -162,15 +162,26 @@
 	// Normalize an id
 	// normalize("path/to/a") ==> "path/to/a.js"
 	// NOTICE: substring is faster than negative slice and RegExp
+	// 通过id找到相应js或css文件路径（path）
+	// 如：normalize("path/to/a") ==> "path/to/a.js"
+	// 注意：substring 方法要比 slice和RegExp 效率要高。
 	function normalize(path) {
-		var last = path.length - 1
-		var lastC = path.charAt(last)
+		var last = path.length - 1 // 取id最后一个字符的索引
+		var lastC = path.charAt(last) // 取id最后一个字符，（path[last]在ie7有bug）因此使用charAt方法获取。
 
 		// If the uri ends with `#`, just return it without '#'
+		// 如果最后一个字符为`#`，则去掉`#`字符，返回id。
 		if (lastC === "#") {
 			return path.substring(0, last)
 		}
 
+		// 如果是以下id则直接返回，否则默认为".js"结尾。
+		/*
+			1. "path/to/a.js"
+			2. "path/to/a.js?"
+			3. "path/to/a.css"
+			4. "path/to/a/"
+		*/
 		return (path.substring(last - 2) === ".js" ||
 			path.indexOf("?") > 0 ||
 			path.substring(last - 3) === ".css" ||
@@ -178,28 +189,59 @@
 	}
 
 
+	// 别名变量、路径变量、一般变量过滤分析
+	// 路径（path）正则，如："(abc)(/de)"
 	var PATHS_RE = /^([^/:]+)(\/.+)$/
+	// 一般变量正则，如："{abc}"
 	var VARS_RE = /{([^{]+)}/g
 
+	// 分析过滤别名
+	/* 如：别名配置
+		alias: {
+			'es5-safe': 'gallery/es5-safe/0.9.3/es5-safe',
+			'json': 'gallery/json/1.0.2/json',
+			'jquery': 'jquery/jquery/1.10.1/jquery'
+		}
+	*/
 	function parseAlias(id) {
+		// 从 seajs.data 缓存中取别名缓存 data.alias。
 		var alias = data.alias
+		// 如果缓存 data.alias 中有参数id相关别名，并且别名为字符串，则返回别名，否则返回参数id。
 		return alias && isString(alias[id]) ? alias[id] : id
 	}
 
+	// 分析过滤路径
+	/* 如：路径配置
+		paths: {
+			'gallery': 'https://a.alipayobjects.com/gallery'
+		}
+	*/
 	function parsePaths(id) {
+		// 从 seajs.data 缓存中取路径缓存 data.paths。
 		var paths = data.paths
 		var m
 
+		// 如果缓存 data.paths 中有路径别名则替换路径。
+		// 如：id = "gallery/json/1.0.2/json" => ["gallery/json/1.0.2/json", "gallery", "/json/1.0.2/json"]
 		if (paths && (m = id.match(PATHS_RE)) && isString(paths[m[1]])) {
+			// 如：id = "https://a.alipayobjects.com/gallery/json/1.0.2/json"
 			id = paths[m[1]] + m[2]
 		}
 
 		return id
 	}
 
+	// 分析过滤一般变量
+	/* 如：变量配置
+		vars: {
+			'locale': 'zh-cn'
+		}
+	*/
 	function parseVars(id) {
+		// 从 seajs.data 缓存中取变量缓存 data.vars。
 		var vars = data.vars
 
+		// 如果有变量缓存，且参数id里有变量存在，则正则替换变量。
 		if (vars && id.indexOf("{") > -1) {
 			id = id.replace(VARS_RE, function(m, key) {
 				return isString(vars[key]) ? vars[key] : m
@@ -209,19 +251,30 @@
 		return id
 	}
 
+	// 分析过滤map映射
+	/* 如：映射配置
+		map: [
+			['http://example.com/js/app/', 'http://localhost/js/app/']
+		]
+	*/
 	function parseMap(uri) {
+		// 从 seajs.data 缓存中取map缓存 data.map。
 		var map = data.map
 		var ret = uri
 
+		// 如果有map缓存，则遍历处理。
 		if (map) {
 			for (var i = 0, len = map.length; i < len; i++) {
 				var rule = map[i]
 
+				// 如果rule是函数，则执行函数（如果无返回值，则默认还是参数uri）。
+				// 如果rule不是函数，则用rule[1]替换rule[0]。
 				ret = isFunction(rule) ?
 					(rule(uri) || uri) :
 					uri.replace(rule[0], rule[1])
 
 				// Only apply the first matched rule
+				// 如果替换后的ret与参数uri值不同，则跳出for循环。即：参数uri只应用map中的第一个匹配的规则。
 				if (ret !== uri) break
 			}
 		}
@@ -973,3 +1026,22 @@
 	}
 
 })(this);
+
+/**
+ * Sea.js 2.2.1 结构图
+ */
+/*
+window.seajs
+	|-version: "2.2.1"
+	|-data
+		|-events
+			|-event1: [],
+			|-event2: []
+		|-alias: {}
+		|-paths: {}
+		|-vars: {}
+		|-map: []
+	|-on
+	|-off
+	|-emit
+*/
