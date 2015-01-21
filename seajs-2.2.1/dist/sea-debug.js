@@ -196,6 +196,7 @@
 	var VARS_RE = /{([^{]+)}/g
 
 	// 分析过滤别名
+	// 参考 http://www.cnblogs.com/ada-zheng/p/3284478.html
 	/* 如：别名配置
 		alias: {
 			'es5-safe': 'gallery/es5-safe/0.9.3/es5-safe',
@@ -283,7 +284,9 @@
 	}
 
 
+	// 如："//e" 或 ":/"
 	var ABSOLUTE_RE = /^\/\/.|:\//
+	// 如："http://example.com/"
 	var ROOT_DIR_RE = /^.*?\/\/.*?\//
 
 	function addBase(id, refUri) {
@@ -291,14 +294,18 @@
 		var first = id.charAt(0)
 
 		// Absolute
+		// 绝对路径，如："//example.com/js/app/" 或者 "://example.com/js/app/"。
+		// 如果是绝对路径，则直接赋值给ret。
 		if (ABSOLUTE_RE.test(id)) {
 			ret = id
 		}
 		// Relative
+		// 如果是相对路径，如："./app/" 或者 "../app/"
 		else if (first === ".") {
 			ret = realpath((refUri ? dirname(refUri) : data.cwd) + id)
 		}
 		// Root
+		// 如："//example.com/"
 		else if (first === "/") {
 			var m = data.cwd.match(ROOT_DIR_RE)
 			ret = m ? m[0] + id.substring(1) : id
@@ -309,6 +316,7 @@
 		}
 
 		// Add default protocol when uri begins with "//"
+		// 当 uri 以"//"开头，则增加默认协议。如："//example.com/js/app/"
 		if (ret.indexOf("//") === 0) {
 			ret = location.protocol + ret
 		}
@@ -316,13 +324,15 @@
 		return ret
 	}
 
+	// 将 id 转成 uri
 	function id2Uri(id, refUri) {
 		if (!id) return ""
 
+		// 依次过滤分析id，别名 > 路径 > 变量，最后为id添加文件后缀（".js"或者".css"）。
 		id = parseAlias(id)
 		id = parsePaths(id)
 		id = parseVars(id)
-		id = normalize(id)
+		id = normalize(id) // （".js"或者".css"）
 
 		var uri = addBase(id, refUri)
 		uri = parseMap(uri)
@@ -332,16 +342,25 @@
 
 
 	var doc = document
+	// 从document.URL里获取目录名称。
+	// 如："http://test.com/a/b/c.js?t=123#xx/zz" => "http://test.com/a/b/"。
+	// 变量 cwd 即为当前页面工作目录。
 	var cwd = dirname(doc.URL)
+	// 获取当前页面里所有script脚本节点。
 	var scripts = doc.scripts
 
 	// Recommend to add `seajsnode` id for the `sea.js` script element
+	// 推荐为`sea.js`脚本元素添加属性 id = `seajsnode`。
+	// 如果木有 id = `seajsnode` 的脚本节点，则从 scripts 集合中取最后一个脚本元素，
+	// 这个元素就是加载器脚本。
 	var loaderScript = doc.getElementById("seajsnode") ||
 		scripts[scripts.length - 1]
 
 	// When `sea.js` is inline, set loaderDir to current working directory
+	// 获取加载器所在目录，如果木有，则默认为当前页面工作目录 cwd。
 	var loaderDir = dirname(getScriptAbsoluteSrc(loaderScript) || cwd)
 
+	// 获取节点的绝对路径。
 	function getScriptAbsoluteSrc(node) {
 		return node.hasAttribute ? // non-IE6/7
 			node.src :
@@ -351,6 +370,7 @@
 
 
 	// For Developers
+	// 将 id2Uri 方法暴露粗来给开发者。
 	seajs.resolve = id2Uri
 
 
