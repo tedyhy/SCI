@@ -291,10 +291,10 @@
 
 	function addBase(id, refUri) {
 		var ret
-		var first = id.charAt(0)
+		var first = id.charAt(0) // 取第一个字符。
 
 		// Absolute
-		// 绝对路径，如："//example.com/js/app/" 或者 "://example.com/js/app/"。
+		// 如果是绝对路径，如："//example.com/js/app/" 或者 "://example.com/js/app/"。
 		// 如果是绝对路径，则直接赋值给ret。
 		if (ABSOLUTE_RE.test(id)) {
 			ret = id
@@ -305,9 +305,11 @@
 			ret = realpath((refUri ? dirname(refUri) : data.cwd) + id)
 		}
 		// Root
-		// 如："//example.com/"
+		// 如果是根目录，如："/a/b"
 		else if (first === "/") {
+			// "http://example.com/a/b" => ["http://example.com/"]
 			var m = data.cwd.match(ROOT_DIR_RE)
+			// "http://example.com/" + "a/b"
 			ret = m ? m[0] + id.substring(1) : id
 		}
 		// Top-level
@@ -334,7 +336,9 @@
 		id = parseVars(id)
 		id = normalize(id) // （".js"或者".css"）
 
+		// 依据参数refUri为id添加base地址。
 		var uri = addBase(id, refUri)
+		// 最后分析过滤 data.map。
 		uri = parseMap(uri)
 
 		return uri
@@ -362,9 +366,12 @@
 
 	// 获取节点的绝对路径。
 	function getScriptAbsoluteSrc(node) {
-		return node.hasAttribute ? // non-IE6/7
+		return node.hasAttribute ? // non-IE6/7 非ie6/7下。
 			node.src :
 			// see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
+			// 参考 http://blog.csdn.net/fudesign2008/article/details/7620985
+			// 参考 http://www.jb51.net/article/28114.htm
+			// object.getAttribute(strAttributeName, lFlags)，lFlags = 4 为ie6/7下获取完整的url链接地址。
 			node.getAttribute("src", 4)
 	}
 
@@ -378,10 +385,13 @@
 	 * util-request.js - The utilities for requesting script and style files
 	 * ref: tests/research/load-js-css/test.html
 	 */
+	// 请求js/css文件工具集。
 
+	// document.head
 	var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement
+	// 获取 document.head 里的 base 元素。
 	var baseElement = head.getElementsByTagName("base")[0]
-
+	// 判断是否是 css 文件。
 	var IS_CSS_RE = /\.css(?:\?|$)/i
 	var currentlyAddingScript
 	var interactiveScript
@@ -536,6 +546,7 @@
 
 
 	// For Developers
+	// 将 request 方法暴露粗来给开发者。
 	seajs.request = request
 
 
@@ -543,14 +554,18 @@
 	 * util-deps.js - The parser for dependencies
 	 * ref: tests/research/parse-dependencies/test.html
 	 */
-
+	// 分析模块依赖工具集。
+	// 分析依赖正则
 	var REQUIRE_RE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g
+	// windows下斜线分割符正则。
 	var SLASH_RE = /\\\\/g
-
+	// 分析模块依赖方法。
 	function parseDependencies(code) {
 		var ret = []
 
+		// 将code中斜线删除掉
 		code.replace(SLASH_RE, "")
+			// 分析code，从中找出依赖的模块id。
 			.replace(REQUIRE_RE, function(m, m1, m2) {
 				if (m2) {
 					ret.push(m2)
@@ -1061,7 +1076,10 @@ window.seajs
 		|-paths: {}
 		|-vars: {}
 		|-map: []
+		|-base: ""
 	|-on
 	|-off
 	|-emit
+	|-resolve
+	|-request
 */
