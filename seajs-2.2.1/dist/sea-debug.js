@@ -393,6 +393,7 @@
 	var baseElement = head.getElementsByTagName("base")[0]
 	// 判断是否是 css 文件。
 	var IS_CSS_RE = /\.css(?:\?|$)/i
+	// 当前正在插入到文档的 script 脚本元素。
 	var currentlyAddingScript
 	var interactiveScript
 
@@ -401,23 +402,30 @@
 	//  - https://bugs.webkit.org/show_activity.cgi?id=38995
 	//  - https://bugzilla.mozilla.org/show_bug.cgi?id=185236
 	//  - https://developer.mozilla.org/en/HTML/Element/link#Stylesheet_load_events
+	// `onload` 事件在 WebKit < 535.23 and Firefox < 9.0 下不被支持。
+	// 如果 WebKit 版本低于536，则被认为是老版本的WebKit。
 	var isOldWebKit = +navigator.userAgent
 		.replace(/.*(?:AppleWebKit|AndroidWebKit)\/(\d+).*/, "$1") < 536
 
-
+	// 根据url连接请求js/css文件。
+	// 参数包括：url、回调、字符集。
 	function request(url, callback, charset) {
-		var isCSS = IS_CSS_RE.test(url)
-		var node = doc.createElement(isCSS ? "link" : "script")
+		var isCSS = IS_CSS_RE.test(url) // 判断是否加载的是css文件。
+		var node = doc.createElement(isCSS ? "link" : "script") // 创建"link"或"script"节点元素。
 
 		if (charset) {
+			// 如果参数 charset 是函数，则执行函数。
 			var cs = isFunction(charset) ? charset(url) : charset
 			if (cs) {
+				// 有字符集，则为节点元素设置charset属性。
 				node.charset = cs
 			}
 		}
 
+		// 为node绑定`onload`事件，监听文件加载进度，并且在文件加载完毕后执行 callback 回调。
 		addOnload(node, callback, isCSS, url)
 
+		// 为 js、css 文件添加属性。
 		if (isCSS) {
 			node.rel = "stylesheet"
 			node.href = url
@@ -429,73 +437,99 @@
 		// For some cache cases in IE 6-8, the script executes IMMEDIATELY after
 		// the end of the insert execution, so use `currentlyAddingScript` to
 		// hold current node, for deriving url in `define` call
+		// IE6-8 下，当 script 脚本插入文档的动作结束之后，script 脚本将立即执行。
+		// 所以用`currentlyAddingScript`去保存当前节点元素。
 		currentlyAddingScript = node
 
 		// ref: #185 & http://dev.jquery.com/ticket/2709
+		// 如果有base元素，则将node节点插入到base元素之前。
+		// 如果木有base元素，则将node节点追加到head元素内部之后。
 		baseElement ?
 			head.insertBefore(node, baseElement) :
 			head.appendChild(node)
 
+		// 当 script 节点元素插入文档后，立即将变量引用置空。
 		currentlyAddingScript = null
 	}
 
+	// 为node绑定`onload`事件。
 	function addOnload(node, callback, isCSS, url) {
+		// 判断是否支持`onload`事件。
 		var supportOnload = "onload" in node
 
 		// for Old WebKit and Old Firefox
+		// 加载css文件（老版本的 WebKit && Firefox 或者 不支持`onload`事件）。
 		if (isCSS && (isOldWebKit || !supportOnload)) {
+			// 采用定时拉取 css 文件。
 			setTimeout(function() {
+				// pollCss 方法测试 css 文件是否加载完毕，如果没有加载完毕，则递归调用此方法直到加载完毕。
 				pollCss(node, callback)
 			}, 1) // Begin after node insertion
 			return
 		}
 
+		// 加载文件（js/css文件）时，如果支持`onload`事件。
 		if (supportOnload) {
 			node.onload = onload
 			node.onerror = function() {
+				// 文件加载失败，触发`error`事件。
 				emit("error", {
 					uri: url,
 					node: node
 				})
 				onload()
 			}
+			// IE 节点元素不支持`onload`事件。
 		} else {
+			// IE支持 onreadystatechange 事件。
 			node.onreadystatechange = function() {
+				// 监听文件加载状态。
 				if (/loaded|complete/.test(node.readyState)) {
 					onload()
 				}
 			}
 		}
 
+		// `onload`事件回调。先清理变量减少内存，后执行回调。
 		function onload() {
 			// Ensure only run once and handle memory leak in IE
+			// 确保此回调只运行一次，运行后将回调置空避免IE下内存泄露。
 			node.onload = node.onerror = node.onreadystatechange = null
 
 			// Remove the script to reduce memory leak
+			// 如果是js文件，且当前处于非debug状态。
 			if (!isCSS && !data.debug) {
+				// 从文档中移除node节点元素，减小内存消耗。
 				head.removeChild(node)
 			}
 
 			// Dereference the node
+			// 删除node变量引用，避免内存泄露。
 			node = null
 
+			// 执行回调。
 			callback()
 		}
 	}
 
+	// 拉取 css 文件方法。
 	function pollCss(node, callback) {
+		// 获取link节点元素的sheet属性。
 		var sheet = node.sheet
 		var isLoaded
 
 		// for WebKit < 536
+		// 对于老版本的 WebKit，只要link元素的sheet属性有值，说明css文件加载完毕。
 		if (isOldWebKit) {
 			if (sheet) {
 				isLoaded = true
 			}
 		}
 		// for Firefox < 9.0
+		// 对于老版本的 Firefox 来讲，如果link元素的sheet属性有值，还需要进一步判断。
 		else if (sheet) {
 			try {
+				// 如果 sheet.cssRules 有值，则说明css文件加载完毕。
 				if (sheet.cssRules) {
 					isLoaded = true
 				}
@@ -512,14 +546,18 @@
 		setTimeout(function() {
 			if (isLoaded) {
 				// Place callback here to give time for style rendering
+				// css 加载完毕后，需要给点时间去渲染样式，随后执行回调函数。
 				callback()
 			} else {
+				// 如果还是没有加载完毕，则递归调用 pollCss 方法继续监听css文件的加载进度。
 				pollCss(node, callback)
 			}
 		}, 20)
 	}
 
+	// 获取当前正在处理的脚本。
 	function getCurrentScript() {
+		// 如果当前时刻，有 script 脚本正在插入文档，则返回此脚本节点元素。
 		if (currentlyAddingScript) {
 			return currentlyAddingScript
 		}
@@ -529,12 +567,17 @@
 		// could query the script nodes and the one that is in "interactive"
 		// mode indicates the current script
 		// ref: http://goo.gl/JHfFW
+		// IE6-9下，script 节点元素的 `onload` 事件可能不会正确触发，
+		// 但是可以通过查找那个节点（一个当前状态为"interactive"的节点）
+		// 来确定当前正在处理的 script 脚本。
+		// 将 "interactive"（互动） 状态的脚本也加入到正在处理的脚本中。
 		if (interactiveScript && interactiveScript.readyState === "interactive") {
 			return interactiveScript
 		}
 
 		var scripts = head.getElementsByTagName("script")
 
+		// 遍历 script 脚本，找出当前状态为 "interactive" 的脚本。
 		for (var i = scripts.length - 1; i >= 0; i--) {
 			var script = scripts[i]
 			if (script.readyState === "interactive") {
