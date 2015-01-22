@@ -622,50 +622,69 @@
 	/**
 	 * module.js - The core of module loader
 	 */
-
+	// 模块加载器核心
+	// 模块缓存器
 	var cachedMods = seajs.cache = {}
+	// 匿名元数据
 	var anonymousMeta
 
 	var fetchingList = {}
 	var fetchedList = {}
 	var callbackList = {}
 
+	// 模块状态
 	var STATUS = Module.STATUS = {
 		// 1 - The `module.uri` is being fetched
+		// 1 - 模块正在被拉取中（根据`module.uri`加载模块）。
 		FETCHING: 1,
 		// 2 - The meta data has been saved to cachedMods
+		// 2 - 模块元数据已经被保存到缓存器中
 		SAVED: 2,
 		// 3 - The `module.dependencies` are being loaded
+		// 3 - 模块依赖正在被加载
 		LOADING: 3,
 		// 4 - The module are ready to execute
+		// 4 - 模块准备好即将执行
 		LOADED: 4,
 		// 5 - The module is being executed
+		// 5 - 模块正在被执行
 		EXECUTING: 5,
 		// 6 - The `module.exports` is available
+		// 6 - `module.exports` 可用
 		EXECUTED: 6
 	}
 
 
+	// 模块构造器
 	function Module(uri, deps) {
+		// 模块参考uri
 		this.uri = uri
+		// 模块依赖
 		this.dependencies = deps || []
+		// 模块接口
 		this.exports = null
+		// 模块状态，默认为0
 		this.status = 0
 
 		// Who depends on me
+		// 哪些模块依赖当前模块
 		this._waitings = {}
 
 		// The number of unloaded dependencies
+		// 当前模块所依赖的模块，还有多少尚未加载完毕。
 		this._remain = 0
 	}
 
 	// Resolve module.dependencies
+	// 解决模块依赖
 	Module.prototype.resolve = function() {
-		var mod = this
-		var ids = mod.dependencies
-		var uris = []
+		var mod = this // 当前模块引用
+		var ids = mod.dependencies // 当前模块依赖
+		var uris = [] // 依赖的模块的uri集合
 
+		// 遍历当前模块所依赖模块集合
 		for (var i = 0, len = ids.length; i < len; i++) {
+			// 将 id 转换成 uri 后入栈
 			uris[i] = Module.resolve(ids[i], mod.uri)
 		}
 		return uris
@@ -871,12 +890,15 @@
 	}
 
 	// Resolve id to uri
+	// 将 id 转换成 uri
 	Module.resolve = function(id, refUri) {
 		// Emit `resolve` event for plugins such as text plugin
+		// 元数据
 		var emitData = {
 			id: id,
 			refUri: refUri
 		}
+		// 触发 "resolve" 事件
 		emit("resolve", emitData)
 
 		return emitData.uri || seajs.resolve(emitData.id, refUri)
@@ -1120,9 +1142,39 @@ window.seajs
 		|-vars: {}
 		|-map: []
 		|-base: ""
+		|-dir: ""
+		|-cwd: ""
+		|-charset: "utf-8"
+		|-preload: []
+		|-fetchedList
+		|-cid
 	|-on
 	|-off
 	|-emit
-	|-resolve
+	|-resolve: id2Uri
 	|-request
+	|-cache
+	|-use
+	|-Module: Module
+
+Module
+	|-STATUS
+		|-FETCHING: 1,
+		|-SAVED: 2,
+		|-LOADING: 3,
+		|-LOADED: 4,
+		|-EXECUTING: 5,
+		|-EXECUTED: 6
+	|-prototype
+		|-resolve
+		|-load
+		|-onload
+		|-fetch
+		|-exec
+	|-resolve
+	|-define
+	|-save
+	|-get
+	|-use
+	|-preload
 */
