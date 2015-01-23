@@ -901,36 +901,48 @@
 		// 触发 "resolve" 事件
 		emit("resolve", emitData)
 
+		// seajs.resolve = id2Uri
 		return emitData.uri || seajs.resolve(emitData.id, refUri)
 	}
 
 	// Define a module
+	// 定义模块
 	Module.define = function(id, deps, factory) {
+		// 根据参数长度来判断
 		var argsLen = arguments.length
 
 		// define(factory)
+		// 如果此方法只有一个参数，即：define(id) => define(function(){...})。
 		if (argsLen === 1) {
+			// 参数转换
 			factory = id
 			id = undefined
+
+		// 两个参数，即：define(id, deps) => define(id, function(){...})。
 		} else if (argsLen === 2) {
 			factory = deps
 
 			// define(deps, factory)
+			// 如果参数id为数组，则：define(id, deps) => define(deps, function(){...})。
 			if (isArray(id)) {
 				deps = id
 				id = undefined
 			}
 			// define(id, factory)
+			// 如果参数id不是数组，则：define(id, deps) => define(id, function(){...})。
 			else {
 				deps = undefined
 			}
 		}
 
 		// Parse dependencies according to the module factory code
+		// 取define方法的 factory 参数的代码内容，利用正则表达式分析出来当前模块所依赖的其他模块id。
+		// 如果有参数 deps，且 deps 有值（一个数组），则不会再去分析 factory 参数的代码内容。
 		if (!isArray(deps) && isFunction(factory)) {
 			deps = parseDependencies(factory.toString())
 		}
 
+		// 组装元数据meta
 		var meta = {
 			id: id,
 			uri: Module.resolve(id),
@@ -951,18 +963,24 @@
 		}
 
 		// Emit `define` event, used in nocache plugin, seajs node version etc
+		// 触发 `define` 事件。
 		emit("define", meta)
 
+		// 如果有meta.uri，则保存模块元数据meta到模块缓存器中。
 		meta.uri ? Module.save(meta.uri, meta) :
 		// Save information for "saving" work in the script onload event
 		anonymousMeta = meta
 	}
 
 	// Save meta data to cachedMods
+	// 保存模块元数据meta到模块缓存器中。
 	Module.save = function(uri, meta) {
+		// 根据 uri 从模块缓存器中取一个存在的模块，或者创建一个新的模块。
 		var mod = Module.get(uri)
 
 		// Do NOT override already saved modules
+		// 如果模块状态小于 STATUS.SAVED ，即处于正在被拉取的状态，则将此模块缓存到模块缓存器中。
+		// 否则不要覆盖已经缓存过的模块信息。
 		if (mod.status < STATUS.SAVED) {
 			mod.id = meta.id || uri
 			mod.dependencies = meta.deps || []
@@ -972,6 +990,7 @@
 	}
 
 	// Get an existed module or create a new one
+	// 根据 uri 从模块缓存器中取一个存在的模块，或者创建一个新的模块。
 	Module.get = function(uri, deps) {
 		return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps))
 	}
@@ -1018,7 +1037,7 @@
 
 
 	// Public API
-
+	// 公共接口方法 use，seajs.use 用于执行模块。
 	seajs.use = function(ids, callback) {
 		Module.preload(function() {
 			Module.use(ids, callback, data.cwd + "_use_" + cid())
@@ -1027,11 +1046,13 @@
 	}
 
 	Module.define.cmd = {}
+	// 公共接口方法 define，window.define = Module.define。
+	// define 用于定义一个模块。
 	global.define = Module.define
 
 
 	// For Developers
-
+	// 暴露给开发者。
 	seajs.Module = Module
 	data.fetchedList = fetchedList
 	data.cid = cid
