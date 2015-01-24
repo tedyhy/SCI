@@ -676,7 +676,7 @@
 	}
 
 	// Resolve module.dependencies
-	// 解决模块依赖
+	// 解决模块依赖，获取当前模块所依赖的模块uri集合。
 	Module.prototype.resolve = function() {
 		var mod = this // 当前模块引用
 		var ids = mod.dependencies // 当前模块依赖
@@ -691,48 +691,65 @@
 	}
 
 	// Load module.dependencies and fire onload when all done
+	// 加载模块依赖，当所有依赖都加载完则触发 `onload` 事件。
 	Module.prototype.load = function() {
 		var mod = this
 
 		// If the module is being loaded, just wait it onload call
+		// 如果当前模块状态为大于等于“正在被加载”，则返回。
 		if (mod.status >= STATUS.LOADING) {
 			return
 		}
 
+		// 当前模块状态标记为“依赖模块正在被加载”
 		mod.status = STATUS.LOADING
 
 		// Emit `load` event for plugins such as combo plugin
+		// 触发 `load` 事件，主要是配合插件使用，如："combo" 插件。
+		// 获取当前模块所依赖的模块 uris。
 		var uris = mod.resolve()
 		emit("load", uris)
 
+		// 重置当前模块依赖计数 mod._remain。
 		var len = mod._remain = uris.length
 		var m
 
 		// Initialize modules and register waitings
 		for (var i = 0; i < len; i++) {
+			// 从模块缓存器中取m模块信息，如果木有，则创建m模块信息缓存。
 			m = Module.get(uris[i])
 
+			// 如果m模块状态为：“正在被加载中”，则处理当前模块与所依赖m模块间关系。
 			if (m.status < STATUS.LOADED) {
 				// Maybe duplicate: When module has dupliate dependency, it should be it's count, not 1
+				// 可能有重复依赖。所以m模块与当前模块有重复依赖关系，应该累加计数，而不是仅仅置为1。
 				m._waitings[mod.uri] = (m._waitings[mod.uri] || 0) + 1
 			} else {
+				// 如果m模块状态为：“加载完毕”，则处理当前模块计数 mod._remain。
 				mod._remain--
 			}
 		}
 
+		// 如果当前模块计数 mod._remain === 0，则触发当前模块 `onload` 事件。
 		if (mod._remain === 0) {
 			mod.onload()
 			return
 		}
 
 		// Begin parallel loading
+		// 开始并行加载模块。
+		// 设置请求模块缓存器。
 		var requestCache = {}
 
+		// 遍历当前模块所依赖的模块集合。
 		for (i = 0; i < len; i++) {
+			// 获取m模块缓存信息。
 			m = cachedMods[uris[i]]
 
+			// 如果m模块状态为：小于“正在被拉取中”，则调用模块fetch方法去拉取模块。
 			if (m.status < STATUS.FETCHING) {
 				m.fetch(requestCache)
+			// 如果m模块状态为：“模块已加载完毕，准备好执行”，则调用m模块load方法迭代加载其依赖的模块。
 			} else if (m.status === STATUS.SAVED) {
 				m.load()
 			}
@@ -747,20 +764,26 @@
 	}
 
 	// Call this method when module is loaded
+	// 当前模块所依赖的模块都加载完毕后将调用此方法。
 	Module.prototype.onload = function() {
 		var mod = this
+		// 将当前模块的状态置为“已加载完毕，等待执行”。
 		mod.status = STATUS.LOADED
 
+		// 如果当前模块有属性callback，则执行回调callback。
 		if (mod.callback) {
 			mod.callback()
 		}
 
 		// Notify waiting modules to fire onload
+		// 通知等待模块（当前模块所依赖的所有模块）去触发 `onload` 方法。
 		var waitings = mod._waitings
 		var uri, m
 
+		// 遍历依赖模块。
 		for (uri in waitings) {
 			if (waitings.hasOwnProperty(uri)) {
+				// 获取m模块的缓存信息。
 				m = cachedMods[uri]
 				m._remain -= waitings[uri]
 				if (m._remain === 0) {
@@ -770,11 +793,14 @@
 		}
 
 		// Reduce memory taken
+		// 删除引用，减少内存消耗。
 		delete mod._waitings
 		delete mod._remain
 	}
 
 	// Fetch a module
+	// 拉取模块
+	// 参数 requestCache 为请求模块缓存器。
 	Module.prototype.fetch = function(requestCache) {
 		var mod = this
 		var uri = mod.uri
@@ -991,38 +1017,47 @@
 
 	// Get an existed module or create a new one
 	// 根据 uri 从模块缓存器中取一个存在的模块，或者创建一个新的模块。
+	// 参数 deps 为模块依赖。
 	Module.get = function(uri, deps) {
 		return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps))
 	}
 
 	// Use function is equal to load a anonymous module
 	Module.use = function(ids, callback, uri) {
+		// 调用 Module.get 方法获取 uri 相关模块缓存信息（并根据参数 ids 生成模块依赖）。
 		var mod = Module.get(uri, isArray(ids) ? ids : [ids])
 
 		mod.callback = function() {
 			var exports = []
-			var uris = mod.resolve()
+			var uris = mod.resolve() // 生成当前模块所依赖的模块集合，作为参数传给回调。
 
+			// 遍历 uri 集合，
 			for (var i = 0, len = uris.length; i < len; i++) {
 				exports[i] = cachedMods[uris[i]].exec()
 			}
 
+			// 如果有回调，则执行回调。作用域为window，参数为每个所依赖模块的执行结果。
 			if (callback) {
 				callback.apply(global, exports)
 			}
 
+			// 执行完回调后，删除当前模块回调引用。
 			delete mod.callback
 		}
 
+		// 加载当前模块
 		mod.load()
 	}
 
 	// Load preload modules before all other modules
+	// 在其他模块之前预先加载模块
 	Module.preload = function(callback) {
+		// 取配置项中预先加载的模块集合
 		var preloadMods = data.preload
 		var len = preloadMods.length
-
+		
 		if (len) {
+			// 如果有预先加载的模块，则加载这些模块。
 			Module.use(preloadMods, function() {
 				// Remove the loaded preload modules
 				preloadMods.splice(0, len)
@@ -1031,13 +1066,14 @@
 				Module.preload(callback)
 			}, data.cwd + "_preload_" + cid())
 		} else {
+			// 如果没有预先加载的模块，则只执行回调。
 			callback()
 		}
 	}
 
 
 	// Public API
-	// 公共接口方法 use，seajs.use 用于执行模块。
+	// 公共接口方法 use，seajs.use 用于调用执行模块。
 	seajs.use = function(ids, callback) {
 		Module.preload(function() {
 			Module.use(ids, callback, data.cwd + "_use_" + cid())
@@ -1070,6 +1106,7 @@
 	/**
 	 * config.js - The configuration for the loader
 	 */
+	// 初始化配置信息。
 
 	var BASE_RE = /^(.+?\/)(\?\?)?(seajs\/)+/
 
