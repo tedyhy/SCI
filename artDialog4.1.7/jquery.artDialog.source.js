@@ -12,7 +12,7 @@
 //------------------------------------------------
 ;
 (function($, window, undefined) {
-
+	// 空函数
 	$.noop = $.noop || function() {}; // jQuery 1.3.2
 	var _box, _thisScript, _skin, _path,
 		_count = 0,
@@ -20,8 +20,11 @@
 		_$document = $(document),
 		_$html = $('html'),
 		_elem = document.documentElement,
+		// 判断是否是ie6
 		_isIE6 = window.VBArray && !window.XMLHttpRequest,
+		// 判断是否是移动平台
 		_isMobile = 'createTouch' in document && !('onmousemove' in _elem) || /(iPhone|iPad|iPod)/i.test(navigator.userAgent),
+		// 唯一id
 		_expando = 'artDialog' + +new Date;
 
 	var artDialog = function(config, ok, cancel) {
