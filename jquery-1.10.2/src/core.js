@@ -160,16 +160,26 @@ jQuery.fn = jQuery.prototype = {
 			if ( match && (match[1] || !context) ) {
 
 				// HANDLE: $(html) -> $(array)
+				// if 创建标签
 				if ( match[1] ) {
+
 					context = context instanceof jQuery ? context[0] : context;
 
 					// scripts is true for back-compat
 					// script 是否能填充进来
-					// merge 对json进行合并
+					// merge 对json进行合并，对外进行数组合并
+					/*
+					 * jQuery.parseHTML()把字符串转成一个html数组,指定三个参数。
+					 * var str = '<li>a</li><li>b</li><li>c</li>';
+					 * var arr = jQuery.parseHTML(str);
+					 * $.each(arr,function(i){
+					 * 	$('ul').append(arr[i]);
+					 *	})
+					 */ 
 					jQuery.merge( this, jQuery.parseHTML(
 						match[1],
-						context && context.nodeType ? context.ownerDocument || context : document,
-						true
+						context && context.nodeType ? context.ownerDocument || context : document,//指定根节点
+						true // 默认为false，能添加script标签，注意标签反斜杠要转义
 					) );
 
 					// HANDLE: $(html, props)
@@ -177,8 +187,8 @@ jQuery.fn = jQuery.prototype = {
 					if ( rsingleTag.test( match[1] ) && jQuery.isPlainObject( context ) ) {// 满足单标签，并且必须是一个自变量
 						for ( match in context ) {// 对json进行 循环
 							// Properties of context are called as methods if possible
-							if ( jQuery.isFunction( this[ match ] ) ) {
-								this[ match ]( context[ match ] );
+							if ( jQuery.isFunction( this[ match ] ) ) {// 当有html()方法的时候
+								this[ match ]( context[ match ] );// 对html进行操作 eg：this.html('aa');
 
 							// ...and otherwise set as attributes
 							} else {
@@ -187,10 +197,11 @@ jQuery.fn = jQuery.prototype = {
 						}
 					}
 
-					return this;
+					return this;// 返回对象
 
 				// HANDLE: $(#id)
 				// id的操作
+				// else 选择id
 				} else {
 					elem = document.getElementById( match[2] );
 
@@ -217,20 +228,20 @@ jQuery.fn = jQuery.prototype = {
 			// HANDLE: $(expr, $(...))
 			// 当执行上下文不存在时或是一个jquery对象 eg:document  $(document)
 			} else if ( !context || context.jquery ) {
-				return ( context || rootjQuery ).find( selector );
+				return ( context || rootjQuery ).find( selector );// 根节点find选择器 eg:$(document).find('ul li.wrap');
 
 			// HANDLE: $(expr, context)
 			// (which is just equivalent to: $(context).find(expr)
 			} else {
-				return this.constructor( context ).find( selector );
+				return this.constructor( context ).find( selector );//不是jquery对象的时候 eg: jQuery(document).find();
 			}
 
 		// HANDLE: $(DOMElement)
 		// 传dom元素 eg: $(this) $(document)
 
-		} else if ( selector.nodeType ) {
+		} else if ( selector.nodeType ) {// 看选择到的节点是否有nodetype
 			this.context = this[0] = selector;//选择到得节点赋到json的第0个元素上
-			this.length = 1;
+			this.length = 1;// 改变json的长度
 			return this;
 
 		// HANDLE: $(function)
@@ -238,7 +249,7 @@ jQuery.fn = jQuery.prototype = {
 		// 传函数function eg: $(function(){})
 		//简写的方式最终还是调用的$(document).ready(function(){});
 		} else if ( jQuery.isFunction( selector ) ) {
-			return rootjQuery.ready( selector );
+			return rootjQuery.ready( selector ); // rootjQuery 就是document
 		}
 
 		if ( selector.selector !== undefined ) {// 传参是不是jquery对象
@@ -249,14 +260,20 @@ jQuery.fn = jQuery.prototype = {
 		return jQuery.makeArray( selector, this );
 		//makeArray 把类数组转成真正数组
 		/*
-
-		*/
+		 * $(function(){
+		 *	var aDiv = document.getElemengtByTagName('div');
+		 *	aDiv.push(); // error 不是数组
+		 *	$.makeArray(aDiv);
+		 * })
+		 */
 	},
 
 	// Start with an empty selector
+	// 存选择到的一个元素的字符串的形式
 	selector: "",
 
 	// The default length of a jQuery object is 0
+	// length为json的属性，默认值0
 	length: 0,
 
 	// 转换成数组
@@ -275,13 +292,13 @@ jQuery.fn = jQuery.prototype = {
 			this.toArray() :
 
 			// Return just the object
-			( num < 0 ? this[ this.length + num ] : this[ num ] );
+			( num < 0 ? this[ this.length + num ] : this[ num ] );// 支持正负数的写法
 	},
 
 	// Take an array of elements and push it onto the stack
 	// (returning the new matched element set)
 	// 把一个数组元素压入栈，返回新的匹配元素集，内部方法，用于生成新的jquery对象。
-	pushStack: function( elems ) {
+	pushStack: function( elems ) {// jquery对象的入栈处理
 
 		// Build a new jQuery matched element set
 		// 创建一个新的jquery匹配元素集
@@ -301,11 +318,11 @@ jQuery.fn = jQuery.prototype = {
 	// (You can seed the arguments with an array of args, but this is
 	// only used internally.)
 	// 为每个匹配的元素执行回调。你可以传一个数组参数args，但是这是在内部使用的。
-	each: function( callback, args ) {
-		return jQuery.each( this, callback, args );
+	each: function( callback, args ) { // 遍历集合
+		return jQuery.each( this, callback, args );// 返回jquery工具的each方法
 	},
 
-	ready: function( fn ) {
+	ready: function( fn ) {// dom加载的接口
 		// Add the callback
 		// jQuery原型上添加dom ready事件回调函数到队列（注册在Deferred对象上）
 		jQuery.ready.promise().done( fn );
@@ -318,16 +335,16 @@ jQuery.fn = jQuery.prototype = {
 		return this.pushStack( core_slice.apply( this, arguments ) );
 	},
 
-	first: function() {
+	first: function() {// 集合的第一项
 		return this.eq( 0 );
 	},
 
-	last: function() {
+	last: function() {// 集合的最后一项
 		return this.eq( -1 );
 	},
 
 	// 获取匹配的某个jquery对象，返回的时jquery对象。
-	eq: function( i ) {
+	eq: function( i ) {// 集合的指定项
 		var len = this.length,
 			j = +i + ( i < 0 ? len : 0 );
 		return this.pushStack( j >= 0 && j < len ? [ this[j] ] : [] );
