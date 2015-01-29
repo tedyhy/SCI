@@ -1113,29 +1113,49 @@
 	// The root path to use for id2uri parsing
 	// If loaderUri is `http://test.com/libs/seajs/[??][seajs/1.2.3/]sea.js`, the
 	// baseUri should be `http://test.com/libs/`
+	// 从seajs加载路径获取base路径。
+	// 如果seajs加载路径如以下路径：
+	/* 
+		`http://test.com/libs/seajs/sea.js`
+		`http://test.com/libs/seajs/1.2.3/sea.js`
+		`http://test.com/libs/seajs/seajs/1.2.3/sea.js`
+		`http://test.com/libs/??seajs/sea.js`
+		`http://test.com/libs/??seajs/1.2.3/sea.js`
+		`http://test.com/libs/??seajs/seajs/1.2.3/sea.js`
+		`/libs/seajs/sea.js`
+		...
+	*/
 	data.base = (loaderDir.match(BASE_RE) || ["", loaderDir])[1]
 
 	// The loader directory
+	// 当前seajs加载目录。
 	data.dir = loaderDir
 
 	// The current working directory
+	// 当前工作目录。
 	data.cwd = cwd
 
 	// The charset for requesting files
+	// 默认字符集为 "utf-8"。
 	data.charset = "utf-8"
 
 	// Modules that are needed to load before all other modules
+	// 预加载模块，需要在其他所有模块加载之前预先加载的模块。
+	// 这里是默认加载的模块，如：`seajs-xxx`。
 	data.preload = (function() {
 		var plugins = []
 
 		// Convert `seajs-xxx` to `seajs-xxx=1`
 		// NOTE: use `seajs-xxx=1` flag in uri or cookie to preload `seajs-xxx`
+		// 将uri中的 `seajs-xxx` 转换成 `seajs-xxx=1`，从而利用uri和cookie中的配置信息预加载模块。
 		var str = location.search.replace(/(seajs-\w+)(&|$)/g, "$1=1$2")
 
 		// Add cookie string
+		// 加上cookie信息
 		str += " " + doc.cookie
 
 		// Exclude seajs-xxx=0
+		// 排除 `seajs-xxx=0` 的情况
 		str.replace(/(seajs-\w+)=1/g, function(m, name) {
 			plugins.push(name)
 		})
@@ -1148,37 +1168,45 @@
 	// data.vars - The {xxx} variables in module id
 	// data.map - An array containing rules to map module uri
 	// data.debug - Debug mode. The default value is false
-
+	// 设置一些配置信息，如：data.alias、data.paths、data.vars、data.map、data.preload、data.debug等。
 	seajs.config = function(configData) {
 
+		// 遍历配置信息
 		for (var key in configData) {
-			var curr = configData[key]
-			var prev = data[key]
+			var curr = configData[key] // 当前配置信息
+			var prev = data[key] // 默认配置信息
 
 			// Merge object config such as alias, vars
+			// 合并“对象”配置，如：alias、paths、vars
 			if (prev && isObject(prev)) {
 				for (var k in curr) {
-					prev[k] = curr[k]
+					prev[k] = curr[k] // 覆盖之前默认配置信息
 				}
 			} else {
 				// Concat array config such as map, preload
+				// 如果是数组，则联合数组配置信息，如：map、preload。
 				if (isArray(prev)) {
 					curr = prev.concat(curr)
 				}
 				// Make sure that `data.base` is an absolute path
+				// 确保 `data.base` 是一个绝对路径。
 				else if (key === "base") {
 					// Make sure end with "/"
+					// 确保路径以 "/" 结尾。
 					if (curr.slice(-1) !== "/") {
 						curr += "/"
 					}
+					// 把当前路径解析成绝对路径。
 					curr = addBase(curr)
 				}
 
 				// Set config
+				// 覆盖之前配置信息
 				data[key] = curr
 			}
 		}
 
+		// 触发 "config" 事件。
 		emit("config", configData)
 		return seajs
 	}
@@ -1199,13 +1227,14 @@ window.seajs
 		|-paths: {}
 		|-vars: {}
 		|-map: []
+		|-preload: []
 		|-base: ""
 		|-dir: ""
 		|-cwd: ""
 		|-charset: "utf-8"
-		|-preload: []
 		|-fetchedList
 		|-cid
+		|-debug
 	|-on
 	|-off
 	|-emit
