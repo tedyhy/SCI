@@ -805,9 +805,11 @@
 		var mod = this
 		var uri = mod.uri
 
+		// 标记当前模块状态为“正在拉取”
 		mod.status = STATUS.FETCHING
 
 		// Emit `fetch` event for plugins such as combo plugin
+		// 触发 `fetch` 事件。
 		var emitData = {
 			uri: uri
 		}
@@ -829,6 +831,7 @@
 		callbackList[requestUri] = [mod]
 
 		// Emit `request` event for plugins such as text plugin
+		// 触发 `request` 事件
 		emit("request", emitData = {
 			uri: uri,
 			requestUri: requestUri,
@@ -864,29 +867,37 @@
 	}
 
 	// Execute a module
+	// 执行模块
 	Module.prototype.exec = function() {
 		var mod = this
 
 		// When module is executed, DO NOT execute it again. When module
 		// is being executed, just return `module.exports` too, for avoiding
 		// circularly calling
+		// 如果当前模块已经被执行过，则不要重复执行，仅仅返回接口 `module.exports` 即可，避免重复循环执行。
 		if (mod.status >= STATUS.EXECUTING) {
 			return mod.exports
 		}
 
+		// 标记当前模块状态为“正在被执行”。
 		mod.status = STATUS.EXECUTING
 
 		// Create require
+		// 创建接口，包括：require、exports、module。
 		var uri = mod.uri
 
+		// 如：var $ = require("lib/jquery");
 		function require(id) {
+			// 返回依赖模块接口（加载依赖模块并执行）。
 			return Module.get(require.resolve(id)).exec()
 		}
 
+		// id2uri接口
 		require.resolve = function(id) {
 			return Module.resolve(id, uri)
 		}
 
+		// 异步加载依赖模块，代码执行到这个地方才会去加载依赖模块并执行。
 		require.async = function(ids, callback) {
 			Module.use(ids, callback, uri + "_async_" + cid())
 			return require
@@ -895,6 +906,7 @@
 		// Exec factory
 		var factory = mod.factory
 
+		// 执行当前模块函数体返回当前模块提供的接口exports。
 		var exports = isFunction(factory) ?
 			factory(require, mod.exports = {}, mod) :
 			factory
@@ -904,12 +916,14 @@
 		}
 
 		// Reduce memory leak
+		// 删除函数引用，减少内存消耗
 		delete mod.factory
 
 		mod.exports = exports
-		mod.status = STATUS.EXECUTED
+		mod.status = STATUS.EXECUTED // 标记模块状态为“已执行完毕”
 
 		// Emit `exec` event
+		// 触发 `exec` 事件
 		emit("exec", mod)
 
 		return exports
@@ -1094,10 +1108,12 @@
 	data.cid = cid
 
 	seajs.require = function(id) {
+		// 根据id获取模块数据
 		var mod = Module.get(Module.resolve(id))
+		// 如果模块状态为“当前模块所依赖的所有模块都加载完毕”时。
 		if (mod.status < STATUS.EXECUTING) {
-			mod.onload()
-			mod.exec()
+			mod.onload() // 执行当前模块相关回调。
+			mod.exec() // 执行当前模块并生成当前模块提供的接口。
 		}
 		return mod.exports
 	}
