@@ -12,7 +12,7 @@
 	// 暴露全局变量 seajs => window.seajs = {}。
 	var seajs = global.seajs = {
 		// The current version of Sea.js being used
-		// 当前版本
+		// seajs当前版本
 		version: "2.2.1"
 	}
 
@@ -63,14 +63,15 @@
 	// Remove event. If `callback` is undefined, remove all callbacks for the
 	// event. If `event` and `callback` are both undefined, remove all callbacks
 	// for all events
-	// 移除绑定的事件。
-	// 1.`callback`未定义，则移除此事件所有回调。
-	// 2.`event` && `callback` 都未定义，则移除事件缓存里所有回调。
+	// 移除绑定的事件，如下两种情况：
+	// 1.`callback`未定义，则清空事件name相关所有回调。
+	// 2.`event` && `callback` 都未定义，则清空事件缓存里所有回调。
 	seajs.off = function(name, callback) {
 		// Remove *all* events
 		// 即：(!name && !callback)
+		// 如果没有事件name和回调callback，则清空事件缓存里所有回调。
 		if (!(name || callback)) {
-			events = data.events = {} // 清空事件缓存里所有回调
+			events = data.events = {}
 			return seajs
 		}
 
@@ -78,14 +79,14 @@
 		var list = events[name]
 		if (list) {
 			if (callback) {
-				// 如果有回调参数，则遍历回调集合查找回调参数，并将此回调参数从集合中移除。
+				// 如果有回调参数callback，则遍历回调集合查找回调参数callback，并将此回调参数callback从集合中移除。
 				for (var i = list.length - 1; i >= 0; i--) {
 					if (list[i] === callback) {
-						list.splice(i, 1)
+						list.splice(i, 1) // 移除动作
 					}
 				}
 			} else {
-				// 如果木有回调参数，则删除与事件name相关的回调集合。
+				// 如果木有回调参数callback，则清空与事件name相关的回调集合。
 				delete events[name]
 			}
 		}
@@ -162,15 +163,15 @@
 	// Normalize an id
 	// normalize("path/to/a") ==> "path/to/a.js"
 	// NOTICE: substring is faster than negative slice and RegExp
-	// 通过id找到相应js或css文件路径（path）
+	// 为id添加后缀名（通过id找到相应js或css文件路径）
 	// 如：normalize("path/to/a") ==> "path/to/a.js"
 	// 注意：substring 方法要比 slice和RegExp 效率要高。
 	function normalize(path) {
 		var last = path.length - 1 // 取id最后一个字符的索引
-		var lastC = path.charAt(last) // 取id最后一个字符，（path[last]在ie7有bug）因此使用charAt方法获取。
+		var lastC = path.charAt(last) // 取id最后一个字符（path[last]在ie7有bug，因此使用charAt方法获取）。
 
 		// If the uri ends with `#`, just return it without '#'
-		// 如果最后一个字符为`#`，则去掉`#`字符，返回id。
+		// 如果最后一个字符为`#`，则去掉`#`字符。
 		if (lastC === "#") {
 			return path.substring(0, last)
 		}
@@ -263,7 +264,7 @@
 		var map = data.map
 		var ret = uri
 
-		// 如果有map缓存，则遍历处理。
+		// 如果有map缓存，则遍历处理（顺序为递增）。
 		if (map) {
 			for (var i = 0, len = map.length; i < len; i++) {
 				var rule = map[i]
@@ -275,7 +276,7 @@
 					uri.replace(rule[0], rule[1])
 
 				// Only apply the first matched rule
-				// 如果替换后的ret与参数uri值不同，则跳出for循环。即：参数uri只应用map中的第一个匹配的规则。
+				// 如果替换后的ret与参数uri值不同，则跳出for循环。即：参数uri只应用map中的第一个匹配的且生效的规则。
 				if (ret !== uri) break
 			}
 		}
@@ -286,9 +287,10 @@
 
 	// 如："//e" 或 ":/"
 	var ABSOLUTE_RE = /^\/\/.|:\//
-	// 如："http://example.com/"
+	// 如："http://example.com/"、"//example.com/"、"file:///"等。
 	var ROOT_DIR_RE = /^.*?\/\/.*?\//
 
+	// 为id添加base地址。
 	function addBase(id, refUri) {
 		var ret
 		var first = id.charAt(0) // 取第一个字符。
@@ -302,10 +304,13 @@
 		// Relative
 		// 如果是相对路径，如："./app/" 或者 "../app/"
 		else if (first === ".") {
+			// 如果有参数 "refUri"，则取其目录作为当前id所在的目录；
+			// 如果木有参数 "refUri"，则取当前页面所在的目录作为当前id所在的目录。
+			// 最后获取当前id的真实路径。
 			ret = realpath((refUri ? dirname(refUri) : data.cwd) + id)
 		}
 		// Root
-		// 如果是根目录，如："/a/b"
+		// 如果是相对根目录，如："/a/b"
 		else if (first === "/") {
 			// "http://example.com/a/b" => ["http://example.com/"]
 			var m = data.cwd.match(ROOT_DIR_RE)
@@ -313,11 +318,14 @@
 			ret = m ? m[0] + id.substring(1) : id
 		}
 		// Top-level
+		// 如果相对于基目录，如：data.base = "http://example.com/path/to/base/"。
+		// 注意：基目录最后一定要带上斜线。
 		else {
 			ret = data.base + id
 		}
 
 		// Add default protocol when uri begins with "//"
+		// 为ret添加默认协议。
 		// 当 uri 以"//"开头，则增加默认协议。如："//example.com/js/app/"
 		if (ret.indexOf("//") === 0) {
 			ret = location.protocol + ret
@@ -331,10 +339,10 @@
 		if (!id) return ""
 
 		// 依次过滤分析id，别名 > 路径 > 变量，最后为id添加文件后缀（".js"或者".css"）。
-		id = parseAlias(id)
-		id = parsePaths(id)
-		id = parseVars(id)
-		id = normalize(id) // （".js"或者".css"）
+		id = parseAlias(id) // 别名
+		id = parsePaths(id) // 路径
+		id = parseVars(id) // 变量
+		id = normalize(id) // 为id添加后缀".js"或者".css"
 
 		// 依据参数refUri为id添加base地址。
 		var uri = addBase(id, refUri)
@@ -346,9 +354,9 @@
 
 
 	var doc = document
-	// 从document.URL里获取目录名称。
+	// 从 document.URL 获取当前页面所在目录的名称。
 	// 如："http://test.com/a/b/c.js?t=123#xx/zz" => "http://test.com/a/b/"。
-	// 变量 cwd 即为当前页面工作目录。
+	// 变量 cwd 为当前页面所在目录。
 	var cwd = dirname(doc.URL)
 	// 获取当前页面里所有script脚本节点。
 	var scripts = doc.scripts
@@ -356,12 +364,12 @@
 	// Recommend to add `seajsnode` id for the `sea.js` script element
 	// 推荐为`sea.js`脚本元素添加属性 id = `seajsnode`。
 	// 如果木有 id = `seajsnode` 的脚本节点，则从 scripts 集合中取最后一个脚本元素，
-	// 这个元素就是加载器脚本。
+	// 这个元素就是加载器seajs脚本。
 	var loaderScript = doc.getElementById("seajsnode") ||
 		scripts[scripts.length - 1]
 
 	// When `sea.js` is inline, set loaderDir to current working directory
-	// 获取加载器所在目录，如果木有，则默认为当前页面工作目录 cwd。
+	// 获取加载器所在目录，如果木有，则默认为当前页面所在目录 cwd。
 	var loaderDir = dirname(getScriptAbsoluteSrc(loaderScript) || cwd)
 
 	// 获取节点的绝对路径。
@@ -1148,7 +1156,7 @@
 	data.dir = loaderDir
 
 	// The current working directory
-	// 当前工作目录。
+	// 当前工作目录（当前页面所在的目录）。
 	data.cwd = cwd
 
 	// The charset for requesting files
@@ -1229,6 +1237,7 @@
 
 })(this);
 
+
 /**
  * Sea.js 2.2.1 结构图
  */
@@ -1237,12 +1246,13 @@ window.seajs
 	|-version: "2.2.1"
 	|-data
 		|-events
-			|-event1: [],
-			|-event2: []
-		|-alias: {}
-		|-paths: {}
-		|-vars: {}
-		|-map: []
+			|-event1: [fn1, fn2, ...],
+			|-event2: [fn1, fn2, ...],
+			|-...
+		|-alias: {'jquery': 'jquery/jquery/1.10.1/jquery'}
+		|-paths: {'gallery': 'https://a.alipayobjects.com/gallery'}
+		|-vars: {'locale': 'zh-cn'}
+		|-map: [ ['http://example.com/js/app/', 'http://localhost/js/app/'] ]
 		|-preload: []
 		|-base: ""
 		|-dir: ""
