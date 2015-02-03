@@ -380,6 +380,7 @@
 			// 参考 http://blog.csdn.net/fudesign2008/article/details/7620985
 			// 参考 http://www.jb51.net/article/28114.htm
 			// object.getAttribute(strAttributeName, lFlags)，lFlags = 4 为ie6/7下获取完整的url链接地址。
+			// 如：<script type="text/javascript" src="/a/b/c"></script>，"/a/b/c" => "http://example.com/a/b/c/"。
 			node.getAttribute("src", 4)
 	}
 
@@ -1038,43 +1039,55 @@
 	}
 
 	// Get an existed module or create a new one
-	// 根据 uri 从模块缓存器中取一个存在的模块，或者创建一个新的模块。
+	// 根据 uri 从模块缓存器中取一个存在的模块（如果木有则创建一个新的模块）。
 	// 参数 deps 为模块依赖。
 	Module.get = function(uri, deps) {
 		return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps))
 	}
 
 	// Use function is equal to load a anonymous module
+	// Module.use 方法相当于加载了一个匿名模块。
+	// 如：Module.use(ids, callback, data.cwd + "_use_" + cid())
 	Module.use = function(ids, callback, uri) {
 		// 调用 Module.get 方法获取 uri 相关模块缓存信息（并根据参数 ids 生成模块依赖）。
 		var mod = Module.get(uri, isArray(ids) ? ids : [ids])
 
+		// 为当前模块添加回调属性（当模块加载完毕后执行）。
 		mod.callback = function() {
 			var exports = []
-			var uris = mod.resolve() // 生成当前模块所依赖的模块集合，作为参数传给回调。
+			var uris = mod.resolve() // 获取当前模块所依赖的模块集合（作为参数传给回调）。
 
-			// 遍历 uri 集合，
+			// 遍历 uris 集合（遍历执行当前模块所依赖的所有模块，将执行结果组成参数集合exports）
 			for (var i = 0, len = uris.length; i < len; i++) {
-				exports[i] = cachedMods[uris[i]].exec()
+				exports[i] = cachedMods[uris[i]].exec() // 执行模块
 			}
 
-			// 如果有回调，则执行回调。作用域为window，参数为每个所依赖模块的执行结果。
+			// 如果有回调，则执行回调。作用域为window，
+			// 参数为集合exports（当前模块所依赖的所有模块集合中每个模块的执行结果）。
+			/* 例如：
+				seajs.use(["jquery", "underscore"], function($, _){
+					// 此处作用域为window，即this指向window。
+					console.log($, _);
+				});
+			 */
+			
+			 */
 			if (callback) {
 				callback.apply(global, exports)
 			}
 
-			// 执行完回调后，删除当前模块回调引用。
+			// 执行完当前模块的回调属性后，删除其回调属性的引用。
 			delete mod.callback
 		}
 
-		// 加载当前模块
+		// 调用当前模块原型方法load加载当前模块所依赖的所有模块。
 		mod.load()
 	}
 
 	// Load preload modules before all other modules
 	// 在其他模块之前预先加载模块
 	Module.preload = function(callback) {
-		// 取配置项中预先加载的模块集合
+		// 取配置项中需要预先加载的模块集合
 		var preloadMods = data.preload
 		var len = preloadMods.length
 		
@@ -1082,13 +1095,15 @@
 			// 如果有预先加载的模块，则加载这些模块。
 			Module.use(preloadMods, function() {
 				// Remove the loaded preload modules
+				// 从 data.preload 中移除已经被加载过的预加载模块。
 				preloadMods.splice(0, len)
 
 				// Allow preload modules to add new preload modules
+				// 允许向 data.preload 中增加新的预加载模块。
 				Module.preload(callback)
 			}, data.cwd + "_preload_" + cid())
 		} else {
-			// 如果没有预先加载的模块，则只执行回调。
+			// 如果配置中没有预先加载的模块，则只需执行回调callback。
 			callback()
 		}
 	}
@@ -1097,6 +1112,7 @@
 	// Public API
 	// 公共接口方法 use，seajs.use 用于调用执行模块。
 	seajs.use = function(ids, callback) {
+		// 调用 Module.preload 方法预加载依赖模块。
 		Module.preload(function() {
 			Module.use(ids, callback, data.cwd + "_use_" + cid())
 		})
