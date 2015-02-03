@@ -304,7 +304,7 @@
 		// Relative
 		// 如果是相对路径，如："./app/" 或者 "../app/"
 		else if (first === ".") {
-			// 如果有参数 "refUri"，则取其目录作为当前id所在的目录；
+			// 如果有参数 "refUri"，则取其目录作为当前id所在的目录，如："http://seajs.org/docs/_use_0"。
 			// 如果木有参数 "refUri"，则取当前页面所在的目录作为当前id所在的目录。
 			// 最后获取当前id的真实路径。
 			ret = realpath((refUri ? dirname(refUri) : data.cwd) + id)
@@ -647,7 +647,7 @@
 		// 1 - 模块正在被拉取中（根据`module.uri`加载模块）。
 		FETCHING: 1,
 		// 2 - The meta data has been saved to cachedMods
-		// 2 - 模块元数据已经被保存到缓存器中
+		// 2 - 模块元数据已经被保存到缓存器（seajs.cache）中
 		SAVED: 2,
 		// 3 - The `module.dependencies` are being loaded
 		// 3 - 模块依赖正在被加载
@@ -666,7 +666,7 @@
 
 	// 模块构造器
 	function Module(uri, deps) {
-		// 模块参考uri
+		// 模块的精确链接地址
 		this.uri = uri
 		// 模块依赖
 		this.dependencies = deps || []
@@ -685,7 +685,7 @@
 	}
 
 	// Resolve module.dependencies
-	// 解决模块依赖，获取当前模块所依赖的模块uri集合。
+	// 获取当前模块的所有依赖模块（获取当前模块所依赖的模块uri集合）。
 	Module.prototype.resolve = function() {
 		var mod = this // 当前模块引用
 		var ids = mod.dependencies // 当前模块依赖
@@ -700,7 +700,7 @@
 	}
 
 	// Load module.dependencies and fire onload when all done
-	// 加载模块依赖，当所有依赖都加载完则触发 `onload` 事件。
+	// 加载当前模块的所有依赖模块，当所有依赖模块都加载完则触发 `onload` 事件。
 	Module.prototype.load = function() {
 		var mod = this
 
@@ -714,7 +714,7 @@
 		mod.status = STATUS.LOADING
 
 		// Emit `load` event for plugins such as combo plugin
-		// 触发 `load` 事件，主要是配合插件使用，如："combo" 插件。
+		// 触发模块 `load` 事件，主要是配合插件使用，如："combo" 插件。
 		// 获取当前模块所依赖的模块 uris。
 		var uris = mod.resolve()
 		emit("load", uris)
@@ -739,7 +739,7 @@
 			}
 		}
 
-		// 如果当前模块计数 mod._remain === 0，则触发当前模块 `onload` 事件。
+		// 如果当前模块计数 mod._remain === 0，则执行当前模块原型方法onload并返回。
 		if (mod._remain === 0) {
 			mod.onload()
 			return
@@ -1119,26 +1119,31 @@
 		return seajs
 	}
 
+	// CMD规范标示
 	Module.define.cmd = {}
 	// 公共接口方法 define，window.define = Module.define。
-	// define 用于定义一个模块。
+	// define 方法用于定义一个遵循CMD规范的模块。
 	global.define = Module.define
 
 
 	// For Developers
-	// 暴露给开发者。
+	// 将Module构造器暴露给开发者。
 	seajs.Module = Module
+	// 用于存储已经拉取过的模块列表。
 	data.fetchedList = fetchedList
+	// 模块唯一标示。
 	data.cid = cid
 
+	// 加载并执行模块
 	seajs.require = function(id) {
-		// 根据id获取模块数据
+		// 根据id（通过id获取uri）获取模块数据
 		var mod = Module.get(Module.resolve(id))
 		// 如果模块状态为“当前模块所依赖的所有模块都加载完毕”时。
 		if (mod.status < STATUS.EXECUTING) {
 			mod.onload() // 执行当前模块相关回调。
 			mod.exec() // 执行当前模块并生成当前模块提供的接口。
 		}
+		// 返回当前模块提供的接口。
 		return mod.exports
 	}
 
