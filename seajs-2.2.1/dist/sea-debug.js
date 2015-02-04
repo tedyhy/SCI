@@ -405,6 +405,7 @@
 	var IS_CSS_RE = /\.css(?:\?|$)/i
 	// 当前正在插入到文档的 script 脚本元素。
 	var currentlyAddingScript
+	// 当前正在处理的脚本。
 	var interactiveScript
 
 	// `onload` event is not supported in WebKit < 535.23 and Firefox < 9.0
@@ -448,7 +449,7 @@
 		// the end of the insert execution, so use `currentlyAddingScript` to
 		// hold current node, for deriving url in `define` call
 		// IE6-8 下，当 script 脚本插入文档的动作结束之后，script 脚本将立即执行。
-		// 所以用`currentlyAddingScript`去保存当前节点元素。
+		// 所以用`currentlyAddingScript`去保存当前正在操作的节点元素。
 		currentlyAddingScript = node
 
 		// ref: #185 & http://dev.jquery.com/ticket/2709
@@ -468,9 +469,9 @@
 		var supportOnload = "onload" in node
 
 		// for Old WebKit and Old Firefox
-		// 加载css文件（老版本的 WebKit && Firefox 或者 不支持`onload`事件）。
+		// 加载css文件（老版本的浏览器（WebKit && Firefox） 或者 节点元素不支持`onload`事件）。
 		if (isCSS && (isOldWebKit || !supportOnload)) {
-			// 采用定时拉取 css 文件。
+			// 采用定时持续拉取 css 文件。
 			setTimeout(function() {
 				// pollCss 方法测试 css 文件是否加载完毕，如果没有加载完毕，则递归调用此方法直到加载完毕。
 				pollCss(node, callback)
@@ -480,14 +481,14 @@
 
 		// 加载文件（js/css文件）时，如果支持`onload`事件。
 		if (supportOnload) {
-			node.onload = onload
+			node.onload = onload // 节点资源加载完毕调用onload方法处理后续。
 			node.onerror = function() {
 				// 文件加载失败，触发`error`事件。
 				emit("error", {
 					uri: url,
 					node: node
 				})
-				onload()
+				onload() // 调用onload方法处理后续。
 			}
 			// IE 节点元素不支持`onload`事件。
 		} else {
@@ -495,7 +496,7 @@
 			node.onreadystatechange = function() {
 				// 监听文件加载状态。
 				if (/loaded|complete/.test(node.readyState)) {
-					onload()
+					onload() // 调用onload方法处理后续。
 				}
 			}
 		}
@@ -503,7 +504,7 @@
 		// `onload`事件回调。先清理变量减少内存，后执行回调。
 		function onload() {
 			// Ensure only run once and handle memory leak in IE
-			// 确保此回调只运行一次，运行后将回调置空避免IE下内存泄露。
+			// 确保此回调只运行一次，运行后将回调置空，避免IE下内存泄露。
 			node.onload = node.onerror = node.onreadystatechange = null
 
 			// Remove the script to reduce memory leak
@@ -517,7 +518,7 @@
 			// 删除node变量引用，避免内存泄露。
 			node = null
 
-			// 执行回调。
+			// 当节点资源加载完毕，执行回调。
 			callback()
 		}
 	}
@@ -638,8 +639,11 @@
 	// 匿名元数据
 	var anonymousMeta
 
+	// 正在被拉取的模块集合
 	var fetchingList = {}
+	// 已经被拉取完毕的模块集合
 	var fetchedList = {}
+	// 回调集合
 	var callbackList = {}
 
 	// 模块状态
@@ -651,7 +655,7 @@
 		// 2 - 模块元数据已经被保存到缓存器（seajs.cache）中
 		SAVED: 2,
 		// 3 - The `module.dependencies` are being loaded
-		// 3 - 模块依赖正在被加载
+		// 3 - 模块的依赖模块正在被加载
 		LOADING: 3,
 		// 4 - The module are ready to execute
 		// 4 - 模块准备好即将执行
@@ -671,7 +675,7 @@
 		this.uri = uri
 		// 模块依赖
 		this.dependencies = deps || []
-		// 模块接口
+		// 模块提供的接口集
 		this.exports = null
 		// 模块状态，默认为0
 		this.status = 0
@@ -686,7 +690,7 @@
 	}
 
 	// Resolve module.dependencies
-	// 获取当前模块的所有依赖模块（获取当前模块所依赖的模块uri集合）。
+	// 获取当前模块的所有依赖模块（获取当前模块所依赖的所有模块的uri集合）。
 	Module.prototype.resolve = function() {
 		var mod = this // 当前模块引用
 		var ids = mod.dependencies // 当前模块依赖
@@ -694,7 +698,7 @@
 
 		// 遍历当前模块所依赖模块集合
 		for (var i = 0, len = ids.length; i < len; i++) {
-			// 将 id 转换成 uri 后入栈
+			// 调用 Module.resolve 方法将 id 转换成 uri（模块的精确地址链接） 后入栈。
 			uris[i] = Module.resolve(ids[i], mod.uri)
 		}
 		return uris
@@ -706,17 +710,18 @@
 		var mod = this
 
 		// If the module is being loaded, just wait it onload call
-		// 如果当前模块状态为大于等于“正在被加载”，则返回。
+		// 如果当前模块状态为大于等于“当前模块所依赖的模块正在被加载”，则返回。
+		// 即：当前模块所依赖的模块“正在被加载”或“已经加载完毕”。
 		if (mod.status >= STATUS.LOADING) {
 			return
 		}
 
-		// 当前模块状态标记为“依赖模块正在被加载”
+		// 把当前模块的状态标记为“当前模块所依赖的模块正在被加载”。
 		mod.status = STATUS.LOADING
 
 		// Emit `load` event for plugins such as combo plugin
 		// 触发模块 `load` 事件，主要是配合插件使用，如："combo" 插件。
-		// 获取当前模块所依赖的模块 uris。
+		// 获取当前模块所依赖的模块集 uris。
 		var uris = mod.resolve()
 		emit("load", uris)
 
@@ -725,41 +730,46 @@
 		var m
 
 		// Initialize modules and register waitings
+		// 遍历当前模块所依赖的模块uri，加载模块依赖，并注册依赖模块的计数 m._waitings。
 		for (var i = 0; i < len; i++) {
-			// 从模块缓存器中取m模块信息，如果木有，则创建m模块信息缓存。
+			// 从模块缓存器（seajs.cache）中取m模块信息，如果木有，则创建m模块信息缓存。
 			m = Module.get(uris[i])
 
-			// 如果m模块状态为：“正在被加载中”，则处理当前模块与所依赖m模块间关系。
+			// 如果m模块状态为：“m模块的依赖模块正在被加载中”，则处理当前模块与所依赖m模块间关系。
 			if (m.status < STATUS.LOADED) {
 				// Maybe duplicate: When module has dupliate dependency, it should be it's count, not 1
 				// 可能有重复依赖。所以m模块与当前模块有重复依赖关系，应该累加计数，而不是仅仅置为1。
+				// m._waitings[mod.uri]，即：mod模块（当前模块）依赖m模块。
 				m._waitings[mod.uri] = (m._waitings[mod.uri] || 0) + 1
 			} else {
-				// 如果m模块状态为：“加载完毕”，则处理当前模块计数 mod._remain。
+				// 如果m模块状态为：“m模块所依赖的模块都已经加载完毕”，则处理当前模块计数 mod._remain。
 				mod._remain--
 			}
 		}
 
-		// 如果当前模块计数 mod._remain === 0，则执行当前模块原型方法onload并返回。
+		// 如果mod模块（当前模块）的计数 mod._remain === 0，则执行当前模块原型方法onload并返回。
+		// 即：当前模块所依赖的所有模块都已经加载完毕，此时可以执行当前模块的onload事件，用来处理后续。
 		if (mod._remain === 0) {
 			mod.onload()
 			return
 		}
 
 		// Begin parallel loading
+		// 如果mod模块（当前模块）还有一些依赖模块尚未加载完毕，则持续加载这些模块。
 		// 开始并行加载模块。
-		// 设置请求模块缓存器。
+		// 设置请求依赖模块缓存器。
 		var requestCache = {}
 
 		// 遍历当前模块所依赖的模块集合。
 		for (i = 0; i < len; i++) {
-			// 获取m模块缓存信息。
+			// 从模块缓存器（seajs.cache）中试图获取m模块缓存信息（木有m模块缓存信息则创建m模块并缓存其信息）。
 			m = cachedMods[uris[i]]
 
-			// 如果m模块状态为：小于“正在被拉取中”，则调用模块fetch方法去拉取模块。
+			// 如果m模块状态为“正在被拉取中”，则调用m模块的原型方法fetch去拉取模块。
 			if (m.status < STATUS.FETCHING) {
 				m.fetch(requestCache)
-			// 如果m模块状态为：“模块已加载完毕，准备好执行”，则调用m模块load方法迭代加载其依赖的模块。
+			// 如果m模块状态为：“m模块已加载完毕并且m模块的信息已被缓存到模块缓存器中”，
+			// 则调用m模块load方法迭代加载m模块所依赖的所有模块。
 			} else if (m.status === STATUS.SAVED) {
 				m.load()
 			}
@@ -777,10 +787,10 @@
 	// 当前模块所依赖的模块都加载完毕后将调用此方法。
 	Module.prototype.onload = function() {
 		var mod = this
-		// 将当前模块的状态置为“已加载完毕，等待执行”。
+		// 将当前模块的状态置为“当前模块所有依赖的模块都已加载完毕，等待执行”。
 		mod.status = STATUS.LOADED
 
-		// 如果当前模块有属性callback，则执行回调callback。
+		// 如果当前模块有回调属性callback，则执行回调callback。
 		if (mod.callback) {
 			mod.callback()
 		}
@@ -790,12 +800,14 @@
 		var waitings = mod._waitings
 		var uri, m
 
-		// 遍历依赖模块。
+		// 遍历那些模块（那些依赖当前模块的模块）。
 		for (uri in waitings) {
 			if (waitings.hasOwnProperty(uri)) {
 				// 获取m模块的缓存信息。
 				m = cachedMods[uri]
+				// 处理m模块计数 m._remain。
 				m._remain -= waitings[uri]
+				// 如果m模块所依赖的模块都已经加载完毕，则执行m模块原型方法onload。
 				if (m._remain === 0) {
 					m.onload()
 				}
@@ -815,7 +827,7 @@
 		var mod = this
 		var uri = mod.uri
 
-		// 标记当前模块状态为“正在拉取”
+		// 标记当前模块状态为“正在被拉取”。
 		mod.status = STATUS.FETCHING
 
 		// Emit `fetch` event for plugins such as combo plugin
@@ -827,16 +839,23 @@
 		var requestUri = emitData.requestUri || uri
 
 		// Empty uri or a non-CMD module
+		// 如果没有requestUri或者uri，或者fetchedList缓存器中标明requestUri已经被来取过了。
+		// 则去加载当前模块所依赖的所有模块。
+		// 即：fetchedList[requestUri] === true。
 		if (!requestUri || fetchedList[requestUri]) {
 			mod.load()
 			return
 		}
 
+		// 如果fetchingList缓存器中有requestUri，则将当前模块添加到callbackList[requestUri]中。
+		// 即：callbackList[requestUri] = [mod, ...]。
 		if (fetchingList[requestUri]) {
 			callbackList[requestUri].push(mod)
 			return
 		}
 
+		// 如果fetchingList缓存器中木有requestUri，则将requestUri加入fetchingList缓存器。
+		// 将当前模块加入callbackList[requestUri]中。
 		fetchingList[requestUri] = true
 		callbackList[requestUri] = [mod]
 
@@ -849,27 +868,37 @@
 			charset: data.charset
 		})
 
+		// 向requestCache中添加方法sendRequest。
+		// 如果有参数requestCache，则requestCache[emitData.requestUri] = sendRequest。
+		// 如果木有参数requestCache，则执行方法sendRequest去请求加载emitData.requestUri模块。
 		if (!emitData.requested) {
 			requestCache ?
 				requestCache[emitData.requestUri] = sendRequest :
 				sendRequest()
 		}
 
+		// 发起请求
 		function sendRequest() {
+			// seajs.request = request，即：调用request方法加载emitData.requestUri模块。
 			seajs.request(emitData.requestUri, emitData.onRequest, emitData.charset)
 		}
 
+		// seajs.request方法的onRequest回调方法。
 		function onRequest() {
+			// 从fetchingList集合中删除requestUri模块。
 			delete fetchingList[requestUri]
+			// 在fetchedList集合中将requestUri模块标记为“被拉取过”状态。
 			fetchedList[requestUri] = true
 
 			// Save meta data of anonymous module
+			// 如果是匿名模块，则将匿名模块数据保存到缓存器中。
 			if (anonymousMeta) {
 				Module.save(uri, anonymousMeta)
 				anonymousMeta = null
 			}
 
 			// Call callbacks
+			// 从callbackList集合中取requestUri模块相关的模块集合，并遍历加载模块。
 			var m, mods = callbackList[requestUri]
 			delete callbackList[requestUri]
 			while ((m = mods.shift())) m.load()
@@ -884,7 +913,7 @@
 		// When module is executed, DO NOT execute it again. When module
 		// is being executed, just return `module.exports` too, for avoiding
 		// circularly calling
-		// 如果当前模块已经被执行过，则不要重复执行，仅仅返回接口 `module.exports` 即可，避免重复循环执行。
+		// 如果当前模块已经被执行过，则不要重复执行，仅仅返回接口 `module.exports` 即可，避免重复执行。
 		if (mod.status >= STATUS.EXECUTING) {
 			return mod.exports
 		}
@@ -902,12 +931,14 @@
 			return Module.get(require.resolve(id)).exec()
 		}
 
-		// id2uri接口
+		// id2uri接口，获取模块id的uri地址链接。
+		// 如：var $ = require.resolve("lib/jquery");
 		require.resolve = function(id) {
 			return Module.resolve(id, uri)
 		}
 
-		// 异步加载依赖模块，代码执行到这个地方才会去加载依赖模块并执行。
+		// 异步加载模块，代码执行到这个地方才会去加载模块并执行。
+		// 如：var $ = require.async("lib/jquery");
 		require.async = function(ids, callback) {
 			Module.use(ids, callback, uri + "_async_" + cid())
 			return require
@@ -916,11 +947,13 @@
 		// Exec factory
 		var factory = mod.factory
 
-		// 执行当前模块函数体返回当前模块提供的接口exports。
+		// 如果mod.factory为函数，则执行mod.factory函数，返回当前模块对外提供的接口集exports。
+		// 如果mod.factory不是函数，则直接返回mod.factory，作为当前模块对外提供的接口集exports。
 		var exports = isFunction(factory) ?
 			factory(require, mod.exports = {}, mod) :
 			factory
 
+		// 如果接口集exports未定义，则默认为空对象，即：mod.exports = {}。
 		if (exports === undefined) {
 			exports = mod.exports
 		}
@@ -940,7 +973,7 @@
 	}
 
 	// Resolve id to uri
-	// 将 id 转换成 uri
+	// 将 id 转换成 uri（模块的精确地址链接）
 	Module.resolve = function(id, refUri) {
 		// Emit `resolve` event for plugins such as text plugin
 		// 元数据
@@ -1001,6 +1034,7 @@
 		}
 
 		// Try to derive uri in IE6-9 for anonymous modules
+		// IE6-9中匿名模块的处理
 		if (!meta.uri && doc.attachEvent) {
 			var script = getCurrentScript()
 
@@ -1029,8 +1063,8 @@
 		var mod = Module.get(uri)
 
 		// Do NOT override already saved modules
-		// 如果模块状态小于 STATUS.SAVED ，即处于正在被拉取的状态，则将此模块缓存到模块缓存器中。
-		// 否则不要覆盖已经缓存过的模块信息。
+		// 如果模块状态小于 STATUS.SAVED ，即mod模块处于正在被拉取的状态，则将此模块缓存到模块缓存器中。
+		// 否则不要覆盖已经缓存过的mod模块的模块信息。
 		if (mod.status < STATUS.SAVED) {
 			mod.id = meta.id || uri
 			mod.dependencies = meta.deps || []
@@ -1040,8 +1074,8 @@
 	}
 
 	// Get an existed module or create a new one
-	// 根据 uri 从模块缓存器中取一个存在的模块（如果木有则创建一个新的模块）。
-	// 参数 deps 为模块依赖。
+	// 根据 uri 从模块缓存器（seajs.cache）中取一个存在的模块（如果木有则创建一个新的模块）。
+	// 参数 deps 为此模块依赖。
 	Module.get = function(uri, deps) {
 		return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps))
 	}
