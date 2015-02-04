@@ -370,9 +370,10 @@
 
 	// When `sea.js` is inline, set loaderDir to current working directory
 	// 获取加载器所在目录，如果木有，则默认为当前页面所在目录 cwd。
+	// 如："http://test.com/lib/sea.js" => "http://test.com/lib/"
 	var loaderDir = dirname(getScriptAbsoluteSrc(loaderScript) || cwd)
 
-	// 获取节点的绝对路径。
+	// 获取节点的绝对路径（uri全路径）。
 	function getScriptAbsoluteSrc(node) {
 		return node.hasAttribute ? // non-IE6/7 非ie6/7下。
 			node.src :
