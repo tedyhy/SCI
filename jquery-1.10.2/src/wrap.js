@@ -11,6 +11,7 @@ jQuery.fn.extend({
 			// 用html创建一个元素用来包围选择的jquery对象元素
 			var wrap = jQuery( html, this[0].ownerDocument ).eq(0).clone(true);
 			// 如果选择的jquery对象有父节点，则用insertBefore方法操作：将wrap插入到当前jquery对象元素前边
+			// 参考 http://www.w3school.com.cn/jsref/met_node_insertbefore.asp
 			if ( this[0].parentNode ) {
 				wrap.insertBefore( this[0] );
 			}
