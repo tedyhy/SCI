@@ -383,10 +383,32 @@ jQuery.fn.init.prototype = jQuery.fn;
  * deep == true 是深copy，
  * jQuery.extend({})、jQuery.extend(true) 扩展到jQuery对象上
  * jQuery.extend(true, {}, {}) 后面的对象扩展到第一个对象上
+ * 
+ * add 20150206 flyer
+ * $.extend({ //扩展jquery工具方法
+ *	 fn1: function (){
+ *		alert(1)
+ *	 },
+ *	 fn2: function (){
+ *		alert(2)
+ *	 }
+ *  });
+ * $.fn.extend({ //扩展jquery实例方法
+ *	 fn3: function (){
+ *		alert(3)
+ *	 },
+ *	 fn4: function (){
+ *		alert(4)
+ *	 }
+ *  });
+ *  $.fn1(); //内部实现过程  $.extend(); 其中的this指代$,就相当于在$下扩展fn1();
+ *  $.fn2(); 
+ *  $().fn3(); //内部实现过程 $.fn.extend() 其中的this指代$.fn,在prototype下加fn1()就相当于创建对象去调用fn1();
+ *  $().fn4();
  */
-jQuery.extend = jQuery.fn.extend = function() {
+jQuery.extend = jQuery.fn.extend = function() {//扩展静态方法
 	var src, copyIsArray, copy, name, options, clone,
-		target = arguments[0] || {}, // 取第一个参数
+		target = arguments[0] || {}, // 取第一个参数，后续的都往其身上扩展
 		i = 1, // 遍历循环参数长度的起始值。
 		length = arguments.length,
 		deep = false;
@@ -433,7 +455,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 
 				// Recurse if we're merging plain objects or arrays
 				// 如果是深copy，且 options[ name ] 是普通对象或数组，则递归merge。
-				if ( deep && copy && ( jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)) ) ) {
+				if ( deep && copy && ( jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)) ) ) { //深拷贝
 					// 如果 options[ name ] 是数组。
 					if ( copyIsArray ) {
 						copyIsArray = false;
@@ -450,7 +472,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 
 				// Don't bring in undefined values
 				// 如果值为未定义的，不会赋值。
-				} else if ( copy !== undefined ) {
+				} else if ( copy !== undefined ) { //浅拷贝
 					target[ name ] = copy;
 				}
 			}
