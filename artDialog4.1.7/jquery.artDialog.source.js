@@ -1038,9 +1038,12 @@
 		_$window = $(window),
 		_$document = $(document),
 		_elem = document.documentElement,
+		// 判断是否是IE6
 		_isIE6 = !('minWidth' in _elem.style),
-		_isLosecapture = 'onlosecapture' in _elem,
-		_isSetCapture = 'setCapture' in _elem;
+		// 参考 https://msdn.microsoft.com/en-us/library/ms536943(VS.85).aspx
+		// IE下事件捕获、丢失捕获事件。
+		_isLosecapture = 'onlosecapture' in _elem, // 由releaseCapture事件触发，如：divOwnCapture.releaseCapture()。
+		_isSetCapture = 'setCapture' in _elem; // 如：divOwnCapture.setCapture()。
 
 	// 拖拽事件
 	artDialog.dragEvent = function() {
