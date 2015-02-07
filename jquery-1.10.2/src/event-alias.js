@@ -26,7 +26,7 @@ jQuery.fn.extend({
 		return this.off( types, null, fn );
 	},
 
-	// 注意 delegate 和 on 参数变化
+	// 注意 delegate 和 on 参数变化（参数selector）
 	delegate: function( selector, types, data, fn ) {
 		return this.on( types, selector, data, fn );
 	},
