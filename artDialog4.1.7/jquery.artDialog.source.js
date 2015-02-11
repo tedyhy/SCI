@@ -13,7 +13,7 @@
 ;
 (function($, window, undefined) {
 	// 空函数
-	$.noop = $.noop || function() {}; // jQuery 1.3.2
+	$.noop = $.noop || function() {}; // jQuery 1.3.2 木有$.noop函数。
 	var _box, _thisScript, _skin, _path,
 		_count = 0,
 		_$window = $(window),
@@ -913,7 +913,7 @@
 
 
 
-	// 全局快捷键
+	// 全局快捷键"ESC"
 	_$document.bind('keydown', function(event) {
 		var target = event.target,
 			nodeName = target.nodeName,
@@ -970,6 +970,7 @@
 
 
 	// 开启IE6 CSS背景图片缓存
+	// 参考 http://www.cnblogs.com/sniper007/archive/2012/05/18/2508121.html
 	try {
 		document.execCommand('BackgroundImageCache', false, true);
 	} catch (e) {};
@@ -978,6 +979,7 @@
 
 	// 使用uglifyjs压缩能够预先处理"+"号合并字符串
 	// uglifyjs: http://marijnhaverbeke.nl/uglifyjs
+	// 低版本浏览器使用join，标准浏览器使用"+"号效率高。
 	artDialog._templates =
 		'<div class="aui_outer">' + '<table class="aui_border">' + '<tbody>' + '<tr>' + '<td class="aui_nw"></td>' + '<td class="aui_n"></td>' + '<td class="aui_ne"></td>' + '</tr>' + '<tr>' + '<td class="aui_w"></td>' + '<td class="aui_c">' + '<div class="aui_inner">' + '<table class="aui_dialog">' + '<tbody>' + '<tr>' + '<td colspan="2" class="aui_header">' + '<div class="aui_titleBar">' + '<div class="aui_title"></div>' + '<a class="aui_close" href="javascript:/*artDialog*/;">' + '\xd7' + '</a>' + '</div>' + '</td>' + '</tr>' + '<tr>' + '<td class="aui_icon">' + '<div class="aui_iconBg"></div>' + '</td>' + '<td class="aui_main">' + '<div class="aui_content"></div>' + '</td>' + '</tr>' + '<tr>' + '<td colspan="2" class="aui_footer">' + '<div class="aui_buttons"></div>' + '</td>' + '</tr>' + '</tbody>' + '</table>' + '</div>' + '</td>' + '<td class="aui_e"></td>' + '</tr>' + '<tr>' + '<td class="aui_sw"></td>' + '<td class="aui_s"></td>' + '<td class="aui_se"></td>' + '</tr>' + '</tbody>' + '</table>' + '</div>';
 
@@ -1001,7 +1003,7 @@
 		height: 'auto', // 内容高度
 		minWidth: 96, // 最小宽度限制
 		minHeight: 32, // 最小高度限制
-		padding: '20px 25px', // 内容与边界填充距离
+		padding: '20px 25px', // "aui_content"内容与边界填充距离
 		skin: '', // 皮肤名(预留接口,尚未实现)
 		icon: null, // 消息图标名称
 		time: null, // 自动关闭时间
