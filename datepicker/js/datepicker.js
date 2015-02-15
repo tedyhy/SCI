@@ -167,14 +167,17 @@
 				/**
 				 * The day that starts the week, where 0: Sunday, 1: Monday, 2: Tuesday, 3: Wednesday, 4: Thursday, 5: Friday, 6: Saturday.  Defaults to Sunday
 				 */
+				// 一周的开始
 				starts: 0,
 				/**
 				 * Previous link text.  Default '&#9664;' (Unicode left arrow)
 				 */
+				// Unicode编码，左箭头“◀”。
 				prev: '&#9664;',
 				/**
 				 * Next link text.  Default '&#9664;' (Unicode left arrow)
 				 */
+				// Unicode编码，右箭头“▶”。
 				next: '&#9654;',
 				/**
 				 * Initial calendar view, one of 'days', 'months' or 'years'.  Defaults to 'days'.
@@ -259,6 +262,14 @@
 				/**
 				 * Locale text for day/month names: provide a hash with keys 'daysMin', 'months' and 'monthsShort'. Default english
 				 */
+				// 本地化，默认为英文。
+				/*
+					locale: {
+						daysMin: ["日", "一", "二", "三", "四", "五", "六"],
+						months: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一", "十二"],
+						monthsShort: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一", "十二"]
+					}
+				*/
 				locale: {
 					daysMin: ["S", "M", "T", "W", "T", "F", "S"],
 					months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
@@ -285,6 +296,7 @@
 			 *
 			 * @param HTMLDivElement el datepicker container element
 			 */
+			// 渲染日历单元格。
 			fill = function(el) {
 				var options = $(el).data('datepicker');
 				var cal = $(el);
@@ -392,6 +404,7 @@
 
 			/**
 			 * Extends the Date object with some useful helper methods
+			 * 扩展Date原型方法。
 			 */
 			extendDate = function(locale) {
 				if (Date.prototype.tempDate) {
@@ -752,32 +765,44 @@
 			 * Internal method to normalize the selected date based on the current
 			 * calendar mode.
 			 */
+			// 内部方法，基于当前日历模式及其参数date处理并返回数组集合，如：
+			// ['1423929600000', '1423929600001', '1423929600002']
 			normalizeDate = function(mode, date) {
 				// if range/multi mode, make sure that the current date value is at least an empty array
+				// 如果是 'range/multiple' 模式，则至少保证date是数组值。
 				if (mode != 'single' && !date) date = [];
 
 				// if we have a selected date and not a null or empty array
 				if (date && (!$.isArray(date) || date.length > 0)) {
 					// Create a standardized date depending on the calendar mode
+					// 'range/multiple' 模式。
 					if (mode != 'single') {
+						// 如：'2015/01/01'
 						if (!$.isArray(date)) {
 							date = [((new Date(date)).setHours(0, 0, 0, 0)).valueOf()];
 							if (mode == 'range') {
 								// create a range of one day
 								date.push(((new Date(date[0])).setHours(23, 59, 59, 0)).valueOf());
 							}
+
+						// date为数组值，如：['2015/01/01', '2015/01/02', '2015/01/03']。
 						} else {
 							for (var i = 0; i < date.length; i++) {
 								date[i] = ((new Date(date[i])).setHours(0, 0, 0, 0)).valueOf();
 							}
+							// 如果是 'range' 模式，则自动补全开始和结束日期。
 							if (mode == 'range') {
 								// for range mode, create the other end of the range
+								// 如：['2015/01/01']
 								if (date.length == 1) date.push(new Date(date[0]));
+								// 即：'2015/01/01 00:00:00' - '2015/01/01 23:59:59'
 								date[1] = ((new Date(date[1])).setHours(23, 59, 59, 0)).valueOf();
 							}
 						}
 					} else {
 						// mode is single, convert date object into a timestamp
+						// 如果是 'single' 模式，则将日期对象转换成时间戳。
+						// 即：+new Date(date)。
 						date = ((new Date(date)).setHours(0, 0, 0, 0)).valueOf();
 					}
 					// at this point date is either a timestamp at hour zero 
@@ -801,15 +826,21 @@
 			init: function(options) {
 				options = $.extend({}, defaults, options || {});
 				extendDate(options.locale);
+				// 日历个数
 				options.calendars = Math.max(1, parseInt(options.calendars, 10) || 1);
-				options.mode = /single|multiple|range/.test(options.mode) ? options.mode : 'single';
+				// 日历模式，默认为 'single'，即：单个日历显示。
+				// 'multiple' 多个日历显示。
+				// 'range' 区间显示。
+ 				options.mode = /single|multiple|range/.test(options.mode) ? options.mode : 'single';
 
 				return this.each(function() {
+					// 如果元素上木有 'datepicker' 数据，则初始化，否则跳过。
 					if (!$(this).data('datepicker')) {
-						options.el = this;
+						options.el = this; // 设置当前日历元素options.el。
 
 						options.date = normalizeDate(options.mode, options.date);
 
+						// 当前日期
 						if (!options.current) {
 							options.current = new Date();
 						} else {
