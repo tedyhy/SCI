@@ -415,6 +415,7 @@
 			 * 根据本地化，扩展Date原型方法。
 			 */
 			extendDate = function(locale) {
+				// 'tempDate' 为缓存的当前日期。
 				if (Date.prototype.tempDate) {
 					return;
 				}
@@ -424,11 +425,14 @@
 				Date.prototype.getMonthName = function(fullName) {
 					return this[fullName ? 'months' : 'monthsShort'][this.getMonth()];
 				};
+				// 增加天
 				Date.prototype.addDays = function(n) {
 					this.setDate(this.getDate() + n);
-					this.tempDate = this.getDate();
+					this.tempDate = this.getDate(); // 缓存计算后的日期。
 				};
+				// 增加月
 				Date.prototype.addMonths = function(n) {
+					// 如果木有缓存日期，则取当前日期并缓存。
 					if (this.tempDate == null) {
 						this.tempDate = this.getDate();
 					}
@@ -638,7 +642,7 @@
 				if (options.mode == 'single') {
 					if (options.date) dates = new Date(options.date);
 				} else {
-					dates = new Array();
+					dates = [];
 					$(options.date).each(function(i, val) {
 						dates.push(new Date(val));
 					});
@@ -706,6 +710,7 @@
 					fill(calEl);
 					// 日历定位显示
 					var pos = $(this).offset();
+					// 获取视口相关数据
 					var viewPort = getViewport();
 					var top = pos.top;
 					var left = pos.left;
@@ -782,14 +787,15 @@
 			 * Internal method to normalize the selected date based on the current
 			 * calendar mode.
 			 */
-			// 内部方法，基于当前日历模式及其参数date处理并返回数组集合，如：
+			// 内部方法，基于当前日历模式及其参数date（如：[new Date, new Date]或者'2015/2/16'）处理并返回数组集合，如：
 			// ['1423929600000', '1423929600001', '1423929600002']
 			normalizeDate = function(mode, date) {
 				// if range/multi mode, make sure that the current date value is at least an empty array
-				// 如果是 'range/multiple' 模式，则至少保证date是数组值。
+				// 如果是 'range/multiple' 模式且木有参数date，则返回值至少保证date是数组值。
 				if (mode != 'single' && !date) date = [];
 
 				// if we have a selected date and not a null or empty array
+				// 如果有参数date，且为数组/非数组值。
 				if (date && (!$.isArray(date) || date.length > 0)) {
 					// Create a standardized date depending on the calendar mode
 					// 'range/multiple' 模式。
@@ -799,6 +805,7 @@
 							date = [((new Date(date)).setHours(0, 0, 0, 0)).valueOf()];
 							if (mode == 'range') {
 								// create a range of one day
+								// 如果是 'range' 模式，则向后增加24h。
 								date.push(((new Date(date[0])).setHours(23, 59, 59, 0)).valueOf());
 							}
 
@@ -847,16 +854,17 @@
 				extendDate(options.locale);
 				// 需要展示的日历个数
 				options.calendars = Math.max(1, parseInt(options.calendars, 10) || 1);
-				// 日历模式，默认为 'single'，即：单个日历显示。
-				// 'multiple' 多个日历显示。
-				// 'range' 区间显示。
+				// 日历模式，默认为 'single'，即：只可选择一天。
+				// 'multiple' 选择多天。
+				// 'range' 选择日期区间。
  				options.mode = /single|multiple|range/.test(options.mode) ? options.mode : 'single';
 
 				return this.each(function() {
-					// 如果元素上木有 'datepicker' 数据，则初始化，否则跳过。
+					// 如果元素上木有 'datepicker' 数据，则初始化，否则跳过已经初始化过的元素。
 					if (!$(this).data('datepicker')) {
-						options.el = this; // 设置当前日历元素options.el。
+						options.el = this; // 设置当前日历元素缓存options.el，如：input。
 
+						// 处理开始、结束日期
 						options.date = normalizeDate(options.mode, options.date);
 
 						// 当前日期
@@ -872,15 +880,18 @@
 						var id = 'datepicker_' + parseInt(Math.random() * 1000),
 							cnt;
 						options.id = id;
+						// 在元素上缓存数据 'datepickerId'。
 						$(this).data('datepickerId', options.id);
+						// 处理日历元素（设置属性id，绑定datepicker数据，绑定click事件回调）
 						var cal = $(tpl.wrapper).attr('id', id).bind('click', click).data('datepicker', options);
+						// 为日历元素添加自定义类
 						if (options.className) {
 							cal.addClass(options.className);
 						}
 						var html = '';
 						// 根据日历个数遍历生成html。
 						for (var i = 0; i < options.calendars; i++) {
-							cnt = options.starts;
+							cnt = options.starts; // 一周起始日期
 							if (i > 0) {
 								html += tpl.space;
 							}
@@ -902,12 +913,12 @@
 							.find('tr:first').append(html) // 将日历html塞入日历容器
 							.find('table').addClass(views[options.view]); // 为每个table添加类
 
-						// 为每个日历填充单元格
+						// 为每个日历填充单元格？？？
 						fill(cal.get(0));
 						// 如果 options.inline === true
 						if (options.inline) {
 							cal.appendTo(this).show().css('position', 'relative');
-							layout(cal.get(0));
+							layout(cal.get(0)); //？？？
 						} else {
 							// 否则，日历元素直接追加到 document.body 里。
 							cal.appendTo(document.body);

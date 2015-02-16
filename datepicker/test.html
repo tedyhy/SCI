@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Datepicker</title>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
@@ -8,33 +9,45 @@
     <script type="text/javascript" src="js/jquery.js"></script>
     <script type="text/javascript" src="js/datepicker.js"></script>
 </head>
-<body>
-    <div id="datepicker-calendar"></div>
-    <div id="datepicker-calendar2"></div>
-    <div id="date-range-field"><span></span></div>
-    <script type="text/javascript">
-	    // 参考 http://foxrunsoftware.github.io/DatePicker/
-	    var to = new Date();
-	    var from = new Date(to.getTime() - 1000 * 60 * 60 * 24);
 
-	    $('#datepicker-calendar').DatePicker({
-	        inline: true,
-	        date: [from, to],
-	        calendars: 3,
-	        mode: 'range',
-	        current: new Date(to.getFullYear(), to.getMonth() - 1, 1),
-	        onChange: function(dates, el) {
-	            // update the range display
-	            $('#date-range-field span').text(
-	                dates[0].getDate() + ' ' + dates[0].getMonthName(true) + ', ' +
-	                dates[0].getFullYear() + ' - ' +
-	                dates[1].getDate() + ' ' + dates[1].getMonthName(true) + ', ' +
-	                dates[1].getFullYear());
-	        }
-	    });
-	    $('#datepicker-calendar2').DatePicker({
-	        inline: true
-	    });
+<body>
+    <div id="datepicker-calendar">的发生大幅度</div>
+    <div id="datepicker-calendar2">的发个非官方</div>
+    <div id="date-range-field"><span></span></div>
+    <input id="inputDate" type="text" value="" />
+    <script type="text/javascript">
+    // 参考 http://foxrunsoftware.github.io/DatePicker/
+    var to = new Date();
+    var from = new Date(to.getTime() - 1000 * 60 * 60 * 24);
+
+    $('#datepicker-calendar').DatePicker({
+        inline: true,
+        date: [from, to],
+        calendars: 3,
+        mode: 'range',
+        current: new Date(to.getFullYear(), to.getMonth() - 1, 1),
+        onChange: function(dates, el) {
+            // update the range display
+            $('#date-range-field span').text(
+                dates[0].getDate() + ' ' + dates[0].getMonthName(true) + ', ' +
+                dates[0].getFullYear() + ' - ' +
+                dates[1].getDate() + ' ' + dates[1].getMonthName(true) + ', ' +
+                dates[1].getFullYear());
+        }
+    });
+    $('#datepicker-calendar2').DatePicker({
+        inline: true
+    });
+
+    $('#inputDate').DatePicker({
+        mode: 'single',
+        position: 'top',
+        onChange: function(date, el) {
+            $(el).val((date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear());
+            $(el).DatePickerHide();
+        }
+    });
     </script>
 </body>
+
 </html>
