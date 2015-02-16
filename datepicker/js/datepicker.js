@@ -298,25 +298,33 @@
 			 */
 			// 渲染日历单元格。
 			fill = function(el) {
+				// 取当前日历选项信息。
 				var options = $(el).data('datepicker');
 				var cal = $(el);
 				var currentCal = Math.floor(options.calendars / 2),
 					date, data, dow, month, cnt = 0,
 					days, indic, indic2, html, tblCal;
 
+				// 将每个日历单元格移除。
 				cal.find('td>table tbody').remove();
+				// 遍历处理每个日历，生成日历单元格。
 				for (var i = 0; i < options.calendars; i++) {
 					date = new Date(options.current);
 					date.addMonths(-currentCal + i);
 					tblCal = cal.find('table').eq(i + 1);
 
+					// 为第一个日历添加类'datepickerFirstView'
 					if (i == 0) tblCal.addClass('datepickerFirstView');
+					// 为最后一个日历添加类'datepickerLastView'
 					if (i == options.calendars - 1) tblCal.addClass('datepickerLastView');
 
+					// 当前为选择天
 					if (tblCal.hasClass('datepickerViewDays')) {
 						dow = date.getMonthName(true) + ", " + date.getFullYear();
+					// 当前为选择月
 					} else if (tblCal.hasClass('datepickerViewMonths')) {
 						dow = date.getFullYear();
+					// 当前为选择年
 					} else if (tblCal.hasClass('datepickerViewYears')) {
 						dow = (date.getFullYear() - 6) + ' - ' + (date.getFullYear() + 5);
 					}
@@ -404,7 +412,7 @@
 
 			/**
 			 * Extends the Date object with some useful helper methods
-			 * 扩展Date原型方法。
+			 * 根据本地化，扩展Date原型方法。
 			 */
 			extendDate = function(locale) {
 				if (Date.prototype.tempDate) {
@@ -641,6 +649,7 @@
 			/**
 			 * Internal method, returns an object containing the viewport dimensions
 			 */
+			// 获取视口大小
 			getViewport = function() {
 				var m = document.compatMode == 'CSS1Compat';
 				return {
@@ -681,28 +690,33 @@
 			 *
 			 * Method is not applicable for inline DatePickers
 			 */
+			// 显示日历控件
 			show = function(ev) {
 				var cal = $('#' + $(this).data('datepickerId'));
+				// 如果日历控件已经显示，则返回。
 				if (!cal.is(':visible')) {
 					var calEl = cal.get(0);
 					var options = cal.data('datepicker');
 
+					// 显示之前执行 onBeforeShow 回调。如果回调执行出现错误，直接返回。
 					var test = options.onBeforeShow.apply(this, [calEl]);
-					if (options.onBeforeShow.apply(this, [calEl]) == false) {
-						return;
-					}
+					if (!test) return;
 
+					// 生成日历单元格
 					fill(calEl);
+					// 日历定位显示
 					var pos = $(this).offset();
 					var viewPort = getViewport();
 					var top = pos.top;
 					var left = pos.left;
-					var oldDisplay = $.curCSS(calEl, 'display');
+					// var oldDisplay = $.curCSS(calEl, 'display');
+					// 文档流中生成日历容器
 					cal.css({
 						visibility: 'hidden',
 						display: 'block'
 					});
 					layout(calEl);
+					// 日历定位
 					switch (options.position) {
 						case 'top':
 							top -= calEl.offsetHeight;
@@ -717,6 +731,7 @@
 							top += this.offsetHeight;
 							break;
 					}
+					// 根据浏览器视口大小自动调节日历位置。
 					if (top + calEl.offsetHeight > viewPort.t + viewPort.h) {
 						top = pos.top - calEl.offsetHeight;
 					}
@@ -729,13 +744,15 @@
 					if (left < viewPort.l) {
 						left = pos.left + this.offsetWidth
 					}
+					// 显示并定位日历
 					cal.css({
 						visibility: 'visible',
 						display: 'block',
 						top: top + 'px',
 						left: left + 'px'
 					});
-					options.onAfterShow.apply(this, [cal.get(0)]);
+					// 触发 'onAfterShow' 事件。
+					options.onAfterShow.apply(this, [calEl]);
 					$(document).bind('mousedown', {
 						cal: cal,
 						trigger: this
@@ -824,9 +841,11 @@
 			 * @see DatePicker()
 			 */
 			init: function(options) {
+				// 初始化选项
 				options = $.extend({}, defaults, options || {});
+				// 根据本地化扩展实例原型方法。
 				extendDate(options.locale);
-				// 日历个数
+				// 需要展示的日历个数
 				options.calendars = Math.max(1, parseInt(options.calendars, 10) || 1);
 				// 日历模式，默认为 'single'，即：单个日历显示。
 				// 'multiple' 多个日历显示。
@@ -849,6 +868,7 @@
 						options.current.setDate(1);
 						options.current.setHours(0, 0, 0, 0);
 
+						// 当前日历id
 						var id = 'datepicker_' + parseInt(Math.random() * 1000),
 							cnt;
 						options.id = id;
@@ -858,12 +878,14 @@
 							cal.addClass(options.className);
 						}
 						var html = '';
+						// 根据日历个数遍历生成html。
 						for (var i = 0; i < options.calendars; i++) {
 							cnt = options.starts;
 							if (i > 0) {
 								html += tpl.space;
 							}
 							// calendar header template
+							// 生成日历头部
 							html += tmpl(tpl.head.join(''), {
 								prev: options.prev,
 								next: options.next,
@@ -877,14 +899,19 @@
 							});
 						}
 						cal
-							.find('tr:first').append(html)
-							.find('table').addClass(views[options.view]);
+							.find('tr:first').append(html) // 将日历html塞入日历容器
+							.find('table').addClass(views[options.view]); // 为每个table添加类
+
+						// 为每个日历填充单元格
 						fill(cal.get(0));
+						// 如果 options.inline === true
 						if (options.inline) {
 							cal.appendTo(this).show().css('position', 'relative');
 							layout(cal.get(0));
 						} else {
+							// 否则，日历元素直接追加到 document.body 里。
 							cal.appendTo(document.body);
+							// 元素聚焦事件
 							$(this).bind(options.showOn, show);
 						}
 					}
