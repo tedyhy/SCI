@@ -288,6 +288,7 @@
 				/**
 				 * Private option, used to determine when a range is selected
 				 */
+				// 私有选项，用于确定一个日期区间被选择。
 				lastSel: false
 			},
 
@@ -448,6 +449,7 @@
 					this.setFullYear(this.getFullYear() + n);
 					this.setDate(Math.min(this.tempDate, this.getMaxDays()));
 				};
+				// 获取一个月份中最大的一天日期，即一个月份中的最后一天。
 				Date.prototype.getMaxDays = function() {
 					var tmpDate = new Date(Date.parse(this)),
 						d = 28,
@@ -916,10 +918,12 @@
 						// 为每个日历填充单元格？？？
 						fill(cal.get(0));
 						// 如果 options.inline === true
+						// 生成的日历直接展示在cal内部（显示的）。
 						if (options.inline) {
 							cal.appendTo(this).show().css('position', 'relative');
 							layout(cal.get(0)); //？？？
 						} else {
+							// 生成的日历在body内部，需要触发focus事件才能显示生成的日历。
 							// 否则，日历元素直接追加到 document.body 里。
 							cal.appendTo(document.body);
 							// 元素聚焦事件
@@ -935,11 +939,14 @@
 			 * @return the DatePicker HTML element
 			 * @see DatePickerShow()
 			 */
+			// 显示日历
 			showPicker: function() {
+				var id;
 				return this.each(function() {
-					if ($(this).data('datepickerId')) {
-						var cal = $('#' + $(this).data('datepickerId'));
+					if (id = $(this).data('datepickerId')) {
+						var cal = $('#' + id);
 						var options = cal.data('datepicker');
+						// 如果options.inline === false则日历直接显示。
 						if (!options.inline) {
 							show.apply(this);
 						}
@@ -953,13 +960,16 @@
 			 * @return the DatePicker HTML element
 			 * @see DatePickerHide()
 			 */
+			// 隐藏日历
 			hidePicker: function() {
+				var id;
 				return this.each(function() {
-					if ($(this).data('datepickerId')) {
-						var cal = $('#' + $(this).data('datepickerId'));
+					if (id = $(this).data('datepickerId')) {
+						var cal = $('#' + id);
 						var options = cal.data('datepicker');
+						// 如果options.inline === false，则日历直接隐藏。
 						if (!options.inline) {
-							$('#' + $(this).data('datepickerId')).hide();
+							$('#' + id).hide();
 						}
 					}
 				});
