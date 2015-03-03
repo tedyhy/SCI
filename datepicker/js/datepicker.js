@@ -141,6 +141,7 @@
 				 * (as from date.getTime(), date.valueOf()), or a date string
 				 * parseable by Date.parse().
 				 */
+				// 当前选中的日期，可以是一个或多个，如：[new Date, new Date]、new Date或者'2015/2/16'。
 				date: null,
 				/**
 				 * Optional date which determines the current calendar month/year.  This
@@ -467,17 +468,19 @@
 			/**
 			 * Internal method which lays out the calendar widget
 			 */
+			// 内部方法勾画出日历组件
 			layout = function(el) {
 				var options = $(el).data('datepicker');
-				var cal = $('#' + options.id);
+				var cal = $('#' + options.id); // 从选项options.id获取到日历元素
+				// 算上额外的宽高
 				if (options.extraHeight === false) {
 					var divs = $(el).find('div');
 					options.extraHeight = divs.get(0).offsetHeight + divs.get(1).offsetHeight; // heights from top/bottom borders
 					options.extraWidth = divs.get(2).offsetWidth + divs.get(3).offsetWidth; // widths from left/right borders
 				}
 				var tbl = cal.find('table:first').get(0);
-				var width = tbl.offsetWidth;
-				var height = tbl.offsetHeight;
+				var width = tbl.offsetWidth; // table自身宽度
+				var height = tbl.offsetHeight; // table自身高度
 				cal.css({
 					width: width + options.extraWidth + 'px',
 					height: height + options.extraHeight + 'px'
@@ -639,11 +642,15 @@
 			 *         the second item is the HTMLElement that DatePicker was invoked
 			 *         upon.
 			 */
+			// 内部方法，被getDate方法调用，onChange回调执行时会调用。
+			// 实际上是一个辅助方法，将返回如下格式的值，如：
+			// [[date1, date2, ...], options.el];
 			prepareDate = function(options) {
 				var dates = null;
+				// 单个日历模式
 				if (options.mode == 'single') {
 					if (options.date) dates = new Date(options.date);
-				} else {
+				} else { // 多个日历模式
 					dates = [];
 					$(options.date).each(function(i, val) {
 						dates.push(new Date(val));
@@ -946,7 +953,7 @@
 					if (id = $(this).data('datepickerId')) {
 						var cal = $('#' + id);
 						var options = cal.data('datepicker');
-						// 如果options.inline === false则日历直接显示。
+						// 如果options.inline === false则日历直接调用show方法显示日历组件。
 						if (!options.inline) {
 							show.apply(this);
 						}
@@ -991,6 +998,7 @@
 			 *
 			 * @see DatePickerSetDate()
 			 */
+			// 设置当前选中日期，参数shiftTo为boolean值。
 			setDate: function(date, shiftTo) {
 				return this.each(function() {
 					if ($(this).data('datepickerId')) {
@@ -1017,8 +1025,10 @@
 			 *
 			 * @see DatePickerGetDate()
 			 */
+			// 返回当前选中的日期和日历元素
 			getDate: function() {
 				if (this.size() > 0) {
+					// 返回值，如：[[date1, date2, ...], options.el];
 					return prepareDate($('#' + $(this).data('datepickerId')).data('datepicker'));
 				}
 			},
@@ -1028,14 +1038,15 @@
 			 *
 			 * @see DatePickerClear()
 			 */
+			// 清除当前选中日期
 			clear: function() {
 				return this.each(function() {
 					if ($(this).data('datepickerId')) {
 						var cal = $('#' + $(this).data('datepickerId'));
 						var options = cal.data('datepicker');
-						if (options.mode == 'single') {
+						if (options.mode == 'single') { // 单个日历模式
 							options.date = null;
-						} else {
+						} else { // 多个日历模式
 							options.date = [];
 						}
 						fill(cal.get(0));
@@ -1048,12 +1059,14 @@
 			 *
 			 * @see DatePickerLayout()
 			 */
+			// 适用于日历在页面上显示的情况，即：options.inline === true。
 			fixLayout: function() {
 				return this.each(function() {
 					if ($(this).data('datepickerId')) {
 						var cal = $('#' + $(this).data('datepickerId'));
-						var options = cal.data('datepicker');
+						var options = cal.data('datepicker'); // 从'datepickerId'获取当前日历选项数据
 						if (options.inline) {
+							// 如果options.inline===true，则调用layout方法勾画出日历组件。
 							layout(cal.get(0));
 						}
 					}
@@ -1063,17 +1076,19 @@
 	}(); // DatePicker
 
 	// Extend jQuery with the following functions so that they can be called on HTML elements, ie: $('#widgetCalendar').DatePicker();
+	// 暴露常用方法到原型上
 	$.fn.extend({
-		DatePicker: DatePicker.init,
-		DatePickerHide: DatePicker.hidePicker,
-		DatePickerShow: DatePicker.showPicker,
-		DatePickerSetDate: DatePicker.setDate,
-		DatePickerGetDate: DatePicker.getDate,
-		DatePickerClear: DatePicker.clear,
-		DatePickerLayout: DatePicker.fixLayout
+		DatePicker: DatePicker.init, // 根据options初始化日历
+		DatePickerHide: DatePicker.hidePicker, // 隐藏日历
+		DatePickerShow: DatePicker.showPicker, // 显示日历
+		DatePickerSetDate: DatePicker.setDate, // 设置当前选中日历日期
+		DatePickerGetDate: DatePicker.getDate, // 获取当前选中日历日期
+		DatePickerClear: DatePicker.clear, // 清除当前选中的日历日期
+		DatePickerLayout: DatePicker.fixLayout // 当选项options.inline===true时，修复layout。
 	});
 })(jQuery);
 
+// jquery 模板方法
 (function() {
 	// within here, 'this' refers to the window object
 	var cache = {};

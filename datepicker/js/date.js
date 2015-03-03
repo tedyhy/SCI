@@ -4,7 +4,7 @@ $(function($) {
 		mode: 'single',
 		inline: false,
 		calendars: 1,
-		date: new Date(),
+		date: new Date(), // 初始化时日历选中日期
 		locale: {
 			daysMin: ["日", "一", "二", "三", "四", "五", "六"],
 			months: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一", "十二"],
