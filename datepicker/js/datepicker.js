@@ -644,7 +644,7 @@
 			 */
 			// 内部方法，被getDate方法调用，onChange回调执行时会调用。
 			// 实际上是一个辅助方法，将返回如下格式的值，如：
-			// [[date1, date2, ...], options.el];
+			// [[from, to], options.el];
 			prepareDate = function(options) {
 				var dates = null;
 				// 单个日历模式
@@ -796,8 +796,11 @@
 			 * Internal method to normalize the selected date based on the current
 			 * calendar mode.
 			 */
-			// 内部方法，基于当前日历模式及其参数date（如：[new Date, new Date]或者'2015/2/16'）处理并返回数组集合，如：
-			// ['1423929600000', '1423929600001', '1423929600002']
+			// 内部方法，基于当前日历模式及其参数date（如：[new Date, new Date]或者'2015/2/16'）处理并返回数组集合，形式如下：
+			// 1. 1423929600000
+			// 2. [1423929600000] 或 [1423929600000, 1423929600001]
+			// 3. [1423929600000, 1423929600001, 1423929600002, 1423929600003]
+			// 4. [1423929600000, 1423929600001]
 			normalizeDate = function(mode, date) {
 				// if range/multi mode, make sure that the current date value is at least an empty array
 				// 如果是 'range/multiple' 模式且木有参数date，则返回值至少保证date是数组值。
@@ -809,7 +812,13 @@
 					// Create a standardized date depending on the calendar mode
 					// 'range/multiple' 模式。
 					if (mode != 'single') {
-						// 如：'2015/01/01'
+						/*
+							参数date为非数组，形式如下：
+							1425466665438、
+							'2015/01/01'、'2015-01-01'、
+							'2015/01/01 9:9:9:6'、'2015-01-01 9:9:9:6'、
+							'Wed Mar 04 2015 18:57:30 GMT+0800 (中国标准时间)'
+						 */
 						if (!$.isArray(date)) {
 							date = [((new Date(date)).setHours(0, 0, 0, 0)).valueOf()];
 							if (mode == 'range') {
@@ -818,7 +827,7 @@
 								date.push(((new Date(date[0])).setHours(23, 59, 59, 0)).valueOf());
 							}
 
-						// date为数组值，如：['2015/01/01', '2015/01/02', '2015/01/03']。
+						// 参数date为数组值，形式如：['2015/01/01', '2015/01/02', '2015/01/03']等。
 						} else {
 							for (var i = 0; i < date.length; i++) {
 								date[i] = ((new Date(date[i])).setHours(0, 0, 0, 0)).valueOf();
@@ -828,14 +837,15 @@
 								// for range mode, create the other end of the range
 								// 如：['2015/01/01']
 								if (date.length == 1) date.push(new Date(date[0]));
-								// 即：'2015/01/01 00:00:00' - '2015/01/01 23:59:59'
+								// 日期区间即：'2015/01/01 00:00:00' - '2015/01/01 23:59:59'
 								date[1] = ((new Date(date[1])).setHours(23, 59, 59, 0)).valueOf();
 							}
 						}
 					} else {
 						// mode is single, convert date object into a timestamp
 						// 如果是 'single' 模式，则将日期对象转换成时间戳。
-						// 即：+new Date(date)。
+						// 即：+new Date(date)，返回值类似：1423929600000。
+						// setHours使用方法参考 http://www.w3school.com.cn/jsref/jsref_setHours.asp
 						date = ((new Date(date)).setHours(0, 0, 0, 0)).valueOf();
 					}
 					// at this point date is either a timestamp at hour zero 
@@ -856,10 +866,11 @@
 			 * Note that 'this' is the HTML element that DatePicker was invoked upon
 			 * @see DatePicker()
 			 */
+			// 初始化日历
 			init: function(options) {
 				// 初始化选项
 				options = $.extend({}, defaults, options || {});
-				// 根据本地化扩展实例原型方法。
+				// 根据本地化扩展日期实例原型方法。
 				extendDate(options.locale);
 				// 需要展示的日历个数
 				options.calendars = Math.max(1, parseInt(options.calendars, 10) || 1);
@@ -868,6 +879,7 @@
 				// 'range' 选择日期区间。
  				options.mode = /single|multiple|range/.test(options.mode) ? options.mode : 'single';
 
+ 				// 遍历日历元素
 				return this.each(function() {
 					// 如果元素上木有 'datepicker' 数据，则初始化，否则跳过已经初始化过的元素。
 					if (!$(this).data('datepicker')) {
@@ -998,15 +1010,17 @@
 			 *
 			 * @see DatePickerSetDate()
 			 */
-			// 设置当前选中日期，参数shiftTo为boolean值。
+			// 设置当前选中日期，参数shiftTo为boolean值。（作用于多个日历）
 			setDate: function(date, shiftTo) {
 				return this.each(function() {
 					if ($(this).data('datepickerId')) {
 						var cal = $('#' + $(this).data('datepickerId'));
-						var options = cal.data('datepicker');
-						options.date = normalizeDate(options.mode, date);
+						var options = cal.data('datepicker'); // 获取日历选项
+						options.date = normalizeDate(options.mode, date); // 序列化日期
 
+						// 如果参数shiftTo为真，则设置options.current值。
 						if (shiftTo) {
+							// 如果是多个日期模式，则取第一个起始日期。
 							options.current = new Date(options.mode != 'single' ? options.date[0] : options.date);
 						}
 						fill(cal.get(0));
@@ -1025,10 +1039,10 @@
 			 *
 			 * @see DatePickerGetDate()
 			 */
-			// 返回当前选中的日期和日历元素
+			// 返回当前选中的日期和日历元素（作用于单个日历）
 			getDate: function() {
 				if (this.size() > 0) {
-					// 返回值，如：[[date1, date2, ...], options.el];
+					// 返回值，如：[[from, to], options.el];
 					return prepareDate($('#' + $(this).data('datepickerId')).data('datepicker'));
 				}
 			},
@@ -1038,7 +1052,7 @@
 			 *
 			 * @see DatePickerClear()
 			 */
-			// 清除当前选中日期
+			// 清除当前选中日期（作用于单个日历）
 			clear: function() {
 				return this.each(function() {
 					if ($(this).data('datepickerId')) {
@@ -1059,7 +1073,7 @@
 			 *
 			 * @see DatePickerLayout()
 			 */
-			// 适用于日历在页面上显示的情况，即：options.inline === true。
+			// 适用于日历在页面上显示的情况，即：options.inline === true。（作用于多个日历）
 			fixLayout: function() {
 				return this.each(function() {
 					if ($(this).data('datepickerId')) {
