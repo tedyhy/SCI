@@ -249,7 +249,7 @@ jQuery.fn = jQuery.prototype = {
 		// 传函数function eg: $(function(){})
 		//简写的方式最终还是调用的$(document).ready(function(){});
 		} else if ( jQuery.isFunction( selector ) ) {
-			return rootjQuery.ready( selector ); // rootjQuery 就是document
+			return rootjQuery.ready( selector ); // rootjQuery 就是 $(document)
 		}
 
 		if ( selector.selector !== undefined ) {// 传参是不是jquery对象
