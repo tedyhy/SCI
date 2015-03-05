@@ -318,38 +318,45 @@
 			fill = function(el) {
 				// 取当前日历选项信息。
 				var options = $(el).data('datepicker');
+				// 日历容器元素
 				var cal = $(el);
+				// 当前日历
 				var currentCal = Math.floor(options.calendars / 2),
 					date, data, dow, month, cnt = 0,
 					days, indic, indic2, html, tblCal;
 
-				// 将每个日历单元格移除。
+				// 将每个日历中的tbody移除。
 				cal.find('td>table tbody').remove();
+
 				// 遍历处理每个日历，生成日历单元格。
 				for (var i = 0; i < options.calendars; i++) {
-					date = new Date(options.current);
-					date.addMonths(-currentCal + i);
-					tblCal = cal.find('table').eq(i + 1);
+					date = new Date(options.current); // 获取当前日历月份
+					date.addMonths(-currentCal + i); // 设置当前日历月份
+					tblCal = cal.find('table').eq(i + 1); // 找到当前日历table
 
 					// 为第一个日历添加类'datepickerFirstView'
 					if (i == 0) tblCal.addClass('datepickerFirstView');
 					// 为最后一个日历添加类'datepickerLastView'
 					if (i == options.calendars - 1) tblCal.addClass('datepickerLastView');
 
-					// 当前为选择天
+					// 根据当前日历显示的是“天、月、年”来设置变量dow（即th显示的简要信息，如："March, 2015"、"2015"、"2009 - 2020"）。
+					// 当前为选择天，如："March, 2015"。
 					if (tblCal.hasClass('datepickerViewDays')) {
 						dow = date.getMonthName(true) + ", " + date.getFullYear();
-					// 当前为选择月
+					// 当前为选择月，如："2015"。
 					} else if (tblCal.hasClass('datepickerViewMonths')) {
 						dow = date.getFullYear();
-					// 当前为选择年
+					// 当前为选择年，如："2009 - 2020"。
 					} else if (tblCal.hasClass('datepickerViewYears')) {
 						dow = (date.getFullYear() - 6) + ' - ' + (date.getFullYear() + 5);
 					}
 					tblCal.find('thead tr:first th a:eq(1) span').text(dow);
+
+					/* 准备 tbody.datepickerYears 模板数据 */
+					// 如：2015 - 6 = 2009；
 					dow = date.getFullYear() - 6;
 					data = {
-						data: [],
+						data: [], // [2009, 2010, 2011, ..., 2020]
 						className: 'datepickerYears'
 					}
 					for (var j = 0; j < 12; j++) {
@@ -357,6 +364,9 @@
 					}
 					// datepickerYears template
 					html = tmpl(tpl.months.join(''), data);
+
+					/* 准备 tbody.datepickerDays 模板数据 */
+					// 初始化日期为当月第一天
 					date.setDate(1);
 					data = {
 						weeks: [],
@@ -366,64 +376,114 @@
 					var dow = (date.getDay() - options.starts) % 7;
 					date.addDays(-(dow + (dow < 0 ? 7 : 0)));
 					cnt = 0;
+					/*
+						0: 1	2	3	4	5	6	7
+						1: 8	9	10	11	12	13	14
+						2: 15	16	17	18	19	20	21
+						3: 22	23	24	25	26	27	28
+						4: 29	30	31
+						5: 
+					 */
 					while (cnt < 42) {
+						// indic（7天一行）
+						/*
+								0-42
+							0 0 0 0 0 0 0
+							1 1 1 1 1 1 1
+							2 2 2 2 2 2 2
+							3 3 3 3 3 3 3
+							4 4 4 4 4 4 4
+							5 5 5 5 5 5 5 
+						 */
+						// indic2（共6行）
+						/*
+								0-42
+							0 1 2 3 4 5 6
+							0 1 2 3 4 5 6
+							0 1 2 3 4 5 6
+							0 1 2 3 4 5 6
+							0 1 2 3 4 5 6
+							0 1 2 3 4 5 6
+						 */
 						indic = parseInt(cnt / 7, 10);
 						indic2 = cnt % 7;
+						// 0-5行
 						if (!data.weeks[indic]) {
 							data.weeks[indic] = {
 								days: []
 							};
 						}
+						// 每行的0-6
 						data.weeks[indic].days[indic2] = {
-							text: date.getDate(),
-							classname: []
+							text: date.getDate(), // 当天日期
+							classname: [] // 当天日期类
 						};
 						var today = new Date();
+						// 等于今天
 						if (today.getDate() == date.getDate() && today.getMonth() == date.getMonth() && today.getYear() == date.getYear()) {
 							data.weeks[indic].days[indic2].classname.push('datepickerToday');
 						}
+						// 大于今天
 						if (date > today) {
 							// current month, date in future
 							data.weeks[indic].days[indic2].classname.push('datepickerFuture');
 						}
-
+						// 不在当前月份
 						if (month != date.getMonth()) {
 							data.weeks[indic].days[indic2].classname.push('datepickerNotInMonth');
 							// disable clicking of the 'not in month' cells
 							data.weeks[indic].days[indic2].classname.push('datepickerDisabled');
 						}
+						// 一周第一天
 						if (date.getDay() == 0) {
 							data.weeks[indic].days[indic2].classname.push('datepickerSunday');
 						}
+						// 一周最后一天
 						if (date.getDay() == 6) {
 							data.weeks[indic].days[indic2].classname.push('datepickerSaturday');
 						}
+						/*
+							调用渲染单元格回调，内容如下：
+							onRenderCell: function(el, date) {
+								var opts = $(el).data('datepicker');
+								return {
+									disabled: date < opts.minDate || date > opts.maxDate
+								};
+							}
+						 */
 						var fromUser = options.onRenderCell(el, date);
 						var val = date.valueOf();
+						// 如果有options.date，则设置被选中的日期
 						if (options.date && (!$.isArray(options.date) || options.date.length > 0)) {
 							if (fromUser.selected || options.date == val || $.inArray(val, options.date) > -1 || (options.mode == 'range' && val >= options.date[0] && val <= options.date[1])) {
 								data.weeks[indic].days[indic2].classname.push('datepickerSelected');
 							}
 						}
+						// 单元格禁用
 						if (fromUser.disabled) {
 							data.weeks[indic].days[indic2].classname.push('datepickerDisabled');
 						}
+						// 为单元格添加类
 						if (fromUser.className) {
 							data.weeks[indic].days[indic2].classname.push(fromUser.className);
 						}
+						// 将单元格类连接起来
 						data.weeks[indic].days[indic2].classname = data.weeks[indic].days[indic2].classname.join(' ');
 						cnt++;
-						date.addDays(1);
+						date.addDays(1); // 下一个单元格
 					}
 					// Fill the datepickerDays template with data
 					html = tmpl(tpl.days.join(''), data) + html;
 
+					/* 准备 tbody.datepickerMonths 模板数据 */
 					data = {
 						data: options.locale.monthsShort,
 						className: 'datepickerMonths'
 					};
 					// datepickerMonths template
 					html = tmpl(tpl.months.join(''), data) + html;
+
+					// 将生成的日历html片段插入tblCal。
 					tblCal.append(html);
 				}
 			},
