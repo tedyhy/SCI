@@ -132,6 +132,7 @@
 					'</tbody>'
 				]
 			},
+			// 默认配置
 			defaults = {
 				/**
 				 * The currently selected date(s).  This can be: a single date, an array
@@ -148,11 +149,13 @@
 				 * can be one of: Date object, milliseconds (as from date.getTime(), date.valueOf()), or a date string
 				 * parseable by Date.parse().  Defaults to todays date.
 				 */
+				// 用于确定当前是何年何月，值可以是date.getTime()、date.valueOf()或Date.parse()的值。默认是new Date。
 				current: null,
 				/**
 				 * true causes the datepicker calendar to be appended to the DatePicker
 				 * element and rendered, false binds the DatePicker to an event on the trigger element
 				 */
+				// 显示方式
 				inline: false,
 				/**
 				 * Date selection mode, one of 'single', 'range' or 'multiple'.  Default
@@ -160,15 +163,17 @@
 				 * allows the selection of range of dates, and 'multiple' allows the
 				 * selection of any number of individual dates.
 				 */
+				// 日历显示模式
 				mode: 'single',
 				/**
 				 * Number of side-by-side calendars, defaults to 1.
 				 */
+				// 日历个数，默认1个。
 				calendars: 1,
 				/**
 				 * The day that starts the week, where 0: Sunday, 1: Monday, 2: Tuesday, 3: Wednesday, 4: Thursday, 5: Friday, 6: Saturday.  Defaults to Sunday
 				 */
-				// 一周的开始
+				// 一周的开始，默认是 0: Sunday。
 				starts: 0,
 				/**
 				 * Previous link text.  Default '&#9664;' (Unicode left arrow)
@@ -183,11 +188,13 @@
 				/**
 				 * Initial calendar view, one of 'days', 'months' or 'years'.  Defaults to 'days'.
 				 */
+				// 默认显示天
 				view: 'days',
 				/**
 				 * Date picker's position relative to the trigger element (non inline
 				 * mode only), one of 'top', 'left', 'right' or 'bottom'. Defaults to 'bottom'
 				 */
+				// 默认显示位置为 'bottom'
 				position: 'bottom',
 				/**
 				 * The trigger event used to show a non-inline calendar.  Defaults to
@@ -195,6 +202,7 @@
 				 * can also be 'click' for instance if the trigger element is a button
 				 * or some text element.
 				 */
+				// 日历显示触发事件，默认为 'focus'。
 				showOn: 'focus',
 				/**
 				 * Callback, invoked prior to the rendering of each date cell, which
@@ -208,6 +216,7 @@
 				 *         disabled: if true, date cell will be disabled
 				 *         className: css class name to add to the cell
 				 */
+				// 渲染单元格时触发的回调
 				onRenderCell: function() {
 					return {}
 				},
@@ -221,6 +230,7 @@
 				 *        of Date objects.
 				 * @param HTMLElement el the DatePicker element, ie the element that DatePicker was invoked upon
 				 */
+				// 当日期被选中后会触发此回调
 				onChange: function() {},
 				/**
 				 * Invoked before a non-inline datepicker is shown, with 'this'
@@ -230,6 +240,7 @@
 				 * @param HTMLDivElement el The datepicker container element, ie the div with class 'datepicker'
 				 * @return true to allow the datepicker to be shown, false to keep it hidden
 				 */
+				// 日历显示前触发此回调
 				onBeforeShow: function() {
 					return true
 				},
@@ -240,6 +251,7 @@
 				 *
 				 * @param HTMLDivElement el The datepicker container element, ie the div with class 'datepicker'
 				 */
+				// 日历触发后显示此回调
 				onAfterShow: function() {},
 				/**
 				 * Invoked before a non-inline datepicker is hidden, with 'this'
@@ -249,6 +261,7 @@
 				 * @param HTMLDivElement el The datepicker container element, ie the div with class 'datepicker'
 				 * @return true to allow the datepicker to be hidden, false to keep it visible
 				 */
+				// 日历隐藏前触发此回调
 				onBeforeHide: function() {
 					return true
 				},
@@ -259,6 +272,7 @@
 				 *
 				 * @param HTMLDivElement el The datepicker container element, ie the div with class 'datepicker'
 				 */
+				// 日历隐藏后触发此回调
 				onAfterHide: function() {},
 				/**
 				 * Locale text for day/month names: provide a hash with keys 'daysMin', 'months' and 'monthsShort'. Default english
@@ -280,11 +294,13 @@
 				 * The combined height from the top/bottom borders.  'false' is the default
 				 * and generally the correct value.
 				 */
+				// 算上额外的高（top/bottom borders）
 				extraHeight: false,
 				/**
 				 * The combined width from the left/right borders.  'false' is the default
 				 * and generally the correct value.
 				 */
+				// 算上额外的宽（left/right borders）
 				extraWidth: false,
 				/**
 				 * Private option, used to determine when a range is selected
@@ -417,22 +433,23 @@
 			 * 根据本地化，扩展Date原型方法。
 			 */
 			extendDate = function(locale) {
-				// 'tempDate' 为缓存的当前日期。
+				// 'tempDate' 为草稿日期。如果存在，说明当前日期已经扩展过，直接跳过。
 				if (Date.prototype.tempDate) {
 					return;
 				}
 				Date.prototype.tempDate = null;
 				Date.prototype.months = locale.months;
 				Date.prototype.monthsShort = locale.monthsShort;
+				// 获取当前日期的月名称
 				Date.prototype.getMonthName = function(fullName) {
 					return this[fullName ? 'months' : 'monthsShort'][this.getMonth()];
 				};
-				// 增加天
+				// 为当前日期增加天
 				Date.prototype.addDays = function(n) {
 					this.setDate(this.getDate() + n);
 					this.tempDate = this.getDate(); // 缓存计算后的日期。
 				};
-				// 增加月
+				// 为当前日期增加月
 				Date.prototype.addMonths = function(n) {
 					// 如果木有缓存日期，则取当前日期并缓存。
 					if (this.tempDate == null) {
@@ -442,6 +459,7 @@
 					this.setMonth(this.getMonth() + n);
 					this.setDate(Math.min(this.tempDate, this.getMaxDays()));
 				};
+				// 为当前日期增加n年
 				Date.prototype.addYears = function(n) {
 					if (this.tempDate == null) {
 						this.tempDate = this.getDate();
@@ -452,7 +470,7 @@
 				};
 				// 获取一个月份中最大的一天日期，即一个月份中的最后一天。
 				Date.prototype.getMaxDays = function() {
-					var tmpDate = new Date(Date.parse(this)),
+					var tmpDate = new Date(Date.parse(this)), // 或者：var tmpDate = new Date(this),
 						d = 28,
 						m;
 					m = tmpDate.getMonth();
@@ -663,11 +681,14 @@
 			 * Internal method, returns an object containing the viewport dimensions
 			 */
 			// 获取视口大小
+			// 标准浏览器使用window.pageXOffset，IE<9使用(m ? document.documentElement.scrollLeft : document.body.scrollLeft)。
 			getViewport = function() {
-				var m = document.compatMode == 'CSS1Compat';
+				var m = document.compatMode == 'CSS1Compat'; // 标准模式，'BackCompat'是混杂模式。
 				return {
+					// 滚动条顶部到网页顶部的距离
 					l: window.pageXOffset || (m ? document.documentElement.scrollLeft : document.body.scrollLeft),
 					t: window.pageYOffset || (m ? document.documentElement.scrollTop : document.body.scrollTop),
+					// 包括滚动条宽度
 					w: window.innerWidth || (m ? document.documentElement.clientWidth : document.body.clientWidth),
 					h: window.innerHeight || (m ? document.documentElement.clientHeight : document.body.clientHeight)
 				};
@@ -782,6 +803,7 @@
 			 *
 			 * @param ev Event object
 			 */
+			// 隐藏日历控件
 			hide = function(ev) {
 				if (ev.target != ev.data.trigger && !isChildOf(ev.data.cal.get(0), ev.target, ev.data.cal.get(0))) {
 					if (ev.data.cal.data('datepicker').onBeforeHide.apply(this, [ev.data.cal.get(0)]) != false) {
@@ -885,10 +907,10 @@
 					if (!$(this).data('datepicker')) {
 						options.el = this; // 设置当前日历元素缓存options.el，如：input。
 
-						// 处理开始、结束日期
+						// 序列化日期
 						options.date = normalizeDate(options.mode, options.date);
 
-						// 当前日期
+						// 当前日期，用于确定当前所在的年月
 						if (!options.current) {
 							options.current = new Date();
 						} else {
@@ -934,13 +956,13 @@
 							.find('tr:first').append(html) // 将日历html塞入日历容器
 							.find('table').addClass(views[options.view]); // 为每个table添加类
 
-						// 为每个日历填充单元格？？？
+						// 渲染日历
 						fill(cal.get(0));
 						// 如果 options.inline === true
 						// 生成的日历直接展示在cal内部（显示的）。
 						if (options.inline) {
 							cal.appendTo(this).show().css('position', 'relative');
-							layout(cal.get(0)); //？？？
+							layout(cal.get(0));　//　修复layout
 						} else {
 							// 生成的日历在body内部，需要触发focus事件才能显示生成的日历。
 							// 否则，日历元素直接追加到 document.body 里。
@@ -1016,7 +1038,8 @@
 					if ($(this).data('datepickerId')) {
 						var cal = $('#' + $(this).data('datepickerId'));
 						var options = cal.data('datepicker'); // 获取日历选项
-						options.date = normalizeDate(options.mode, date); // 序列化日期
+						// 序列化日期，返回的值格式如：[1423929600000, 1423929600001]。
+						options.date = normalizeDate(options.mode, date);
 
 						// 如果参数shiftTo为真，则设置options.current值。
 						if (shiftTo) {
