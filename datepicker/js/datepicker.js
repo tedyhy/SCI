@@ -573,25 +573,33 @@
 			 * This is the function that controls the behavior of the calendar when
 			 * the title, next/previous, or a date cell is clicked on.
 			 */
+			// 内部方法，为每个日期单元格绑定的'click'事件回调。
+			// 设置的是 options.current。
 			click = function(ev) {
+				// 如果点中的是'span'元素，则将ev.target赋值为'span'的父元素'a'。
 				if ($(ev.target).is('span')) {
 					ev.target = ev.target.parentNode;
 				}
 				var el = $(ev.target);
+				// 如果ev.target是'a'元素则继续。
 				if (el.is('a')) {
-					ev.target.blur();
+					ev.target.blur(); // ???
+					// 禁止点击选择日期
 					if (el.hasClass('datepickerDisabled')) {
 						return false;
 					}
+					// 当前日历选项信息
+					// this => tpl.wrapper
 					var options = $(this).data('datepicker');
-					var parentEl = el.parent();
-					var tblEl = parentEl.parent().parent().parent();
-					var tblIndex = $('table', this).index(tblEl.get(0)) - 1;
+					var parentEl = el.parent(); // td或th元素
+					var tblEl = parentEl.parent().parent().parent(); // table元素
+					var tblIndex = $('table', this).index(tblEl.get(0)) - 1; // table元素索引
 					var tmp = new Date(options.current);
 					var changed = false;
 					var fillIt = false;
 					var currentCal = Math.floor(options.calendars / 2);
 
+					// 如果 parentEl 是 th元素
 					if (parentEl.is('th')) {
 						// clicking the calendar title
 
@@ -635,23 +643,27 @@
 							fillIt = true;
 						}
 
+					// 如果 parentEl 是 td元素，并且 parentEl 木有类 'datepickerDisabled'。
 					} else if (parentEl.is('td') && !parentEl.hasClass('datepickerDisabled')) {
 						// clicking the calendar grid
 
+						// 点击的是月单元格
 						if (tblEl.eq(0).hasClass('datepickerViewMonths')) {
 							// clicked a month cell
 							options.current.setMonth(tblEl.find('tbody.datepickerMonths td').index(parentEl));
 							options.current.setFullYear(parseInt(tblEl.find('thead th a.datepickerMonth span').text(), 10));
-							options.current.addMonths(currentCal - tblIndex);
+							options.current.addMonths(currentCal - tblIndex); // ???
 							tblEl.eq(0).toggleClass('datepickerViewMonths datepickerViewDays');
+						// 点击的是年单元格
 						} else if (tblEl.eq(0).hasClass('datepickerViewYears')) {
 							// clicked a year cell
 							options.current.setFullYear(parseInt(el.text(), 10));
 							tblEl.eq(0).toggleClass('datepickerViewYears datepickerViewMonths');
+						// 点击的是日单元格
 						} else {
 							// clicked a day cell
 							var val = parseInt(el.text(), 10);
-							tmp.addMonths(tblIndex - currentCal);
+							tmp.addMonths(tblIndex - currentCal); // ???
 							if (parentEl.hasClass('datepickerNotInMonth')) {
 								tmp.addMonths(val > 15 ? -1 : 1);
 							}
@@ -696,9 +708,17 @@
 						}
 						fillIt = true;
 					}
+					// 如果点击了表格头部或者单元格则重新渲染日期单元格。
 					if (fillIt) {
 						fill(this);
 					}
+					/*
+						如果点击了单元格，则调用onChange回调，如：
+						onChange: function(date) {
+							_end.val(date);
+							_end.DatePickerHide();
+						}
+					 */
 					if (changed) {
 						options.onChange.apply(this, prepareDate(options));
 					}
