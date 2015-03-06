@@ -592,21 +592,23 @@
 					// this => tpl.wrapper
 					var options = $(this).data('datepicker');
 					var parentEl = el.parent(); // td或th元素
-					var tblEl = parentEl.parent().parent().parent(); // table元素
-					var tblIndex = $('table', this).index(tblEl.get(0)) - 1; // table元素索引
+					var tblEl = parentEl.parent().parent().parent(); // 当前table元素
+					var tblIndex = $('table', this).index(tblEl.get(0)) - 1; // 当前table元素索引
 					var tmp = new Date(options.current);
-					var changed = false;
-					var fillIt = false;
-					var currentCal = Math.floor(options.calendars / 2);
+					var changed = false; // 日历日期是否被改动，如果改动会触发 'onChange' 回调执行。
+					var fillIt = false; // 是否重新渲染日历
+					var currentCal = Math.floor(options.calendars / 2); // 默认基日历元素索引
 
 					// 如果 parentEl 是 th元素
 					if (parentEl.is('th')) {
 						// clicking the calendar title
 
+						// 点击title选择月份或者年份
 						if (el.hasClass('datepickerMonth')) {
 							// clicking on the title of a Month Datepicker
 							tmp.addMonths(tblIndex - currentCal);
 
+							// 如果是多个日历，则选中当前月内的所有日期。
 							if (options.mode == 'range') {
 								// range, select the whole month
 								options.date[0] = (tmp.setHours(0, 0, 0, 0)).valueOf();
@@ -616,10 +618,13 @@
 								fillIt = true;
 								changed = true;
 								options.lastSel = false;
+
+							// 如果只有一个日历，则切换年选项或月选项。
 							} else if (options.calendars == 1) {
 								// single/multiple mode with a single calendar: swap between daily/monthly/yearly view.
 								// Note:  there's no reason a multi-calendar widget can't have this functionality,
 								//   however I think it looks really unintuitive.
+								// 日历显示月选项、年选项的切换。
 								if (tblEl.eq(0).hasClass('datepickerViewDays')) {
 									tblEl.eq(0).toggleClass('datepickerViewDays datepickerViewMonths');
 									el.find('span').text(tmp.getFullYear());
@@ -631,8 +636,11 @@
 									el.find('span').text(tmp.getMonthName(true) + ", " + tmp.getFullYear());
 								}
 							}
+
+						// 点击title前后按钮
 						} else if (parentEl.parent().parent().is('thead')) {
 							// clicked either next/previous arrows
+							// 点击 next/previous 箭头对当前日期做处理。
 							if (tblEl.eq(0).hasClass('datepickerViewDays')) {
 								options.current.addMonths(el.hasClass('datepickerGoPrev') ? -1 : 1);
 							} else if (tblEl.eq(0).hasClass('datepickerViewMonths')) {
@@ -669,6 +677,7 @@
 							}
 							tmp.setDate(val);
 							switch (options.mode) {
+								// 'multiple' 模式
 								case 'multiple':
 									val = (tmp.setHours(0, 0, 0, 0)).valueOf();
 									if ($.inArray(val, options.date) > -1) {
@@ -682,7 +691,9 @@
 										options.date.push(val);
 									}
 									break;
+								// 'range' 模式
 								case 'range':
+									// 如果尚未选中一个日期区间，则此次点击设置一个区间起始日期。
 									if (!options.lastSel) {
 										// first click: set to the start of the day
 										options.date[0] = (tmp.setHours(0, 0, 0, 0)).valueOf();
@@ -690,6 +701,7 @@
 									// get the very end of the day clicked
 									val = (tmp.setHours(23, 59, 59, 0)).valueOf();
 
+									// 设置一个区间的结束日期。
 									if (val < options.date[0]) {
 										// second range click < first
 										options.date[1] = options.date[0] + 86399000; // starting date + 1 day
