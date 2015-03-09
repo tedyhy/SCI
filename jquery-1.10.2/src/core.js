@@ -350,7 +350,7 @@ jQuery.fn = jQuery.prototype = {
 		return this.pushStack( j >= 0 && j < len ? [ this[j] ] : [] );
 	},
 
-	map: function( callback ) {
+	map: function( callback ) {// 对集合进行2次处理
 		return this.pushStack( jQuery.map(this, function( elem, i ) {
 			return callback.call( elem, i, elem );
 		}));
@@ -363,7 +363,7 @@ jQuery.fn = jQuery.prototype = {
 
 	// For internal use only.
 	// Behaves like an Array's method, not like a jQuery method.
-	// 原型上的数组方法，处理匹配的jquery对象。
+	// 原型上的数组方法，处理匹配的jquery对象。供jquery内部使用
 	/* ex:
 	 * var a = {length: 0, push: [].push}
 	 * a.push(1)
@@ -585,7 +585,7 @@ jQuery.extend({
 	// 判断数据类型
 	type: function( obj ) {
 		if ( obj == null ) {
-			return String( obj );
+			return String( obj ); //通过String把null或undefined转换为字符串
 		}
 		return typeof obj === "object" || typeof obj === "function" ?
 			class2type[ core_toString.call(obj) ] || "object" :
@@ -594,6 +594,7 @@ jQuery.extend({
 
 	// 判断是普通对象
 	// ???
+	// 是否为对象自变量
 	isPlainObject: function( obj ) {
 		var key;
 
@@ -635,7 +636,7 @@ jQuery.extend({
 	// 判断是否是空对象
 	isEmptyObject: function( obj ) {
 		var name;
-		for ( name in obj ) {
+		for ( name in obj ) {// 利用for in 
 			return false;
 		}
 		return true;
@@ -649,7 +650,7 @@ jQuery.extend({
 	// data: string of html
 	// context (optional): If specified, the fragment will be created in this context, defaults to document
 	// keepScripts (optional): If true, will include scripts passed in the html string
-	parseHTML: function( data, context, keepScripts ) {
+	parseHTML: function( data, context, keepScripts ) {// 解析节点
 		if ( !data || typeof data !== "string" ) {
 			return null;
 		}
@@ -668,13 +669,13 @@ jQuery.extend({
 			return [ context.createElement( parsed[1] ) ];
 		}
 
-		parsed = jQuery.buildFragment( [ data ], context, scripts );
+		parsed = jQuery.buildFragment( [ data ], context, scripts );// 利用文档碎片进行节点多标签创建
 		if ( scripts ) {
 			jQuery( scripts ).remove();
 		}
 		return jQuery.merge( [], parsed.childNodes );
 	},
-
+	//解析JSON
 	parseJSON: function( data ) {
 		// Attempt to parse using the native JSON parser first
 		if ( window.JSON && window.JSON.parse ) {
@@ -707,14 +708,15 @@ jQuery.extend({
 	},
 
 	// Cross-browser xml parsing
+	//解析XML
 	parseXML: function( data ) {
 		var xml, tmp;
-		if ( !data || typeof data !== "string" ) {
+		if ( !data || typeof data !== "string" ) { // 数据不存在不为字符串，return null
 			return null;
 		}
 		try {
 			if ( window.DOMParser ) { // Standard
-				tmp = new DOMParser();
+				tmp = new DOMParser(); // 创建一个实例对象的方法
 				xml = tmp.parseFromString( data , "text/xml" );
 			} else { // IE
 				xml = new ActiveXObject( "Microsoft.XMLDOM" );
@@ -724,18 +726,19 @@ jQuery.extend({
 		} catch( e ) {
 			xml = undefined;
 		}
-		if ( !xml || !xml.documentElement || xml.getElementsByTagName( "parsererror" ).length ) {
+		if ( !xml || !xml.documentElement || xml.getElementsByTagName( "parsererror" ).length ) {// 判断xml下有没有parsererror这个标签
 			jQuery.error( "Invalid XML: " + data );
 		}
 		return xml;
 	},
-
+	//空函数
 	noop: function() {},
 
 	// Evaluates a script in a global context
 	// Workarounds based on findings by Jim Driscoll
 	// http://weblogs.java.net/blog/driscoll/archive/2009/09/08/eval-javascript-global-context
 	// 全局eval方法。ie下使用window.execScript，标准浏览器使用window.eval
+	//全局解析js
 	globalEval: function( data ) {
 		if ( data && jQuery.trim( data ) ) {
 			// We use execScript on Internet Explorer
@@ -754,7 +757,8 @@ jQuery.extend({
 		return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, fcamelCase );
 	},
 
-	// 判断元素的节点名称是否等于给定的name。
+	//判断元素的节点名称是否等于给定的name。
+
 	nodeName: function( elem, name ) {
 		return elem.nodeName && elem.nodeName.toLowerCase() === name.toLowerCase();
 	},
@@ -833,6 +837,7 @@ jQuery.extend({
 		},
 
 	// results is for internal usage only
+	// 类数组转成真正的数组
 	makeArray: function( arr, results ) {
 		var ret = results || [];
 
@@ -851,7 +856,7 @@ jQuery.extend({
 	},
 
 	// 判断元素是否在数组中，返回值是索引。i（数组索引）表示从第i个开始循环数组，判断元素是否在数组中i之后。
-	inArray: function( elem, arr, i ) {
+	inArray: function( elem, arr, i ) {// 有点类似于indexof的方法
 		var len;
 
 		if ( arr ) {
@@ -873,13 +878,13 @@ jQuery.extend({
 		return -1;
 	},
 
-	// merge
+	// 合并数组
 	merge: function( first, second ) {
 		var l = second.length,
 			i = first.length,
 			j = 0;
 
-		if ( typeof l === "number" ) {
+		if ( typeof l === "number" ) { // 判断第二个参数是不是number
 			for ( ; j < l; j++ ) {
 				first[ i++ ] = second[ j ];
 			}
@@ -889,7 +894,7 @@ jQuery.extend({
 			}
 		}
 
-		first.length = i;
+		first.length = i;// 手动的改变json的长度
 
 		return first;
 	},
@@ -1120,15 +1125,16 @@ jQuery.extend({
 
 jQuery.ready.promise = function( obj ) {
 	if ( !readyList ) {
-
+		//先创建一个延长对象
 		readyList = jQuery.Deferred();
 
 		// Catch cases where $(document).ready() is called after the browser event has already occurred.
 		// we once tried to use readyState "interactive" here, but it caused issues like the one
 		// discovered by ChrisS here: http://bugs.jquery.com/ticket/12282#comment:15
+		// 判断dom是否加载完毕。
 		if ( document.readyState === "complete" ) {
 			// Handle it asynchronously to allow scripts the opportunity to delay ready
-			setTimeout( jQuery.ready );
+			setTimeout( jQuery.ready );// 延迟加载是针对ie的bug
 
 		// Standards-based browsers support DOMContentLoaded
 		// 标准浏览器支持DOMContentLoaded事件
