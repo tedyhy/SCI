@@ -12,3 +12,6 @@ SCI(Source code interpretation)
 
 4.seajs-2.2.1
 <pre><code>dist/sea-debug.js</code></pre>
+
+5.datepicker
+<pre><code>js/datepicker.js</code></pre>
