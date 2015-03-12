@@ -24,12 +24,15 @@
 		_isIE6 = window.VBArray && !window.XMLHttpRequest,
 		// 判断是否是移动平台
 		_isMobile = 'createTouch' in document && !('onmousemove' in _elem) || /(iPhone|iPad|iPod)/i.test(navigator.userAgent),
-		// 唯一id
+		// 弹窗唯一id
 		_expando = 'artDialog' + +new Date;
 
+	// artDialog构造器
 	var artDialog = function(config, ok, cancel) {
 		config = config || {};
 
+		// 如果参数config为字符串或者为dom元素，则将参数config作为作用域content。
+		// 如果是手机设备，不允许fixed。
 		if (typeof config === 'string' || config.nodeType === 1) {
 			config = {
 				content: config,
@@ -73,8 +76,11 @@
 		if (!$.isArray(config.button)) {
 			config.button = config.button ? [config.button] : [];
 		};
+		// ok回调
 		if (ok !== undefined) config.ok = ok;
+		// cancel回调
 		if (cancel !== undefined) config.cancel = cancel;
+		// ok、cancel按钮
 		config.ok && config.button.push({
 			name: config.okVal,
 			callback: config.ok,
@@ -85,7 +91,7 @@
 			callback: config.cancel
 		});
 
-		// zIndex全局配置
+		// zIndex全局配置，更新zIndex。
 		artDialog.defaults.zIndex = config.zIndex;
 
 		_count++;
@@ -94,6 +100,7 @@
 			_box._init(config) : new artDialog.fn._init(config);
 	};
 
+	// artDialog原型
 	artDialog.fn = artDialog.prototype = {
 
 		version: '4.1.7',
@@ -888,13 +895,19 @@
 
 	};
 
+	// 将原型方法_init的原型执行artDialog原型。
 	artDialog.fn._init.prototype = artDialog.fn;
+
+	// 创建jQuery原型方法dialog、artDialog。
 	$.fn.dialog = $.fn.artDialog = function() {
 		var config = arguments;
+		// 为匹配的元素绑定click事件。
 		this[this.live ? 'live' : 'bind']('click', function() {
+			// 执行artDialog构造器
 			artDialog.apply(this, config);
 			return false;
 		});
+		// 链式写法
 		return this;
 	};
 
@@ -909,11 +922,13 @@
 		return id === undefined ? artDialog.list : artDialog.list[id];
 	};
 
+	// 根据id缓存弹窗API
 	artDialog.list = {};
 
 
 
 	// 全局快捷键"ESC"
+	// 按"ESC"键，隐藏当前弹窗。
 	_$document.bind('keydown', function(event) {
 		var target = event.target,
 			nodeName = target.nodeName,
@@ -943,6 +958,7 @@
 
 
 	// 无阻塞载入CSS (如"artDialog.js?skin=aero")
+	// 从当前artDialog路径的相对目录/skins/里获取css文件并加载。
 	_skin = _thisScript.src.split('skin=')[1];
 	if (_skin) {
 		var link = document.createElement('link');
@@ -956,6 +972,7 @@
 	// 触发浏览器预先缓存背景图片
 	_$window.bind('load', function() {
 		setTimeout(function() {
+			// 如果有_count，说明当前页面有artDialog实例。否则，初始化一个artDialog实例。
 			if (_count) return;
 			artDialog({
 				left: '-9999em',
