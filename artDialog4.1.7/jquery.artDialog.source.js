@@ -41,10 +41,11 @@
 		};
 
 		var api,
-			defaults = artDialog.defaults,
-			elem = config.follow = this.nodeType === 1 && this || config.follow;
+			defaults = artDialog.defaults, // 取默认配置
+			// follow元素
+			elem = config.follow = this.nodeType === 1 && this || config.follow; // 如：$(elem) = $(el)或$('#follow')
 
-		// 合并默认配置
+		// 将当前配置和默认配置合并
 		for (var i in defaults) {
 			if (config[i] === undefined) config[i] = defaults[i];
 		};
@@ -63,10 +64,14 @@
 			});
 
 		// 返回跟随模式或重复定义的ID
-		if (typeof elem === 'string') elem = $(elem)[0];
+		if (typeof elem === 'string') elem = $(elem)[0]; // 如：elem = "#follow"
+		// 弹窗id
 		config.id = elem && elem[_expando + 'follow'] || config.id || _expando + _count;
+		// 根据弹窗id获取缓存弹窗信息
 		api = artDialog.list[config.id];
+		// 如果有follow元素和弹窗缓存信息，则follow弹出并聚焦。
 		if (elem && api) return api.follow(elem).zIndex().focus();
+		// 如果只有弹窗缓存信息，则只弹出并聚焦。
 		if (api) return api.zIndex().focus();
 
 		// 目前主流移动设备对fixed支持不好
@@ -94,8 +99,10 @@
 		// zIndex全局配置，更新zIndex。
 		artDialog.defaults.zIndex = config.zIndex;
 
+		// 弹窗计数
 		_count++;
 
+		// _box为弹窗实例，如果有_box，则调用_init方法根据config去初始化弹窗。否则根据config新建弹窗实例。
 		return artDialog.list[config.id] = _box ?
 			_box._init(config) : new artDialog.fn._init(config);
 	};
@@ -105,30 +112,39 @@
 
 		version: '4.1.7',
 
-		closed: true,
+		closed: true, // 标记当前弹窗是否显示
 
 		_init: function(config) {
 			var that = this,
 				DOM,
-				icon = config.icon,
+				icon = config.icon, // 消息图标名称
 				iconBg = icon && (_isIE6 ? {
 					png: 'icons/' + icon + '.png'
 				} : {
 					backgroundImage: 'url(\'' + config.path + '/skins/icons/' + icon + '.png\')'
 				});
 
+			// 标记当前弹窗为显示。
 			that.closed = false;
+			// 存储当前弹窗配置信息。
 			that.config = config;
+			// 根据artDialog._templates新建一个弹窗，并获取弹窗各个部分元素放入DOM对象。
 			that.DOM = DOM = that.DOM || that._getDOM();
 
+			// 弹窗换肤
 			DOM.wrap.addClass(config.skin);
+			// 如果config.cancel === false，则说明没有取消和关闭按钮，所以DOM.close.hide()；否则显示关闭按钮。
 			DOM.close[config.cancel === false ? 'hide' : 'show']();
+			// 背景图片显示
 			DOM.icon[0].style.display = icon ? '' : 'none';
 			DOM.iconBg.css(iconBg || {
 				background: 'none'
 			});
+			// 是否可拖动弹窗右下角，改变弹窗大小
 			DOM.se.css('cursor', config.resize ? 'se-resize' : 'auto');
+			// 是否可拖动弹窗title
 			DOM.title.css('cursor', config.drag ? 'move' : 'auto');
+			// 设置弹窗内容内边距
 			DOM.content.css('padding', config.padding);
 
 			that[config.show ? 'show' : 'hide'](true)
@@ -653,7 +669,7 @@
 			return that;
 		},
 
-		// 获取元素
+		// 根据artDialog._templates新建一个弹窗，并获取弹窗各个部分元素放入DOM对象。
 		_getDOM: function() {
 			var wrap = document.createElement('div'),
 				body = document.body;
