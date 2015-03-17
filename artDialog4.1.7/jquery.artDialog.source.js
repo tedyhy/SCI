@@ -147,7 +147,9 @@
 			// 设置弹窗内容内边距
 			DOM.content.css('padding', config.padding);
 
+			// 根据配置，初始化后是否显示对话框
 			that[config.show ? 'show' : 'hide'](true)
+			// 初始化button
 			that.button(config.button)
 				.title(config.title)
 				.content(config.content, true)
@@ -432,16 +434,17 @@
 			var that = this,
 				ags = arguments,
 				DOM = that.DOM,
-				buttons = DOM.buttons,
+				buttons = DOM.buttons, // buttons容器
 				elem = buttons[0],
 				strongButton = 'aui_state_highlight',
-				listeners = that._listeners = that._listeners || {},
-				list = $.isArray(ags[0]) ? ags[0] : [].slice.call(ags);
+				listeners = that._listeners = that._listeners || {}, // 按钮监听缓存
+				list = $.isArray(ags[0]) ? ags[0] : [].slice.call(ags); // 获取button列表
 
-			if (ags[0] === undefined) return elem;
+			if (ags[0] === undefined) return elem; // 如果没有button参数则直接返回
+			// 遍历button列表
 			$.each(list, function(i, val) {
 				var name = val.name,
-					isNewButton = !listeners[name],
+					isNewButton = !listeners[name], // 按钮监听缓存
 					button = !isNewButton ?
 					listeners[name].elem :
 					document.createElement('button');
@@ -470,6 +473,7 @@
 				};
 			});
 
+			// 根据buttons个数控制按钮显示或隐藏。
 			buttons[0].style.display = list.length ? '' : 'none';
 
 			that._ie6SelectFix();
