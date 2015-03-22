@@ -10,6 +10,7 @@
 var fis = module.exports = require('fis-kernel');
 
 //merge standard conf
+//合并fis标准配置信息
 fis.config.merge({
     modules : {
         preprocessor: {
@@ -51,7 +52,7 @@ fis.cli.commander = null;
 fis.cli.info = fis.util.readJSON(__dirname + '/package.json');
 
 //output help info
-//帮助方法简介，如：fis -h 或 fis --help
+//帮助方法简介，包括各种标准命令用法，如：fis -h 或 fis --help。
 fis.cli.help = function(){
     var content = [
         '',
@@ -83,6 +84,7 @@ fis.cli.help = function(){
 fis.cli.help.commands = [ 'release', 'install', 'server' ];
 
 //output version info
+//获取版本信息方法
 fis.cli.version = function(){
     var content = [
         '',
@@ -102,6 +104,7 @@ fis.cli.version = function(){
     console.log(content);
 };
 
+//遍历判断是否有参数search
 function hasArgv(argv, search){
     var pos = argv.indexOf(search);
     var ret = false;
@@ -114,21 +117,27 @@ function hasArgv(argv, search){
 }
 
 //run cli tools
+//fis启动接口方法，argv参数为process.argv，即：[ 'node', '/Users/hanli/git/SCI/fis/bin/fis', ... ]。
 fis.cli.run = function(argv){
+    console.log(argv)
+    fis.processCWD = process.cwd(); //fis所在目录，如："/Users/hanli/git/SCI/fis"
 
-    fis.processCWD = process.cwd();
-
+    //如果有参数'--no-color'，则说明console输出不带color。
     if(hasArgv(argv, '--no-color')){
         fis.cli.colors.mode = 'none';
     }
 
     var first = argv[2];
+    //查看fis帮助信息
     if(argv.length < 3 || first === '-h' ||  first === '--help'){
         fis.cli.help();
+    //查看fis版本信息
     } else if(first === '-v' || first === '--version'){
         fis.cli.version();
+    //查看fis帮助信息
     } else if(first[0] === '-'){
         fis.cli.help();
+    //否则加载'commander'模块，分析命令调用相应命令。
     } else {
         //register command
         var commander = fis.cli.commander = require('commander');
