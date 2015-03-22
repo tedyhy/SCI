@@ -6,6 +6,7 @@
 'use strict';
 
 //kernel
+//加载fis-kernel模块
 var fis = module.exports = require('fis-kernel');
 
 //merge standard conf
@@ -32,20 +33,25 @@ fis.config.merge({
 });
 
 //exports cli object
+//暴露cli接口对象
 fis.cli = {};
 
 fis.cli.name = 'fis';
 
 //colors
+//colors工具
 fis.cli.colors = require('colors');
 
 //commander object
+//commander工具
 fis.cli.commander = null;
 
 //package.json
+//读取package.json文件内容
 fis.cli.info = fis.util.readJSON(__dirname + '/package.json');
 
 //output help info
+//帮助方法简介，如：fis -h 或 fis --help
 fis.cli.help = function(){
     var content = [
         '',
