@@ -1,3 +1,3 @@
 #!/usr/bin/env node
-
+//process.argv是一个数组，数组里存放着启动这个node.js进程各个参数和命令代码。
 require('../fis.js').cli.run(process.argv);

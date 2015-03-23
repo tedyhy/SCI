@@ -63,6 +63,13 @@ fis.cli.help = function(){
     ];
 
     fis.cli.help.commands.forEach(function(name){
+        /*cmd如下：
+            cmd = {
+                name: 'release',
+                desc: 'build and deploy your project',
+                register: function(){}
+            };
+        */
         var cmd = fis.require('command', name);
         name = cmd.name || name;
         name = fis.util.pad(name, 12);
@@ -81,6 +88,7 @@ fis.cli.help = function(){
     console.log(content.join('\n'));
 };
 
+//fis三条命令
 fis.cli.help.commands = [ 'release', 'install', 'server' ];
 
 //output version info
@@ -119,8 +127,8 @@ function hasArgv(argv, search){
 //run cli tools
 //fis启动接口方法，argv参数为process.argv，即：[ 'node', '/Users/hanli/git/SCI/fis/bin/fis', ... ]。
 fis.cli.run = function(argv){
-    console.log(argv)
-    fis.processCWD = process.cwd(); //fis所在目录，如："/Users/hanli/git/SCI/fis"
+    // console.log(argv)
+    fis.processCWD = process.cwd(); //process.cwd()返回当前进程的工作目录，如："/Users/hanli/git/SCI/fis"
 
     //如果有参数'--no-color'，则说明console输出不带color。
     if(hasArgv(argv, '--no-color')){
@@ -128,26 +136,37 @@ fis.cli.run = function(argv){
     }
 
     var first = argv[2];
-    //查看fis帮助信息
+    //查看fis帮助信息，如：fis -h 或 fis --help。
     if(argv.length < 3 || first === '-h' ||  first === '--help'){
         fis.cli.help();
-    //查看fis版本信息
+    //查看fis版本信息，如：fis -v 或 fis --version。
     } else if(first === '-v' || first === '--version'){
         fis.cli.version();
-    //查看fis帮助信息
+    //查看fis帮助信息，如： fis -。
     } else if(first[0] === '-'){
         fis.cli.help();
     //否则加载'commander'模块，分析命令调用相应命令。
     } else {
         //register command
+        //通过command模块构建[ 'release', 'install', 'server' ]3个命令的命令控制台。
+        //参考https://www.npmjs.com/package/commander
         var commander = fis.cli.commander = require('commander');
+        /*cmd如下：
+            cmd = {
+                name: 'release',
+                desc: 'build and deploy your project',
+                register: function(){}
+            };
+        */
         var cmd = fis.require('command', argv[2]);
         cmd.register(
+            //返回一个对象作为参数传给cmd.register回调。
             commander
                 .command(cmd.name || first)
                 .usage(cmd.usage)
                 .description(cmd.desc)
         );
+        //即：program.parse(process.argv);
         commander.parse(argv);
     }
 };
