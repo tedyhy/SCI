@@ -23,6 +23,7 @@ var requirejs, require, define;
         ap = Array.prototype,
         apsp = ap.splice,
         isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document),
+        //参考：http://www.cnblogs.com/_franky/archive/2010/11/23/1885773.html
         isWebWorker = !isBrowser && typeof importScripts !== 'undefined',
         //PS3 indicates loaded and complete, but need to wait for complete
         //specifically. Sequence is 'loading', 'loaded', execution,
@@ -32,16 +33,19 @@ var requirejs, require, define;
         /^complete$/ : /^(complete|loaded)$/,
         defContextName = '_',
         //Oh the tragedy, detecting opera. See the usage of isOpera for reason.
+        //用于检测是否是opera浏览器。
         isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]',
         contexts = {},
         cfg = {},
         globalDefQueue = [],
         useInteractive = false;
 
+    //判断是否是函数
     function isFunction(it) {
         return ostring.call(it) === '[object Function]';
     }
 
+    //判断是否是数组
     function isArray(it) {
         return ostring.call(it) === '[object Array]';
     }
@@ -50,6 +54,7 @@ var requirejs, require, define;
      * Helper function for iterating over an array. If the func returns
      * a true value, it will break out of the loop.
      */
+    //一个遍历辅助函数，当func函数返回true时，会中断遍历。
     function each(ary, func) {
         if (ary) {
             var i;
