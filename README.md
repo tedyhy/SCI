@@ -15,3 +15,6 @@ SCI(Source code interpretation)
 
 5.datepicker
 <pre><code>js/datepicker.js</code></pre>
+
+6.requireJS
+<pre><code>requirejs-2.1.16/require.js</code></pre>
