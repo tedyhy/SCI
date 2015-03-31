@@ -58,7 +58,7 @@ var requirejs, require, define;
     function each(ary, func) {
         if (ary) {
             var i;
-            for (i = 0; i < ary.length; i += 1) {
+            for (i = 0; i < ary.length; i += 1) { //效率不高，可以这样：for (var i = 0, l = ary.length; i < l; i++) {//...}
                 if (ary[i] && func(ary[i], i, ary)) {
                     break;
                 }
@@ -70,6 +70,7 @@ var requirejs, require, define;
      * Helper function for iterating over an array backwards. If the func
      * returns a true value, it will break out of the loop.
      */
+    //一个遍历辅助函数，当func函数返回true时，会中断遍历。与each函数相似，只是反序遍历。
     function eachReverse(ary, func) {
         if (ary) {
             var i;
@@ -81,10 +82,11 @@ var requirejs, require, define;
         }
     }
 
+    //判断对象属性是否是对象自有属性。
     function hasProp(obj, prop) {
         return hasOwn.call(obj, prop);
     }
-
+    //判断对象属性是否是对象自有属性，如果是则获取其属性值。
     function getOwn(obj, prop) {
         return hasProp(obj, prop) && obj[prop];
     }
@@ -94,6 +96,7 @@ var requirejs, require, define;
      * property value. If the function returns a truthy value, then the
      * iteration is stopped.
      */
+    //遍历对象属性，将对象和属性作为回调参数，如果回调返回true，则中断遍历。
     function eachProp(obj, func) {
         var prop;
         for (prop in obj) {
@@ -109,10 +112,15 @@ var requirejs, require, define;
      * Simple function to mix in properties from source into target,
      * but only if target does not already have a property of the same name.
      */
+    //简单的函数用于将source和target属性混合，支持强制覆盖，支持深度混合。
+    //@force 强制覆盖已有属性
+    //@deepStringMixin 深度覆盖
     function mixin(target, source, force, deepStringMixin) {
         if (source) {
             eachProp(source, function(value, prop) {
+                //强制覆盖或者木有此属性
                 if (force || !hasProp(target, prop)) {
+                    //深度覆盖
                     if (deepStringMixin && typeof value === 'object' && value &&
                         !isArray(value) && !isFunction(value) &&
                         !(value instanceof RegExp)) {
@@ -120,6 +128,7 @@ var requirejs, require, define;
                         if (!target[prop]) {
                             target[prop] = {};
                         }
+                        //循环遍历
                         mixin(target[prop], value, force, deepStringMixin);
                     } else {
                         target[prop] = value;
@@ -132,22 +141,26 @@ var requirejs, require, define;
 
     //Similar to Function.prototype.bind, but the 'this' object is specified
     //first, since it is easier to read/figure out what 'this' will be.
+    //为回调fn绑定作用域
     function bind(obj, fn) {
         return function() {
             return fn.apply(obj, arguments);
         };
     }
 
+    //获取文档所有script节点
     function scripts() {
         return document.getElementsByTagName('script');
     }
 
+    //抛出错误
     function defaultOnError(err) {
         throw err;
     }
 
     //Allow getting a global that is expressed in
     //dot notation, like 'a.b.c'.
+    //如：'a.b.c' => window.a.b.c
     function getGlobal(value) {
         if (!value) {
             return value;
@@ -167,6 +180,7 @@ var requirejs, require, define;
      *
      * @returns {Error}
      */
+    //生成错误信息
     function makeError(id, msg, err, requireModules) {
         var e = new Error(msg + '\nhttp://requirejs.org/docs/errors.html#' + id);
         e.requireType = id;
@@ -177,12 +191,14 @@ var requirejs, require, define;
         return e;
     }
 
+    //如果define已经定义过了，则返回，不会再次覆盖define方法。
     if (typeof define !== 'undefined') {
         //If a define is already in play via another AMD loader,
         //do not overwrite.
         return;
     }
 
+    //如果requirejs已定义，且是函数，则返回，不会再次覆盖requirejs接口。
     if (typeof requirejs !== 'undefined') {
         if (isFunction(requirejs)) {
             //Do not overwrite an existing requirejs instance.
@@ -1722,6 +1738,9 @@ var requirejs, require, define;
      * on a require that are not standardized), and to give a short
      * name for minification/local scope use.
      */
+    //主入口函数
+    //如果只有一个参数，且是字符串，则将加载次模块
+    //如果第一个参数是数组
     req = requirejs = function(deps, callback, errback, optional) {
 
         //Find the right context, use default
