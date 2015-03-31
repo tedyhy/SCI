@@ -22,13 +22,16 @@ var requirejs, require, define;
         hasOwn = op.hasOwnProperty,
         ap = Array.prototype,
         apsp = ap.splice,
+        //判断是否是浏览器环境。
         isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document),
+        //判断是否是webWorker环境。
         //参考：http://www.cnblogs.com/_franky/archive/2010/11/23/1885773.html
         isWebWorker = !isBrowser && typeof importScripts !== 'undefined',
         //PS3 indicates loaded and complete, but need to wait for complete
         //specifically. Sequence is 'loading', 'loaded', execution,
         // then 'complete'. The UA check is unfortunate, but not sure how
         //to feature test w/o causing perf issues.
+        //兼容PS3平台浏览器。
         readyRegExp = isBrowser && navigator.platform === 'PLAYSTATION 3' ?
         /^complete$/ : /^(complete|loaded)$/,
         defContextName = '_',
@@ -1804,6 +1807,7 @@ var requirejs, require, define;
         require = req;
     }
 
+    //requireJS版本
     req.version = version;
 
     //Used to filter out dependencies that are already paths.
@@ -1815,6 +1819,7 @@ var requirejs, require, define;
     };
 
     //Create default context.
+    //创建默认的作用域
     req({});
 
     //Exports some context-sensitive methods on global require.
@@ -1833,11 +1838,15 @@ var requirejs, require, define;
         };
     });
 
+    //如果是浏览器环境，则设置baseElement（head元素或base元素的父节点）。
     if (isBrowser) {
+        //获取页面上head元素节点。
         head = s.head = document.getElementsByTagName('head')[0];
         //If BASE tag is in play, using appendChild is a problem for IE6.
         //When that browser dies, this can be removed. Details in this jQuery bug:
         //http://dev.jquery.com/ticket/2709
+        //如果页面head元素里有base元素节点，则避免ie6下bug，所以会采用head.insertBefore(node, baseElement)方式。
+        //否则采用head.appendChild(node)方式将script节点插入文档拉取其内容。
         baseElement = document.getElementsByTagName('base')[0];
         if (baseElement) {
             head = s.head = baseElement.parentNode;
@@ -1849,17 +1858,24 @@ var requirejs, require, define;
      * function. Intercept/override it if you want custom error handling.
      * @param {Error} err the error object.
      */
+    //任何错误需要显示的生成将被传递给这个函数，
+    //如果想自定义错误处理，可以重载此回调函数。
     req.onError = defaultOnError;
 
     /**
      * Creates the node for the load command. Only used in browser envs.
      */
+    //仅仅在浏览器环境下创建script节点
     req.createNode = function(config, moduleName, url) {
+        //如果是xhtml模式文档，则创建带有命名空间的script节点。
         var node = config.xhtml ?
             document.createElementNS('http://www.w3.org/1999/xhtml', 'html:script') :
             document.createElement('script');
+        //设置节点类型
         node.type = config.scriptType || 'text/javascript';
+        //设置编码类型
         node.charset = 'utf-8';
+        //异步加载
         node.async = true;
         return node;
     };
@@ -1873,11 +1889,14 @@ var requirejs, require, define;
      * @param {String} moduleName the name of the module.
      * @param {Object} url the URL to the module.
      */
+    //浏览器环境下，请求模块url，加载模块内容。
+    //其他环境中，允许弄一个单独的函数去覆盖此函数。
     req.load = function(context, moduleName, url) {
         var config = (context && context.config) || {},
             node;
         if (isBrowser) {
             //In the browser so use a script tag
+            //创建一个script元素节点
             node = req.createNode(config, moduleName, url);
 
             node.setAttribute('data-requirecontext', context.contextName);
@@ -1960,11 +1979,14 @@ var requirejs, require, define;
         }
     };
 
+    //获取状态为“下载完成但尚不可用”的script节点。
     function getInteractiveScript() {
+        //如果有此状态的script节点，则返回此节点
         if (interactiveScript && interactiveScript.readyState === 'interactive') {
             return interactiveScript;
         }
 
+        //反序遍历script节点，直到找到状态为此状态的节点，然后返回。
         eachReverse(scripts(), function(script) {
             if (script.readyState === 'interactive') {
                 return (interactiveScript = script);
@@ -2088,6 +2110,8 @@ var requirejs, require, define;
         (context ? context.defQueue : globalDefQueue).push([name, deps, callback]);
     };
 
+    //jQuery对AMD的支持标志。jQuery1.7开始支持AMD规范，jQuery1.11.1去掉了对define.amd.jQuery的判断。
+    //参考 http://www.css88.com/archives/4826
     define.amd = {
         jQuery: true
     };
@@ -2099,6 +2123,7 @@ var requirejs, require, define;
      * loader plugins, not for plain JS modules.
      * @param {String} text the text to execute/evaluate.
      */
+    //执行js的函数
     req.exec = function(text) {
         /*jslint evil: true */
         return eval(text);
