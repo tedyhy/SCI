@@ -1231,16 +1231,20 @@ var requirejs, require, define;
          * @param {Event} evt
          * @returns {Object}
          */
+        //参数evt为脚本加载事件对象。此方法用来移除脚本节点上绑定的事件。
         function getScriptData(evt) {
             //Using currentTarget instead of target for Firefox 2.0's sake. Not
             //all old browsers will be supported, but this one was easy enough
             //to support and still makes sense.
+            //标准浏览器下evt.currentTarget，ie浏览器下使用evt.srcElement。
             var node = evt.currentTarget || evt.srcElement;
 
             //Remove the listeners once here.
+            //一次性移走'load'、'onreadystatechange'、'error'事件。
             removeListener(node, context.onScriptLoad, 'load', 'onreadystatechange');
             removeListener(node, context.onScriptError, 'error');
 
+            //返回对象，包括：node节点、模块id。
             return {
                 node: node,
                 id: node && node.getAttribute('data-requiremodule')
@@ -1696,6 +1700,8 @@ var requirejs, require, define;
              * @param {Event} evt the event from the browser for the script
              * that was loaded.
              */
+            //脚本加载回调，用来检测脚本加载状态。
+            //@param {Event} evt来自浏览器脚本加载回调事件对象。
             onScriptLoad: function(evt) {
                 //Using currentTarget instead of target for Firefox 2.0's sake. Not
                 //all old browsers will be supported, but this one was easy enough
@@ -1704,9 +1710,11 @@ var requirejs, require, define;
                     (readyRegExp.test((evt.currentTarget || evt.srcElement).readyState))) {
                     //Reset interactive script so a script node is not held onto for
                     //to long.
+                    //如果脚本加载完毕，则重置interactiveScript为空。
                     interactiveScript = null;
 
                     //Pull out the name of the module and the context.
+                    //移走node节点上绑定事件。
                     var data = getScriptData(evt);
                     context.completeLoad(data.id);
                 }
@@ -1715,6 +1723,7 @@ var requirejs, require, define;
             /**
              * Callback for script errors.
              */
+            //脚本错误回调
             onScriptError: function(evt) {
                 var data = getScriptData(evt);
                 if (!hasPathFallback(data.id)) {
@@ -1896,9 +1905,10 @@ var requirejs, require, define;
             node;
         if (isBrowser) {
             //In the browser so use a script tag
-            //创建一个script元素节点
+            //浏览器环境下，创建一个script元素节点
             node = req.createNode(config, moduleName, url);
 
+            //设置作用域名称和模块名称属性
             node.setAttribute('data-requirecontext', context.contextName);
             node.setAttribute('data-requiremodule', moduleName);
 
@@ -1910,6 +1920,8 @@ var requirejs, require, define;
             //https://connect.microsoft.com/IE/feedback/details/648057/script-onload-event-is-not-fired-immediately-after-script-execution
             //UNFORTUNATELY Opera implements attachEvent but does not follow the script
             //script execution mode.
+            //设置script节点加载监听器。
+            //IE9下使用onload监听会有问题，即：在脚本加载完成后木有立即触发onload事件。因此会优先使用attachEvent。
             if (node.attachEvent &&
                 //Check if node.attachEvent is artificially added by custom script or
                 //natively supported by browser
@@ -1918,6 +1930,9 @@ var requirejs, require, define;
                 //in IE8, node.attachEvent does not have toString()
                 //Note the test for "[native code" with no closing brace, see:
                 //https://github.com/jrburke/requirejs/issues/273
+                //首先检测node.attachEvent函数是否是浏览器原生方法。
+                //IE<=8的node.attachEvent函数木有toString方法。
+                //HtmlUnit测试环境下IE7模式的node.attachEvent函数的toString方法为"[native code"，没有右边的中括号。
                 !(node.attachEvent.toString && node.attachEvent.toString().indexOf('[native code') < 0) &&
                 !isOpera) {
                 //Probably IE. IE (at least 6-8) do not fire
@@ -1927,6 +1942,7 @@ var requirejs, require, define;
                 //readyState at the time of the define call.
                 useInteractive = true;
 
+                //给node绑定'onreadystatechange'事件监听脚本加载情况。
                 node.attachEvent('onreadystatechange', context.onScriptLoad);
                 //It would be great to add an error handler here to catch
                 //404s in IE9+. However, onreadystatechange will fire before
@@ -1939,6 +1955,7 @@ var requirejs, require, define;
                 //Best hope: IE10 fixes the issues,
                 //and then destroys all installs of IE 6-9.
                 //node.attachEvent('onerror', context.onScriptError);
+                //标准浏览器给node节点绑定'load'和'error'事件。
             } else {
                 node.addEventListener('load', context.onScriptLoad, false);
                 node.addEventListener('error', context.onScriptError, false);
@@ -1949,16 +1966,22 @@ var requirejs, require, define;
             //of the appendChild execution, so to tie an anonymous define
             //call to the module name (which is stored on the node), hold on
             //to a reference to this node, but clear after the DOM insertion.
+            //当前正在增加的script节点。
             currentlyAddingScript = node;
+            //将script节点插入head节点。
             if (baseElement) {
-                head.insertBefore(node, baseElement);
+                head.insertBefore(node, baseElement); //head里base元素bug导致，使用insertBefore代替appendChild方法。
             } else {
                 head.appendChild(node);
             }
+            //清空当前正在增加的script节点。
             currentlyAddingScript = null;
 
             return node;
         } else if (isWebWorker) {
+            //webWorker环境下，使用importScripts方法。
+            //但是，importScripts不是非常高效，它会导致阻塞直到脚本下载完毕。
+            //然而，如果是webWorker环境，期望的是仅仅加载一个脚本就好。如果是其他情况，需要重新考虑了。
             try {
                 //In a web worker, use importScripts. This is not a very
                 //efficient use of importScripts, importScripts will block until
@@ -1971,6 +1994,7 @@ var requirejs, require, define;
                 //Account for anonymous modules
                 context.completeLoad(moduleName);
             } catch (e) {
+                //如果出现异常，则生成错误并抛出。
                 context.onError(makeError('importscripts',
                     'importScripts failed for ' +
                     moduleName + ' at ' + url,
