@@ -926,17 +926,17 @@ jQuery.extend({
 		var value,
 			i = 0,
 			length = elems.length,
-			isArray = isArraylike( elems ),
+			isArray = isArraylike( elems ),//判断elems是不是类数组
 			ret = [];
 
 		// Go through the array, translating each of the items to their
 		// elems为jquery对象
 		if ( isArray ) {
 			for ( ; i < length; i++ ) {
-				value = callback( elems[ i ], i, arg );
+				value = callback( elems[ i ], i, arg );回调，传参，得到的value为计算后的结果
 
 				if ( value != null ) {
-					ret[ ret.length ] = value; // 或者：ret.push(value)
+					ret[ ret.length ] = value; // 或者：ret.push(value)  添加到新数组里
 				}
 			}
 
@@ -954,7 +954,7 @@ jQuery.extend({
 
 		// Flatten any nested arrays
 		// 返回数组（由map循环时执行回调的结果组成）
-		return core_concat.apply( [], ret );
+		return core_concat.apply( [], ret );//为避免出现复合数组
 	},
 
 	// A global GUID counter for objects
@@ -963,12 +963,12 @@ jQuery.extend({
 
 	// Bind a function to a context, optionally partially applying any
 	// arguments.
-	proxy: function( fn, context ) {
+	proxy: function( fn, context ) { //修改this指向  参数分别为函数和指向
 		var args, proxy, tmp;
 
 		// obj = {"test": fn};
 		// jQuery.proxy( obj, "test" ) 
-		if ( typeof context === "string" ) {
+		if ( typeof context === "string" ) { //如果指向是字符串
 			tmp = fn[ context ];
 			context = fn;
 			fn = tmp;
@@ -976,7 +976,7 @@ jQuery.extend({
 
 		// Quick check to determine if target is callable, in the spec
 		// this throws a TypeError, but we will just return undefined.
-		if ( !jQuery.isFunction( fn ) ) {
+		if ( !jQuery.isFunction( fn ) ) {//fn必须为函数
 			return undefined;
 		}
 
@@ -984,7 +984,7 @@ jQuery.extend({
 		// 取(fn, context)两个参数后的参数为新函数（代理函数）的参数
 		args = core_slice.call( arguments, 2 );
 		proxy = function() {
-			return fn.apply( context || this, args.concat( core_slice.call( arguments ) ) );
+			return fn.apply( context || this, args.concat( core_slice.call( arguments ) ) );//通过core_slice转为数组
 		};
 
 		// Set the guid of unique handler to the same of original handler, so it can be removed
@@ -1002,7 +1002,7 @@ jQuery.extend({
 	/*
 	   例如：$('div').height(100);
 	   elems 就是匹配的元素节点集合，jQuery对象。
-	   fn 是需要对节点进行操作的函数。
+	   fn 是需要对节点进行操作的函数。回调函数
 	   key 是属性名，例如 'height'。
 	   value 是样式值或函数，例如 '+=100px'。
 	   chainable 表示是否链式执行，对于 get 类方法，我们会获得一个返回值，例如字符串、数字等等，这时候是不需要链式执行的；
@@ -1010,10 +1010,11 @@ jQuery.extend({
 	   emptyGet 用于节点集合中没有元素时返回的默认值。
 	   raw 为 true，表明 value 不是个函数。
 	*/
+	//多功能值的操作（内部）
 	access: function( elems, fn, key, value, chainable, emptyGet, raw ) {
 		var i = 0,
 			length = elems.length, // elems为jQuery对象。
-			bulk = key == null;
+			bulk = key == null;//key和null进行比较，返回bulk为true或false
 
 		// Sets many values
 		// (1) 处理设置元素样式集合的情况。
