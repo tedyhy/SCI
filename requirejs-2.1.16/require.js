@@ -17,11 +17,11 @@ var requirejs, require, define;
         cjsRequireRegExp = /[^.]\s*require\s*\(\s*["']([^'"\s]+)["']\s*\)/g,
         jsSuffixRegExp = /\.js$/,
         currDirRegExp = /^\.\//,
-        op = Object.prototype,
-        ostring = op.toString,
-        hasOwn = op.hasOwnProperty,
-        ap = Array.prototype,
-        apsp = ap.splice,
+        op = Object.prototype, //Object原型对象
+        ostring = op.toString, //对象toString方法
+        hasOwn = op.hasOwnProperty, //对象hasOwnProperty方法
+        ap = Array.prototype, //Array原型对象
+        apsp = ap.splice, //数组splice方法
         //判断是否是浏览器环境。
         isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document),
         //判断是否是webWorker环境。
@@ -34,7 +34,7 @@ var requirejs, require, define;
         //兼容PS3平台浏览器。
         readyRegExp = isBrowser && navigator.platform === 'PLAYSTATION 3' ?
         /^complete$/ : /^(complete|loaded)$/,
-        defContextName = '_',
+        defContextName = '_', //定义作用域名称为"_"
         //Oh the tragedy, detecting opera. See the usage of isOpera for reason.
         //用于检测是否是opera浏览器。
         isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]',
@@ -58,6 +58,7 @@ var requirejs, require, define;
      * a true value, it will break out of the loop.
      */
     //一个遍历辅助函数，当func函数返回true时，会中断遍历。
+    //函数func的参数为：func(value, key, array)。
     function each(ary, func) {
         if (ary) {
             var i;
@@ -74,6 +75,7 @@ var requirejs, require, define;
      * returns a true value, it will break out of the loop.
      */
     //一个遍历辅助函数，当func函数返回true时，会中断遍历。与each函数相似，只是反序遍历。
+    //函数func的参数为：func(value, key, array)。
     function eachReverse(ary, func) {
         if (ary) {
             var i;
@@ -99,7 +101,8 @@ var requirejs, require, define;
      * property value. If the function returns a truthy value, then the
      * iteration is stopped.
      */
-    //遍历对象属性，将对象和属性作为回调参数，如果回调返回true，则中断遍历。
+    //遍历对象，将对象和属性作为回调参数，如果回调返回true，则中断遍历。
+    //函数func的参数为：func(value, key)。
     function eachProp(obj, func) {
         var prop;
         for (prop in obj) {
@@ -116,22 +119,25 @@ var requirejs, require, define;
      * but only if target does not already have a property of the same name.
      */
     //简单的函数用于将source和target属性混合，支持强制覆盖，支持深度混合。
-    //@force 强制覆盖已有属性
-    //@deepStringMixin 深度覆盖
+    //@target {Object} 目标对象
+    //@source {Object} 源对象
+    //@force {Boolean} 强制覆盖已有属性
+    //@deepStringMixin {Boolean} 深度递归覆盖
     function mixin(target, source, force, deepStringMixin) {
         if (source) {
+            //遍历对象
             eachProp(source, function(value, prop) {
-                //强制覆盖或者木有此属性
+                //强制覆盖或者目标对象木有此属性
                 if (force || !hasProp(target, prop)) {
-                    //深度覆盖
+                    //深度递归覆盖
                     if (deepStringMixin && typeof value === 'object' && value &&
                         !isArray(value) && !isFunction(value) &&
                         !(value instanceof RegExp)) {
-
+                        //如果目标对象木有此属性，则置为空对象
                         if (!target[prop]) {
                             target[prop] = {};
                         }
-                        //循环遍历
+                        //深度循环遍历混合
                         mixin(target[prop], value, force, deepStringMixin);
                     } else {
                         target[prop] = value;
@@ -151,7 +157,7 @@ var requirejs, require, define;
         };
     }
 
-    //获取文档所有script节点
+    //获取当前文档所有script节点
     function scripts() {
         return document.getElementsByTagName('script');
     }
@@ -166,9 +172,10 @@ var requirejs, require, define;
     //如：'a.b.c' => window.a.b.c
     function getGlobal(value) {
         if (!value) {
-            return value;
+            return value; //返回undefined
         }
-        var g = global;
+        var g = global; //window对象
+        //如：'a.b.c'
         each(value.split('.'), function(part) {
             g = g[part];
         });
@@ -189,29 +196,30 @@ var requirejs, require, define;
         e.requireType = id;
         e.requireModules = requireModules;
         if (err) {
-            e.originalError = err;
+            e.originalError = err; //原错误
         }
         return e;
     }
 
-    //如果define已经定义过了，则返回，不会再次覆盖define方法。
+    //如果define已经定义过了（其他AMD加载器），则返回（不会覆盖当前加载器的define方法）。
     if (typeof define !== 'undefined') {
         //If a define is already in play via another AMD loader,
         //do not overwrite.
         return;
     }
 
-    //如果requirejs已定义，且是函数，则返回，不会再次覆盖requirejs接口。
+    //如果requirejs已定义，且是函数，则返回，不会覆盖当前requirejs接口。
     if (typeof requirejs !== 'undefined') {
         if (isFunction(requirejs)) {
             //Do not overwrite an existing requirejs instance.
             return;
         }
-        cfg = requirejs;
-        requirejs = undefined;
+        cfg = requirejs; //保留原来的requirejs变量
+        requirejs = undefined; //重置requirejs变量为undefined。
     }
 
     //Allow for a require config object
+    //如果require已经定义，且不是函数，则保留原来的require。
     if (typeof require !== 'undefined' && !isFunction(require)) {
         //assume it is a config object.
         cfg = require;
