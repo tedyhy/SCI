@@ -34,7 +34,7 @@ var requirejs, require, define;
         //兼容PS3平台浏览器。
         readyRegExp = isBrowser && navigator.platform === 'PLAYSTATION 3' ?
         /^complete$/ : /^(complete|loaded)$/,
-        defContextName = '_', //定义作用域名称为"_"
+        defContextName = '_', //定义作用域名称
         //Oh the tragedy, detecting opera. See the usage of isOpera for reason.
         //用于检测是否是opera浏览器。
         isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]',
@@ -1758,9 +1758,12 @@ var requirejs, require, define;
      * on a require that are not standardized), and to give a short
      * name for minification/local scope use.
      */
+    //req为本地局部变量使用，是requirejs的引用，短名称方便。
     //主入口函数
-    //如果只有一个参数，且是字符串，则将加载次模块
-    //如果第一个参数是数组
+    //@deps 指定要加载的一个依赖数组
+    //@callback 回调
+    //@errback 错误回调
+    //@optional 可选参数
     req = requirejs = function(deps, callback, errback, optional) {
 
         //Find the right context, use default
@@ -1768,11 +1771,14 @@ var requirejs, require, define;
             contextName = defContextName;
 
         // Determine if have config object in the call.
+        // 确定是否是config配置对象被传递进来。
         if (!isArray(deps) && typeof deps !== 'string') {
             // deps is a config object
+            // 即，参数deps为配置对象。
             config = deps;
             if (isArray(callback)) {
                 // Adjust args if there are dependencies
+                // 如果有依赖，就调整参数。
                 deps = callback;
                 callback = errback;
                 errback = optional;
@@ -1781,6 +1787,7 @@ var requirejs, require, define;
             }
         }
 
+        //如果有配置config，且有依赖配置（config.context，在配置对象里指定要加载的一个依赖数组）
         if (config && config.context) {
             contextName = config.context;
         }
@@ -1801,6 +1808,7 @@ var requirejs, require, define;
      * Support require.config() to make it easier to cooperate with other
      * AMD loaders on globally agreed names.
      */
+    //配置函数，将config配置传递给req方法。
     req.config = function(config) {
         return req(config);
     };
@@ -1820,6 +1828,7 @@ var requirejs, require, define;
     /**
      * Export require as a global, but only if it does not already exist.
      */
+    //如果全局变量require不存在，则将req（requirejs）赋给require暴露到全局。
     if (!require) {
         require = req;
     }
