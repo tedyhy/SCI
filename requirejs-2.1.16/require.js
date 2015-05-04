@@ -8,6 +8,7 @@
 /*jslint regexp: true, nomen: true, sloppy: true */
 /*global window, navigator, document, importScripts, setTimeout, opera */
 
+//三个极其重要的全局变量。
 var requirejs, require, define;
 (function(global) {
     var req, s, head, baseElement, dataMain, src,
@@ -201,6 +202,10 @@ var requirejs, require, define;
         return e;
     }
 
+
+    /*
+    * 检查并准备三个全局变量：define、require、requirejs。
+    */
     //如果define已经定义过了（其他AMD加载器），则返回（不会覆盖当前加载器的define方法）。
     if (typeof define !== 'undefined') {
         //If a define is already in play via another AMD loader,
@@ -208,22 +213,23 @@ var requirejs, require, define;
         return;
     }
 
-    //如果requirejs已定义，且是函数，则返回，不会覆盖当前requirejs接口。
+    //如果requirejs已定义，且是函数，则返回，不会覆盖已存在的requirejs接口（可能是其他类库，只是名称冲突）。
     if (typeof requirejs !== 'undefined') {
         if (isFunction(requirejs)) {
             //Do not overwrite an existing requirejs instance.
             return;
         }
-        cfg = requirejs; //保留原来的requirejs变量
+        cfg = requirejs; //保留原来的requirejs内容。
         requirejs = undefined; //重置requirejs变量为undefined。
     }
 
     //Allow for a require config object
-    //如果require已经定义，且不是函数，则保留原来的require。
+    //如果require已经定义，且不是函数，则保留原来的require内容。
     if (typeof require !== 'undefined' && !isFunction(require)) {
         //assume it is a config object.
+        //假定require是一个配置对象。
         cfg = require;
-        require = undefined;
+        require = undefined; //重置require变量为undefined。
     }
 
     function newContext(contextName) {
@@ -1759,6 +1765,7 @@ var requirejs, require, define;
      * name for minification/local scope use.
      */
     //req为本地局部变量使用，是requirejs的引用，短名称方便。
+    //即：window.requirejs。
     //主入口函数
     //@deps 指定要加载的一个依赖数组
     //@callback 回调
@@ -1808,7 +1815,8 @@ var requirejs, require, define;
      * Support require.config() to make it easier to cooperate with other
      * AMD loaders on globally agreed names.
      */
-    //配置函数，将config配置传递给req方法。
+    //配置函数，将config配置传递给req方法。即：
+    //requirejs.config(cf)等价requirejs(cf)。
     req.config = function(config) {
         return req(config);
     };
@@ -1819,6 +1827,7 @@ var requirejs, require, define;
      * that have a better solution than setTimeout.
      * @param  {Function} fn function to execute later.
      */
+    //回调延迟执行
     req.nextTick = typeof setTimeout !== 'undefined' ? function(fn) {
         setTimeout(fn, 4);
     } : function(fn) {
@@ -1828,7 +1837,8 @@ var requirejs, require, define;
     /**
      * Export require as a global, but only if it does not already exist.
      */
-    //如果全局变量require不存在，则将req（requirejs）赋给require暴露到全局。
+    //如果全局变量require不存在，则将req（requirejs）赋给require变量。
+    //其实，require === requirejs。
     if (!require) {
         require = req;
     }
@@ -1837,8 +1847,8 @@ var requirejs, require, define;
     req.version = version;
 
     //Used to filter out dependencies that are already paths.
-    req.jsExtRegExp = /^\/|:|\?|\.js$/;
-    req.isBrowser = isBrowser;
+    req.jsExtRegExp = /^\/|:|\?|\.js$/; //用于过滤出哪些依赖已经是paths。
+    req.isBrowser = isBrowser; //是否是浏览器环境
     s = req.s = {
         contexts: contexts,
         newContext: newContext
@@ -1849,6 +1859,7 @@ var requirejs, require, define;
     req({});
 
     //Exports some context-sensitive methods on global require.
+    //为全局变量require添加常用方法：toUrl、undef、defined、specified。
     each([
         'toUrl',
         'undef',
@@ -2089,18 +2100,24 @@ var requirejs, require, define;
      * return a value to define the module corresponding to the first argument's
      * name.
      */
+    //定义模块的函数。
     define = function(name, deps, callback) {
         var node, context;
 
         //Allow for anonymous modules
+        //定义一个匿名模块，如：define(['jquery'], function(){...});
         if (typeof name !== 'string') {
             //Adjust args appropriately
+            //相应的调整参数
             callback = deps;
             deps = name;
             name = null;
         }
 
         //This module may not have dependencies
+        //此模块木有依赖模块，如：
+        //define('jquery', function(){...}); 或
+        //define(function(){...});
         if (!isArray(deps)) {
             callback = deps;
             deps = null;
@@ -2108,15 +2125,22 @@ var requirejs, require, define;
 
         //If no name, and callback is a function, then figure out if it a
         //CommonJS thing with dependencies.
+        //如果定义此模块时，写明了模块依赖，则不会去计算判断当前模块的依赖。否则会通过正则判断其模块依赖。
+        //如：define('jquery', function(){...}); 或
+        //define(function(){...});（可能是一个CommonJS模块）
         if (!deps && isFunction(callback)) {
             deps = [];
             //Remove comments from the callback string,
             //look for require calls, and pull them into the dependencies,
             //but only if there are function args.
-            if (callback.length) {
+            //仅当callback回调有参数时（型参），才从callback回调字符串里移除注释字符串，
+            //并查找其依赖模块，将他们收集放入deps数组。
+            if (callback.length) { //callback回调有参数
                 callback
-                    .toString()
-                    .replace(commentRegExp, '')
+                    .toString() //获取callback回调字符串
+                    .replace(commentRegExp, '') //将代码中得注释清空
+                    //提取依赖，如：
+                    //require("a") => ["a"]
                     .replace(cjsRequireRegExp, function(match, dep) {
                         deps.push(dep);
                     });
@@ -2126,6 +2150,10 @@ var requirejs, require, define;
                 //work though if it just needs require.
                 //REQUIRES the function to expect the CommonJS variables in the
                 //order listed below.
+                //如：define(function(require){...}); 或
+                //define(function(require, exports, module){...});
+                //联合参数，将模块依赖加入参数，如：
+                //define(function('require', 'a', 'b'){...});
                 deps = (callback.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps);
             }
         }
@@ -2153,6 +2181,12 @@ var requirejs, require, define;
 
     //jQuery对AMD的支持标志。jQuery1.7开始支持AMD规范，jQuery1.11.1去掉了对define.amd.jQuery的判断。
     //参考 http://www.css88.com/archives/4826
+    /*
+        如：
+        if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
+            define( "jquery", [], function () { return jQuery; } );
+        }
+    */
     define.amd = {
         jQuery: true
     };
@@ -2171,5 +2205,6 @@ var requirejs, require, define;
     };
 
     //Set up with config info.
+    //设置配置信息。
     req(cfg);
 }(this));
