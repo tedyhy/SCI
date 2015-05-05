@@ -249,6 +249,7 @@ var requirejs, require, define;
                 //Defaults. Do not set a default for map
                 //config to speed up normalize(), which
                 //will run faster if there is no default.
+                //默认config配置。不要设置一个默认config.map，会加快normalize()执行。
                 waitSeconds: 7,
                 baseUrl: './',
                 paths: {},
@@ -279,6 +280,10 @@ var requirejs, require, define;
          * NOTE: this method MODIFIES the input array.
          * @param {Array} ary the array of path segments.
          */
+        //根据相对路径的 '.' 和 '..' 获取其真实路径（木有'.'和'..'的路径）。
+        //如：
+        //var b = ['a','b','..', '..', 'c'] => 'a/b/../../c'
+        //trimDots(b) => b === ['c'] => 'c'
         function trimDots(ary) {
             var i, part;
             for (i = 0; i < ary.length; i++) {
@@ -312,14 +317,20 @@ var requirejs, require, define;
          * only be done if this normalization is for a dependency ID.
          * @returns {String} normalized name
          */
+        //序列化模块名称，将相对链接名称序列化成一个能被映射到真实路径的模块名称。
+        //@name {String} 模块名称
+        //@baseName {String} 基路径
+        //@applyMap {Boolean} 是否应用config.map配置
         function normalize(name, baseName, applyMap) {
             var pkgMain, mapValue, nameParts, i, j, nameSegment, lastIndex,
                 foundMap, foundI, foundStarMap, starI, normalizedBaseParts,
+                //将baseName转换成数组，如：'js/base/d.js' => ['js', 'base', 'd.js']
                 baseParts = (baseName && baseName.split('/')),
                 map = config.map,
                 starMap = map && map['*'];
 
             //Adjust any relative paths.
+            //如：'./a/b/c.js' => ['.', 'a', 'b', 'c.js']
             if (name) {
                 name = name.split('/');
                 lastIndex = name.length - 1;
@@ -328,40 +339,60 @@ var requirejs, require, define;
                 // of IDs. Have to do this here, and not in nameToUrl
                 // because node allows either .js or non .js to map
                 // to same file.
+                // 如果模块名称想带上文件后缀'.js'，需要配置config.nodeIdCompat=true。
+                // 如：'./a/b/c.js' => ['.', 'a', 'b', 'c.js'] => ['.', 'a', 'b', 'c']
                 if (config.nodeIdCompat && jsSuffixRegExp.test(name[lastIndex])) {
                     name[lastIndex] = name[lastIndex].replace(jsSuffixRegExp, '');
                 }
 
                 // Starts with a '.' so need the baseName
+                // 如果模块名称以'.'开头，则需要baseName来确定绝对路径。
                 if (name[0].charAt(0) === '.' && baseParts) {
                     //Convert baseName to array, and lop off the last part,
                     //so that . matches that 'directory' and not name of the baseName's
                     //module. For instance, baseName of 'one/two/three', maps to
                     //'one/two/three.js', but we want the directory, 'one/two' for
                     //this normalization.
+                    //砍掉baseName最后一部分，获取其目录，如：'js/base/d.js' => 'js/base/'
                     normalizedBaseParts = baseParts.slice(0, baseParts.length - 1);
+                    //如：['js', 'base', '.', 'a', 'b', 'c']
                     name = normalizedBaseParts.concat(name);
                 }
 
-                trimDots(name);
-                name = name.join('/');
+                trimDots(name); //如：['js', 'base', '.', 'a', 'b', 'c'] => ['js', 'base', 'a', 'b', 'c']
+                name = name.join('/'); //如：'js/base/a/b/c'
             }
 
             //Apply map config if available.
+            //是否应用config.map配置。
             if (applyMap && map && (baseParts || starMap)) {
+                //如：'js/base/a/b/c' => ['js', 'base', 'a', 'b', 'c']
                 nameParts = name.split('/');
 
+                //倒序遍历nameParts
                 outerLoop: for (i = nameParts.length; i > 0; i -= 1) {
+                    //name片段如：
+                    //'js/base/a/b/c'
+                    //'js/base/a/b'
+                    //'js/base/a'
+                    //...
                     nameSegment = nameParts.slice(0, i).join('/');
 
+                    //如：'js/base/d.js' => ['js', 'base', 'd.js']
                     if (baseParts) {
                         //Find the longest baseName segment match in the config.
                         //So, do joins on the biggest to smallest lengths of baseParts.
+                        //倒序遍历baseParts
                         for (j = baseParts.length; j > 0; j -= 1) {
+                            //map片段如：
+                            //'js/base/d.js'
+                            //'js/base'
+                            //'js'
                             mapValue = getOwn(map, baseParts.slice(0, j).join('/'));
 
                             //baseName segment has config, find if it has one for
                             //this name.
+                            //有匹配的map配置
                             if (mapValue) {
                                 mapValue = getOwn(mapValue, nameSegment);
                                 if (mapValue) {
@@ -401,6 +432,7 @@ var requirejs, require, define;
             return pkgMain ? pkgMain : name;
         }
 
+        //移除模块名称为name的script节点
         function removeScript(name) {
             if (isBrowser) {
                 each(scripts(), function(scriptNode) {
