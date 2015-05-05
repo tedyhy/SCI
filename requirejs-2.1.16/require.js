@@ -11,13 +11,24 @@
 //三个极其重要的全局变量。
 var requirejs, require, define;
 (function(global) {
+    /*
+        @req require|requirejs
+        @head document.head|document.getElementsByTagName('base')[0]
+        @baseElement document.getElementsByTagName('base')[0]
+        @dataMain script.getAttribute('data-main')
+        @src dataMain.split('/')
+        @interactiveScript script.readyState === 'interactive'
+        @currentlyAddingScript 当前正在加载/处理的script节点
+        @mainScript src.pop()
+        @subPath src.length ? src.join('/') + '/' : './'
+    */
     var req, s, head, baseElement, dataMain, src,
         interactiveScript, currentlyAddingScript, mainScript, subPath,
         version = '2.1.16',
-        commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg,
-        cjsRequireRegExp = /[^.]\s*require\s*\(\s*["']([^'"\s]+)["']\s*\)/g,
-        jsSuffixRegExp = /\.js$/,
-        currDirRegExp = /^\.\//,
+        commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg, //注释正则
+        cjsRequireRegExp = /[^.]\s*require\s*\(\s*["']([^'"\s]+)["']\s*\)/g, //加载依赖正则
+        jsSuffixRegExp = /\.js$/, //js后缀正则
+        currDirRegExp = /^\.\//, //当前目录正则
         op = Object.prototype, //Object原型对象
         ostring = op.toString, //对象toString方法
         hasOwn = op.hasOwnProperty, //对象hasOwnProperty方法
@@ -40,7 +51,7 @@ var requirejs, require, define;
         //用于检测是否是opera浏览器。
         isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]',
         contexts = {},
-        cfg = {},
+        cfg = {}, //config配置信息
         globalDefQueue = [],
         useInteractive = false;
 
@@ -191,7 +202,7 @@ var requirejs, require, define;
      *
      * @returns {Error}
      */
-    //生成错误信息
+    //生成错误信息并返回
     function makeError(id, msg, err, requireModules) {
         var e = new Error(msg + '\nhttp://requirejs.org/docs/errors.html#' + id);
         e.requireType = id;
@@ -204,7 +215,7 @@ var requirejs, require, define;
 
 
     /*
-    * 检查并准备三个全局变量：define、require、requirejs。
+    * 检查并准备三个全局变量：define、requirejs、require。
     */
     //如果define已经定义过了（其他AMD加载器），则返回（不会覆盖当前加载器的define方法）。
     if (typeof define !== 'undefined') {
@@ -219,17 +230,16 @@ var requirejs, require, define;
             //Do not overwrite an existing requirejs instance.
             return;
         }
-        cfg = requirejs; //保留原来的requirejs内容。
-        requirejs = undefined; //重置requirejs变量为undefined。
+        cfg = requirejs; //保留原来的requirejs内容（config配置信息）。
+        requirejs = undefined; //重置requirejs变量为undefined（初始化）。
     }
 
     //Allow for a require config object
     //如果require已经定义，且不是函数，则保留原来的require内容。
     if (typeof require !== 'undefined' && !isFunction(require)) {
         //assume it is a config object.
-        //假定require是一个配置对象。
-        cfg = require;
-        require = undefined; //重置require变量为undefined。
+        cfg = require; //假定require是一个配置对象（config配置信息）。
+        require = undefined; //重置require变量为undefined（初始化）。
     }
 
     function newContext(contextName) {
@@ -1764,9 +1774,8 @@ var requirejs, require, define;
      * on a require that are not standardized), and to give a short
      * name for minification/local scope use.
      */
-    //req为本地局部变量使用，是requirejs的引用，短名称方便。
-    //即：window.requirejs。
-    //主入口函数
+    //req为本地局部变量使用，是requirejs的引用，短名称方便，即：window.requirejs。
+    //requirejs是主入口函数，参数如下：
     //@deps 指定要加载的一个依赖数组
     //@callback 回调
     //@errback 错误回调
@@ -1778,18 +1787,20 @@ var requirejs, require, define;
             contextName = defContextName;
 
         // Determine if have config object in the call.
-        // 确定是否是config配置对象被传递进来。
+        // 确定是否是config配置对象被传递进来。即：如果参数deps不是数组和字符串，则认为是config配置信息。
         if (!isArray(deps) && typeof deps !== 'string') {
             // deps is a config object
-            // 即，参数deps为配置对象。
+            // 参数deps为配置信息对象。
             config = deps;
             if (isArray(callback)) {
                 // Adjust args if there are dependencies
                 // 如果有依赖，就调整参数。
+                // 即：requirejs({...}, ['a', 'b']);
                 deps = callback;
                 callback = errback;
                 errback = optional;
             } else {
+                // 即：requirejs({...}, function(){...});
                 deps = [];
             }
         }
@@ -1815,8 +1826,7 @@ var requirejs, require, define;
      * Support require.config() to make it easier to cooperate with other
      * AMD loaders on globally agreed names.
      */
-    //配置函数，将config配置传递给req方法。即：
-    //requirejs.config(cf)等价requirejs(cf)。
+    //配置函数，将config配置传递给req方法。即：requirejs.config(cf)等价requirejs(cf)。
     req.config = function(config) {
         return req(config);
     };
