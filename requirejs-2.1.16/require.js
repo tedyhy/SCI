@@ -50,7 +50,7 @@ var requirejs, require, define;
         //Oh the tragedy, detecting opera. See the usage of isOpera for reason.
         //用于检测是否是opera浏览器。
         isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]',
-        contexts = {},
+        contexts = {}, //作用域内容对象
         cfg = {}, //config配置信息
         globalDefQueue = [],
         useInteractive = false;
@@ -245,12 +245,12 @@ var requirejs, require, define;
     function newContext(contextName) {
         var inCheckLoaded, Module, context, handlers,
             checkLoadedTimeoutId,
+            //默认config配置。不要设置一个默认config.map，否则会拖慢normalize()执行效率。
             config = {
                 //Defaults. Do not set a default for map
                 //config to speed up normalize(), which
                 //will run faster if there is no default.
-                //默认config配置。不要设置一个默认config.map，会加快normalize()执行。
-                waitSeconds: 7,
+                waitSeconds: 7, //等待加载时间设置，默认7s。
                 baseUrl: './',
                 paths: {},
                 bundles: {},
@@ -1815,11 +1815,15 @@ var requirejs, require, define;
     req = requirejs = function(deps, callback, errback, optional) {
 
         //Find the right context, use default
+        //@context {Object} 作用域对象
+        //@config {Object} 配置对象
+        //@contextName {Object} 作用域名称，默认为"_"
         var context, config,
-            contextName = defContextName;
+            contextName = defContextName; //默认为"_"
 
         // Determine if have config object in the call.
         // 确定是否是config配置对象被传递进来。即：如果参数deps不是数组和字符串，则认为是config配置信息。
+        // 如：requirejs({...}, ['a', 'b'], function(){...});
         if (!isArray(deps) && typeof deps !== 'string') {
             // deps is a config object
             // 参数deps为配置信息对象。
@@ -1837,20 +1841,26 @@ var requirejs, require, define;
             }
         }
 
-        //如果有配置config，且有依赖配置（config.context，在配置对象里指定要加载的一个依赖数组）
+        //如果有配置config，且有config.context设置（作用域名称，默认为"_"），
+        //则将默认的"_"替换为配置中的config.context内容。
         if (config && config.context) {
             contextName = config.context;
         }
 
+        //判断作用域contexts里是否存在contextName内容，如：
+        //contexts = {_: {...}}
         context = getOwn(contexts, contextName);
+        //如果不存在，则用req.s.newContext方法依据contextName来创建作用域对象。
         if (!context) {
             context = contexts[contextName] = req.s.newContext(contextName);
         }
 
+        //如果有配置信息，则调用context.configure方法处理配置。
         if (config) {
             context.configure(config);
         }
 
+        //调用context.require方法加载模块及依赖。
         return context.require(deps, callback, errback);
     };
 
