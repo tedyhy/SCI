@@ -44,6 +44,7 @@ var requirejs, require, define;
         // then 'complete'. The UA check is unfortunate, but not sure how
         //to feature test w/o causing perf issues.
         //兼容PS3平台浏览器。
+        //PS3平台使用'complete'，浏览器平台使用'complete|loaded'来判断script节点是否加载完毕。
         readyRegExp = isBrowser && navigator.platform === 'PLAYSTATION 3' ?
         /^complete$/ : /^(complete|loaded)$/,
         defContextName = '_', //定义作用域名称
@@ -243,6 +244,7 @@ var requirejs, require, define;
     }
 
     function newContext(contextName) {
+        //@context 作用域对象，即：requirejs.s._。
         var inCheckLoaded, Module, context, handlers,
             checkLoadedTimeoutId,
             //默认config配置。不要设置一个默认config.map，否则会拖慢normalize()执行效率。
@@ -283,7 +285,7 @@ var requirejs, require, define;
         //根据相对路径的 '.' 和 '..' 获取其真实路径（木有'.'和'..'的路径）。
         //如：
         //var b = ['a','b','..', '..', 'c'] => 'a/b/../../c'
-        //trimDots(b) => b === ['c'] => 'c'
+        //trimDots(b) => ['c'] => 'c'
         function trimDots(ary) {
             var i, part;
             for (i = 0; i < ary.length; i++) {
@@ -326,7 +328,24 @@ var requirejs, require, define;
                 foundMap, foundI, foundStarMap, starI, normalizedBaseParts,
                 //将baseName转换成数组，如：'js/base/d.js' => ['js', 'base', 'd.js']
                 baseParts = (baseName && baseName.split('/')),
-                map = config.map,
+                map = config.map, //config.map配置map映射
+                //"*"表示全匹配，即所有模块遵循这一设置。如果还有其他匹配项，将会比"*"的配置优先级高。
+                //参考 http://blog.csdn.net/kevinwon1985/article/details/8155267
+                /*
+                    如：
+                    requirejs.config({
+                        map: {
+                            'some/newmodule': {
+                                'foo': 'foo1.2'
+                            },
+                            'some/oldmodule': {
+                                'foo': 'foo1.0'
+                            }
+                        }
+                    });
+                    在'some/newmodule' 模块中 `require('foo')` 时，加载的是 foo1.2.js ，
+                    当 'some/oldmodule' 模块中 `require('foo')` 时，加载的是 foo1.0.js。
+                 */
                 starMap = map && map['*'];
 
             //Adjust any relative paths.
@@ -347,31 +366,41 @@ var requirejs, require, define;
 
                 // Starts with a '.' so need the baseName
                 // 如果模块名称以'.'开头，则需要baseName来确定绝对路径。
+                /*
+                    如：
+                    name: './a/b/c.js' => ['.', 'a', 'b', 'c.js'] => ['.', a', 'b', 'c']
+                    baseParts: 'js/base/d.js' => ['js', 'base', 'd.js'] => ['js', 'base']
+                */
                 if (name[0].charAt(0) === '.' && baseParts) {
                     //Convert baseName to array, and lop off the last part,
                     //so that . matches that 'directory' and not name of the baseName's
                     //module. For instance, baseName of 'one/two/three', maps to
                     //'one/two/three.js', but we want the directory, 'one/two' for
                     //this normalization.
-                    //砍掉baseName最后一部分，获取其目录，如：'js/base/d.js' => 'js/base/'
+                    //被序列化后的baseParts，即：砍掉baseName最后一部分，获取其目录，如：'js/base/d.js' => 'js/base/'
                     normalizedBaseParts = baseParts.slice(0, baseParts.length - 1);
-                    //如：['js', 'base', '.', 'a', 'b', 'c']
+                    //即：name + baseParts
+                    // ['js', 'base'] + ['.', a', 'b', 'c'] => ['js', 'base', '.', 'a', 'b', 'c']
                     name = normalizedBaseParts.concat(name);
                 }
 
-                trimDots(name); //如：['js', 'base', '.', 'a', 'b', 'c'] => ['js', 'base', 'a', 'b', 'c']
-                name = name.join('/'); //如：'js/base/a/b/c'
+                trimDots(name); //即：['js', 'base', '.', 'a', 'b', 'c'] => ['js', 'base', 'a', 'b', 'c']
+                name = name.join('/'); //即：'js/base/a/b/c'
             }
 
             //Apply map config if available.
             //是否应用config.map配置。
+            //@applyMap {Boolean} 是否应用map配置
+            //@map {Object} config.map
+            //@baseParts {Array} baseName数组
+            //@starMap {Object} "*"全匹配配置
             if (applyMap && map && (baseParts || starMap)) {
-                //如：'js/base/a/b/c' => ['js', 'base', 'a', 'b', 'c']
+                //将模块名name拆分成数组，如：'js/base/a/b/c' => ['js', 'base', 'a', 'b', 'c']
                 nameParts = name.split('/');
 
                 //倒序遍历nameParts
                 outerLoop: for (i = nameParts.length; i > 0; i -= 1) {
-                    //name片段如：
+                    //name片段'nameSegment'数据如：
                     //'js/base/a/b/c'
                     //'js/base/a/b'
                     //'js/base/a'
@@ -384,10 +413,11 @@ var requirejs, require, define;
                         //So, do joins on the biggest to smallest lengths of baseParts.
                         //倒序遍历baseParts
                         for (j = baseParts.length; j > 0; j -= 1) {
-                            //map片段如：
+                            //map片段'mapValue'数据如：
                             //'js/base/d.js'
                             //'js/base'
                             //'js'
+                            //...
                             mapValue = getOwn(map, baseParts.slice(0, j).join('/'));
 
                             //baseName segment has config, find if it has one for
@@ -435,6 +465,9 @@ var requirejs, require, define;
         //移除模块名称为name的script节点
         function removeScript(name) {
             if (isBrowser) {
+                //遍历页面上所有已加载的script节点，找到相关模块script，并删除。
+                //@data-requiremodule 加载的模块名称
+                //@data-requirecontext 当前模块的作用域对象名称
                 each(scripts(), function(scriptNode) {
                     if (scriptNode.getAttribute('data-requiremodule') === name &&
                         scriptNode.getAttribute('data-requirecontext') === context.contextName) {
@@ -445,6 +478,7 @@ var requirejs, require, define;
             }
         }
 
+        //@id 模块id
         function hasPathFallback(id) {
             var pathConfig = getOwn(config.paths, id);
             if (pathConfig && isArray(pathConfig) && pathConfig.length > 1) {
@@ -466,6 +500,9 @@ var requirejs, require, define;
         //Turns a plugin!resource to [plugin, resource]
         //with the plugin being undefined if the name
         //did not have a plugin prefix.
+        //获取插件模块的前缀和名称。
+        //@name {String} name
+        //@result {Array} [prefix, name]
         function splitPrefix(name) {
             var prefix,
                 index = name ? name.indexOf('!') : -1;
@@ -797,7 +834,9 @@ var requirejs, require, define;
             inCheckLoaded = false;
         }
 
+        //模块管理类
         Module = function(map) {
+            //模块事件对象
             this.events = getOwn(undefEvents, map.id) || {};
             this.map = map;
             this.shim = getOwn(config.shim, map.id);
@@ -805,7 +844,7 @@ var requirejs, require, define;
             this.depMaps = [];
             this.depMatched = [];
             this.pluginMaps = {};
-            this.depCount = 0;
+            this.depCount = 0; //当前模块的依赖计数
 
             /* this.exports this.factory
                this.depMaps = [],
@@ -1238,18 +1277,25 @@ var requirejs, require, define;
                 this.check();
             },
 
+            //为当前模块注册事件name
             on: function(name, cb) {
-                var cbs = this.events[name];
+                var cbs = this.events[name]; //事件回调
+                //如果木有事件回调，则注册事件name
                 if (!cbs) {
                     cbs = this.events[name] = [];
                 }
                 cbs.push(cb);
             },
 
+            //触发当前事件name
+            //@name 事件名称
+            //@evt 事件对象
             emit: function(name, evt) {
+                //遍历事件回调
                 each(this.events[name], function(cb) {
                     cb(evt);
                 });
+                //如果是error事件被触发了，则只触发一次。
                 if (name === 'error') {
                     //Now that the error handler was triggered, remove
                     //the listeners, since this broken Module instance
@@ -1266,10 +1312,12 @@ var requirejs, require, define;
             }
         }
 
+        //移除script节点事件监听
         function removeListener(node, func, name, ieName) {
             //Favor detachEvent because of IE9
             //issue, see attachEvent/addEventListener comment elsewhere
             //in this file.
+            //IE下解除事件绑定。
             if (node.detachEvent && !isOpera) {
                 //Probably IE. If not it will throw an error, which will be
                 //useful to know.
@@ -1277,6 +1325,7 @@ var requirejs, require, define;
                     node.detachEvent(ieName, func);
                 }
             } else {
+                //标准浏览器下解除事件绑定。
                 node.removeEventListener(name, func, false);
             }
         }
@@ -1287,23 +1336,25 @@ var requirejs, require, define;
          * @param {Event} evt
          * @returns {Object}
          */
-        //参数evt为脚本加载事件对象。此方法用来移除脚本节点上绑定的事件。
+        //移除脚本节点上绑定的事件
+        //@evt 脚本加载事件对象
         function getScriptData(evt) {
             //Using currentTarget instead of target for Firefox 2.0's sake. Not
             //all old browsers will be supported, but this one was easy enough
             //to support and still makes sense.
             //标准浏览器下evt.currentTarget，ie浏览器下使用evt.srcElement。
+            //node为script节点。
             var node = evt.currentTarget || evt.srcElement;
 
             //Remove the listeners once here.
-            //一次性移走'load'、'onreadystatechange'、'error'事件。
+            //script节点移除'load'（ie下为onreadystatechange）、'error'事件。
             removeListener(node, context.onScriptLoad, 'load', 'onreadystatechange');
             removeListener(node, context.onScriptError, 'error');
 
-            //返回对象，包括：node节点、模块id。
+            //返回对象，包括：script节点、模块id。
             return {
-                node: node,
-                id: node && node.getAttribute('data-requiremodule')
+                node: node, //script节点
+                id: node && node.getAttribute('data-requiremodule') //模块id
             };
         }
 
@@ -1326,6 +1377,7 @@ var requirejs, require, define;
             }
         }
 
+        //创建作用域对象，即：requirejs.s._内容。
         context = {
             config: config,
             contextName: contextName,
@@ -1756,12 +1808,13 @@ var requirejs, require, define;
              * @param {Event} evt the event from the browser for the script
              * that was loaded.
              */
-            //脚本加载回调，用来检测脚本加载状态。
-            //@param {Event} evt来自浏览器脚本加载回调事件对象。
+            //脚本加载完毕回调
+            //@evt {Event} evt为浏览器脚本加载回调事件对象。
             onScriptLoad: function(evt) {
                 //Using currentTarget instead of target for Firefox 2.0's sake. Not
                 //all old browsers will be supported, but this one was easy enough
                 //to support and still makes sense.
+                //标准浏览器、ie下判断script节点加载完毕状态。
                 if (evt.type === 'load' ||
                     (readyRegExp.test((evt.currentTarget || evt.srcElement).readyState))) {
                     //Reset interactive script so a script node is not held onto for
@@ -1781,6 +1834,8 @@ var requirejs, require, define;
              */
             //脚本错误回调
             onScriptError: function(evt) {
+                //移除script节点事件，并返回script节点信息。
+                //即：data === {node: node, id: id}。
                 var data = getScriptData(evt);
                 if (!hasPathFallback(data.id)) {
                     return onError(makeError('scripterror', 'Script error for: ' + data.id, evt, [data.id]));
@@ -1815,9 +1870,9 @@ var requirejs, require, define;
     req = requirejs = function(deps, callback, errback, optional) {
 
         //Find the right context, use default
-        //@context {Object} 作用域对象
-        //@config {Object} 配置对象
-        //@contextName {Object} 作用域名称，默认为"_"
+        //@context {Object} 作用域对象（局部变量）
+        //@config {Object} 配置对象（局部变量）
+        //@contextName {Object} 作用域名称，默认为"_"（局部变量）
         var context, config,
             contextName = defContextName; //默认为"_"
 
@@ -1843,6 +1898,7 @@ var requirejs, require, define;
 
         //如果有配置config，且有config.context设置（作用域名称，默认为"_"），
         //则将默认的"_"替换为配置中的config.context内容。
+        //如：config.context === '__'。
         if (config && config.context) {
             contextName = config.context;
         }
@@ -1868,7 +1924,7 @@ var requirejs, require, define;
      * Support require.config() to make it easier to cooperate with other
      * AMD loaders on globally agreed names.
      */
-    //配置函数，将config配置传递给req方法。即：requirejs.config(cf)等价requirejs(cf)。
+    //配置函数，将config配置传递给req方法。即：requirejs.config(config)等价requirejs(config)。
     req.config = function(config) {
         return req(config);
     };
@@ -1901,17 +1957,21 @@ var requirejs, require, define;
     //Used to filter out dependencies that are already paths.
     req.jsExtRegExp = /^\/|:|\?|\.js$/; //用于过滤出哪些依赖已经是paths。
     req.isBrowser = isBrowser; //是否是浏览器环境
+    //设置require.s或requirejs.s对象内容。
+    //@contexts 作用域对象
+    //@newContext 创建作用域对象的方法
     s = req.s = {
         contexts: contexts,
         newContext: newContext
     };
 
     //Create default context.
-    //创建默认的作用域
+    //创建（初始化）默认的作用域对象。
     req({});
 
     //Exports some context-sensitive methods on global require.
-    //为全局变量require添加常用方法：toUrl、undef、defined、specified。
+    //为全局变量require（或requirejs）添加常用方法：toUrl、undef、defined、specified。
+    //这些方法来自contexts[defContextName].require方法的静态方法引用（并将这些方法的作用域指向了contexts[defContextName]）。
     each([
         'toUrl',
         'undef',
@@ -1922,18 +1982,21 @@ var requirejs, require, define;
         //so that during builds, the latest instance of the default context
         //with its config gets used.
         req[prop] = function() {
+            //ctx = contexts[_]
             var ctx = contexts[defContextName];
+            //调用ctx.require相应方法，作用域指向ctx。
             return ctx.require[prop].apply(ctx, arguments);
         };
     });
 
-    //如果是浏览器环境，则设置baseElement（head元素或base元素的父节点）。
+    //如果是浏览器环境，则设置req.s.head（head元素或base元素的父节点）。
     if (isBrowser) {
         //获取页面上head元素节点。
         head = s.head = document.getElementsByTagName('head')[0];
         //If BASE tag is in play, using appendChild is a problem for IE6.
         //When that browser dies, this can be removed. Details in this jQuery bug:
-        //http://dev.jquery.com/ticket/2709
+        //bug参考 http://dev.jquery.com/ticket/2709
+        //base参考 http://www.w3school.com.cn/tags/tag_base.asp
         //如果页面head元素里有base元素节点，则避免ie6下bug，所以会采用head.insertBefore(node, baseElement)方式。
         //否则采用head.appendChild(node)方式将script节点插入文档拉取其内容。
         baseElement = document.getElementsByTagName('base')[0];
@@ -1978,9 +2041,11 @@ var requirejs, require, define;
      * @param {String} moduleName the name of the module.
      * @param {Object} url the URL to the module.
      */
+    //拉取script节点内容。
     //浏览器环境下，请求模块url，加载模块内容。
     //其他环境中，允许弄一个单独的函数去覆盖此函数。
     req.load = function(context, moduleName, url) {
+        //如果有context作用域对象，则取其config配置对象。
         var config = (context && context.config) || {},
             node;
         if (isBrowser) {
@@ -1988,7 +2053,7 @@ var requirejs, require, define;
             //浏览器环境下，创建一个script元素节点
             node = req.createNode(config, moduleName, url);
 
-            //设置作用域名称和模块名称属性
+            //设置作用域对象名称和模块名称属性
             node.setAttribute('data-requirecontext', context.contextName);
             node.setAttribute('data-requiremodule', moduleName);
 
@@ -2100,6 +2165,8 @@ var requirejs, require, define;
     }
 
     //Look for a data-main script attribute, which could also adjust the baseUrl.
+    //如果是浏览器平台，且木有配置skipDataMain，即：cfg.skipDataMain === false或undefined。
+    //查找有'data-main'属性的script节点
     if (isBrowser && !cfg.skipDataMain) {
         //Figure out baseUrl. Get it from the script tag with require.js in it.
         eachReverse(scripts(), function(script) {
@@ -2112,34 +2179,42 @@ var requirejs, require, define;
             //Look for a data-main attribute to set main script for the page
             //to load. If it is there, the path to data main becomes the
             //baseUrl, if it is not already set.
+            //如果script节点有属性'data-main'，则把其值作为baseUrl。
             dataMain = script.getAttribute('data-main');
             if (dataMain) {
                 //Preserve dataMain in case it is a path (i.e. contains '?')
+                //如：'js/main.js'
                 mainScript = dataMain;
 
                 //Set final baseUrl if there is not already an explicit one.
+                //如果木有配置cfg.baseUrl
                 if (!cfg.baseUrl) {
                     //Pull off the directory of data-main for use as the
                     //baseUrl.
                     src = mainScript.split('/');
-                    mainScript = src.pop();
+                    mainScript = src.pop(); //main模块
+                    //main模块所在的目录，如果木有，则为当前html文档所在目录
                     subPath = src.length ? src.join('/') + '/' : './';
-
+                    //设置subPath为baseUrl
                     cfg.baseUrl = subPath;
                 }
 
                 //Strip off any trailing .js since mainScript is now
                 //like a module name.
+                //去掉main模块的后缀'.js'
                 mainScript = mainScript.replace(jsSuffixRegExp, '');
 
                 //If mainScript is still a path, fall back to dataMain
+                //如果mainScript已经是一个path
                 if (req.jsExtRegExp.test(mainScript)) {
                     mainScript = dataMain;
                 }
 
                 //Put the data-main script in the files to load.
+                //如果有模块依赖，则将mainScript加入依赖数组。
                 cfg.deps = cfg.deps ? cfg.deps.concat(mainScript) : [mainScript];
 
+                //返回true，则中断eachReverse函数遍历script节点。
                 return true;
             }
         });
@@ -2152,7 +2227,8 @@ var requirejs, require, define;
      * return a value to define the module corresponding to the first argument's
      * name.
      */
-    //定义模块的函数。
+    //定义模块的函数。callback回调在此模块的所有依赖被加载完毕后执行。
+    //依赖模块返回值作为callback回调的参数。
     define = function(name, deps, callback) {
         var node, context;
 
@@ -2167,9 +2243,8 @@ var requirejs, require, define;
         }
 
         //This module may not have dependencies
-        //此模块木有依赖模块，如：
-        //define('jquery', function(){...}); 或
-        //define(function(){...});
+        //定义模块的时候尚未手动指定此模块的依赖模块，如：
+        //define('jquery', function(){...}); 或 define(function(){...});
         if (!isArray(deps)) {
             callback = deps;
             deps = null;
@@ -2178,8 +2253,7 @@ var requirejs, require, define;
         //If no name, and callback is a function, then figure out if it a
         //CommonJS thing with dependencies.
         //如果定义此模块时，写明了模块依赖，则不会去计算判断当前模块的依赖。否则会通过正则判断其模块依赖。
-        //如：define('jquery', function(){...}); 或
-        //define(function(){...});（可能是一个CommonJS模块）
+        //如：define('jquery', function(){...}); 或 define(function(){...});（可能是一个CommonJS模块）
         if (!deps && isFunction(callback)) {
             deps = [];
             //Remove comments from the callback string,
@@ -2187,7 +2261,7 @@ var requirejs, require, define;
             //but only if there are function args.
             //仅当callback回调有参数时（型参），才从callback回调字符串里移除注释字符串，
             //并查找其依赖模块，将他们收集放入deps数组。
-            if (callback.length) { //callback回调有参数
+            if (callback.length) {
                 callback
                     .toString() //获取callback回调字符串
                     .replace(commentRegExp, '') //将代码中得注释清空
@@ -2257,6 +2331,6 @@ var requirejs, require, define;
     };
 
     //Set up with config info.
-    //设置配置信息。
+    //依据cfg配置信息加载模块或依赖。
     req(cfg);
 }(this));
