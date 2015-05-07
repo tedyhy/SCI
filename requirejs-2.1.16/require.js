@@ -1278,6 +1278,8 @@ var requirejs, require, define;
             },
 
             //为当前模块注册事件name
+            //@name 事件名称
+            //@cb 回调函数
             on: function(name, cb) {
                 var cbs = this.events[name]; //事件回调
                 //如果木有事件回调，则注册事件name
@@ -1379,8 +1381,8 @@ var requirejs, require, define;
 
         //创建作用域对象，即：requirejs.s._内容。
         context = {
-            config: config,
-            contextName: contextName,
+            config: config, //配置信息
+            contextName: contextName, //作用域对象名称
             registry: registry,
             defined: defined,
             urlFetched: urlFetched,
