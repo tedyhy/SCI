@@ -12,16 +12,16 @@ define(function(require) {
 
     var $ = require('jquery');
 
-    var _count = 0;
-    var _isIE6 = !('minWidth' in $('html')[0].style);
-    var _isFixed = !_isIE6;
+    var _count = 0; // 当前页面所有Popup浮层的计数器
+    var _isIE6 = !('minWidth' in $('html')[0].style); // 判断是否是ie6
+    var _isFixed = !_isIE6; // ie6不支持fixed
 
 
     function Popup() {
 
-        this.destroyed = false;
+        this.destroyed = false; // 浮层是否被销毁
 
-
+        // 创建浮层jquery对象
         this.__popup = $('<div />')
             /*使用 <dialog /> 元素可能导致 z-index 永远置顶的问题(chrome)*/
             .css({
@@ -43,7 +43,7 @@ define(function(require) {
             .html(this.innerHTML)
             .appendTo('body');
 
-
+        // 浮层遮罩
         this.__backdrop = this.__mask = $('<div />')
             .css({
                 opacity: .7,
@@ -53,10 +53,10 @@ define(function(require) {
 
         // 使用 HTMLElement 作为外部接口使用，而不是 jquery 对象
         // 统一的接口利于未来 Popup 移植到其他 DOM 库中
-        this.node = this.__popup[0];
-        this.backdrop = this.__backdrop[0];
+        this.node = this.__popup[0]; // 浮层DOM
+        this.backdrop = this.__backdrop[0]; // 遮罩DOM
 
-        _count++;
+        _count++; // 浮层计数累计
     }
 
 
@@ -104,7 +104,7 @@ define(function(require) {
          * @event
          */
 
-        /** 浮层 DOM 素节点[*] */
+        /** 浮层 DOM 节点[*] */
         node: null,
 
         /** 遮罩 DOM 节点[*] */
@@ -136,33 +136,33 @@ define(function(require) {
 
         /**
          * 显示浮层
-         * @param   {HTMLElement, Event}  指定位置（可选）
+         * @anchor   {HTMLElement, Event}  指定位置（可选）
          */
         show: function(anchor) {
-
+            // 如果浮层被销毁，则直接返回
             if (this.destroyed) {
                 return this;
             }
 
-            var that = this;
-            var popup = this.__popup;
-            var backdrop = this.__backdrop;
+            var that = this; // 浮层实例
+            var popup = this.__popup; // 浮层
+            var backdrop = this.__backdrop; // 遮罩
 
-            this.__activeElement = this.__getActive();
+            this.__activeElement = this.__getActive(); // 获取当前聚焦元素
 
-            this.open = true;
-            this.follow = anchor || this.follow;
+            this.open = true; // 浮层被标记为打开
+            this.follow = anchor || this.follow; // 获取浮层需要follow的元素
 
 
-            // 初始化 show 方法
+            // 初始化 show 方法（是否第一次初始化浮层，this.__ready默认为false）。
             if (!this.__ready) {
 
                 popup
-                    .addClass(this.className)
-                    .attr('role', this.modal ? 'alertdialog' : 'dialog')
-                    .css('position', this.fixed ? 'fixed' : 'absolute');
+                    .addClass(this.className) // 默认为'ui-popup'
+                    .attr('role', this.modal ? 'alertdialog' : 'dialog') // 浮层角色
+                    .css('position', this.fixed ? 'fixed' : 'absolute'); // 是否fixed，默认为false
 
-                if (!_isIE6) {
+                if (!_isIE6) { // 非ie6下绑定resize事件
                     $(window).on('resize', $.proxy(this.reset, this));
                 }
 
@@ -436,7 +436,7 @@ define(function(require) {
         },
 
 
-        // 获取当前焦点的元素
+        // 获取当前焦点的元素，包括获取iframe聚焦元素
         __getActive: function() {
             try { // try: ie8~9, iframe #26
                 var activeElement = document.activeElement;
