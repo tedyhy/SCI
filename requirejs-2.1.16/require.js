@@ -243,6 +243,8 @@ var requirejs, require, define;
         require = undefined; //重置require变量为undefined（初始化）。
     }
 
+    //创建作用域内容对象
+    //即：contexts[_] = req.s.newContext(contextName);
     function newContext(contextName) {
         //@context 作用域对象，即：requirejs.s._。
         var inCheckLoaded, Module, context, handlers,
@@ -253,12 +255,12 @@ var requirejs, require, define;
                 //config to speed up normalize(), which
                 //will run faster if there is no default.
                 waitSeconds: 7, //等待加载时间设置，默认7s。
-                baseUrl: './',
-                paths: {},
-                bundles: {},
-                pkgs: {},
-                shim: {},
-                config: {}
+                baseUrl: './', //基目录默认为当前文档所在目录。
+                paths: {}, //默认路径配置。
+                bundles: {}, //默认bundles配置。
+                pkgs: {}, //默认的pkgs配置。
+                shim: {}, //默认的shim配置。
+                config: {} //默认的config配置。
             },
             registry = {},
             //registry of just enabled modules, to speed
@@ -1396,8 +1398,10 @@ var requirejs, require, define;
              * Set a configuration for the context.
              * @param {Object} cfg config object to integrate.
              */
+            //设置config配置
             configure: function(cfg) {
                 //Make sure the baseUrl ends in a slash.
+                //确保baseUrl以'/'结尾
                 if (cfg.baseUrl) {
                     if (cfg.baseUrl.charAt(cfg.baseUrl.length - 1) !== '/') {
                         cfg.baseUrl += '/';
@@ -1406,7 +1410,8 @@ var requirejs, require, define;
 
                 //Save off the paths since they require special processing,
                 //they are additive.
-                var shim = config.shim,
+                var shim = config.shim, //shim配置信息
+                    //需要特别处理的配置项，包括：paths、bundles、config、map。
                     objs = {
                         paths: true,
                         bundles: true,
@@ -1414,18 +1419,39 @@ var requirejs, require, define;
                         map: true
                     };
 
+                //遍历config配置内容
                 eachProp(cfg, function(value, prop) {
+                    //如果是paths、bundles、config、map这些配置项。
                     if (objs[prop]) {
+                        //如果木有此配置项，则创建，默认为空对象。
                         if (!config[prop]) {
                             config[prop] = {};
                         }
+                        //混合配置项，用新的配置信息深度递归覆盖默认配置项。
                         mixin(config[prop], value, true, true);
                     } else {
+                        //如果不是paths、bundles、config、map这些配置项，则直接用新的配置信息覆盖默认配置。
                         config[prop] = value;
                     }
                 });
 
                 //Reverse map the bundles
+                //参考 http://requirejs.org/docs/api.html#config-bundles
+                /*  如：
+                    requirejs.config({
+                        bundles: {
+                            'primary': ['main', 'util', 'text', 'text!template.html'],
+                            'secondary': ['text!secondary.html']
+                        }
+                    });
+                    如：
+                    bundlesMap = {
+                        'main': 'primary',
+                        'util': 'primary',
+                        'text': 'primary',
+                        'text!template.html': 'primary'
+                    }
+                 */
                 if (cfg.bundles) {
                     eachProp(cfg.bundles, function(value, prop) {
                         each(value, function(v) {
@@ -1437,14 +1463,39 @@ var requirejs, require, define;
                 }
 
                 //Merge shim
+                //参考 http://requirejs.org/docs/api.html#config-shim
+                /*  如：
+                    requirejs.config({
+                        shim: {
+                            'backbone': {
+                                deps: ['underscore', 'jquery'],
+                                exports: 'Backbone'
+                            },
+                            'underscore': {
+                                exports: '_'
+                            },
+                            'foo': {
+                                deps: ['bar'],
+                                exports: 'Foo',
+                                init: function (bar) {
+                                    return this.Foo.noConflict();
+                                }
+                            },
+                            'jquery.scroll': ['jquery']
+                        }
+                    });
+                 */
                 if (cfg.shim) {
                     eachProp(cfg.shim, function(value, id) {
                         //Normalize the structure
+                        //如:{'jquery.scroll': ['jquery']}，设置依赖。
                         if (isArray(value)) {
                             value = {
                                 deps: value
                             };
                         }
+                        //如果有设置exports、init、木有exportsFn，则调用context.makeShimExports生成exportsFn。
+                        //即：为每个shim配置添加一个属性'exportsFn'。
                         if ((value.exports || value.init) && !value.exportsFn) {
                             value.exportsFn = context.makeShimExports(value);
                         }
@@ -1454,10 +1505,23 @@ var requirejs, require, define;
                 }
 
                 //Adjust packages if necessary.
+                //参考 http://requirejs.org/docs/api.html#packages
+                /*  如：
+                    require.config({
+                        packages: [
+                            "cart",
+                            {
+                                name: "store",
+                                main: "store"
+                            }
+                        ]
+                    });
+                 */
                 if (cfg.packages) {
                     each(cfg.packages, function(pkgObj) {
                         var location, name;
 
+                        //如：{packages: ["cart"]} 或 {packages: [{name: "store",main: "store"}]}
                         pkgObj = typeof pkgObj === 'string' ? {
                             name: pkgObj
                         } : pkgObj;
@@ -1465,7 +1529,7 @@ var requirejs, require, define;
                         name = pkgObj.name;
                         location = pkgObj.location;
                         if (location) {
-                            config.paths[name] = pkgObj.location;
+                            config.paths[name] = pkgObj.location; //设置路径配置
                         }
 
                         //Save pointer to main module ID for pkg name.
@@ -1473,15 +1537,17 @@ var requirejs, require, define;
                         //and remove any trailing .js, since different package
                         //envs have different conventions: some use a module name,
                         //some use a file name.
+                        //设置pkgs配置。pkgObj.name为包目录名称（相对baseUrl），pkgObj.main为main js，默认为main.js。
                         config.pkgs[name] = pkgObj.name + '/' + (pkgObj.main || 'main')
-                            .replace(currDirRegExp, '')
-                            .replace(jsSuffixRegExp, '');
+                            .replace(currDirRegExp, '') //清除目录'./'
+                            .replace(jsSuffixRegExp, ''); //清除后缀'.js'
                     });
                 }
 
                 //If there are any "waiting to execute" modules in the registry,
                 //update the maps for them, since their info, like URLs to load,
                 //may have changed.
+                //存储着已经加载好了的模块
                 eachProp(registry, function(mod, id) {
                     //If module already has init called, since it is too
                     //late to modify them, and ignore unnormalized ones
@@ -1494,11 +1560,15 @@ var requirejs, require, define;
                 //If a deps array or a config callback is specified, then call
                 //require with those args. This is useful when require is defined as a
                 //config object before require.js is loaded.
+                //如果有依赖数组或配置回调被指定，那么将它们作为context.require的参数进行加载模块。
+                //在require.js主文件加载前将requirejs设置成一个配置对象，是灰常有用的。
                 if (cfg.deps || cfg.callback) {
                     context.require(cfg.deps || [], cfg.callback);
                 }
             },
 
+            //根据shim配置里的(value.exports || value.init)来生成exportsFn函数。
+            //最终是为了返回exports接口对象。
             makeShimExports: function(value) {
                 function fn() {
                     var ret;
@@ -1510,6 +1580,7 @@ var requirejs, require, define;
                 return fn;
             },
 
+            //加载模块及依赖的主方法
             makeRequire: function(relMap, options) {
                 options = options || {};
 
@@ -1579,24 +1650,25 @@ var requirejs, require, define;
                 }
 
                 mixin(localRequire, {
-                    isBrowser: isBrowser,
+                    isBrowser: isBrowser, //判断是否是浏览器环境
 
                     /**
                      * Converts a module name + .extension into an URL path.
                      * *Requires* the use of a module name. It does not support using
                      * plain URLs like nameToUrl.
                      */
+                    //带后缀的模块名，如：'./a/b/c.js'
                     toUrl: function(moduleNamePlusExt) {
                         var ext,
                             index = moduleNamePlusExt.lastIndexOf('.'),
                             segment = moduleNamePlusExt.split('/')[0],
-                            isRelative = segment === '.' || segment === '..';
+                            isRelative = segment === '.' || segment === '..'; //判断是否是相对路径
 
                         //Have a file extension alias, and it is not the
                         //dots from a relative path.
                         if (index !== -1 && (!isRelative || index > 1)) {
-                            ext = moduleNamePlusExt.substring(index, moduleNamePlusExt.length);
-                            moduleNamePlusExt = moduleNamePlusExt.substring(0, index);
+                            ext = moduleNamePlusExt.substring(index, moduleNamePlusExt.length); //获取后缀
+                            moduleNamePlusExt = moduleNamePlusExt.substring(0, index); //获取不带后缀的模块名
                         }
 
                         return context.nameToUrl(normalize(moduleNamePlusExt,
@@ -1673,10 +1745,12 @@ var requirejs, require, define;
              * load call.
              * @param {String} moduleName the name of the module to potentially complete.
              */
+            //模块加载完毕触发的事件回调。
+            //@moduleName 模块id，也即模块名称。
             completeLoad: function(moduleName) {
                 var found, args, mod,
-                    shim = getOwn(config.shim, moduleName) || {},
-                    shExports = shim.exports;
+                    shim = getOwn(config.shim, moduleName) || {}, //针对当前模块的shim配置。
+                    shExports = shim.exports; //shim配置中的shim.exports。
 
                 takeGlobalQueue();
 
@@ -1826,6 +1900,7 @@ var requirejs, require, define;
 
                     //Pull out the name of the module and the context.
                     //移走node节点上绑定事件。
+                    //data.id 模块id。
                     var data = getScriptData(evt);
                     context.completeLoad(data.id);
                 }
@@ -1845,6 +1920,7 @@ var requirejs, require, define;
             }
         };
 
+        //加载模块及依赖的主方法，暴露到作用域对象上，即：context.require。
         context.require = context.makeRequire();
         return context;
     }
