@@ -179,10 +179,10 @@ define(function(require) {
                         zIndex: this.zIndex || Popup.zIndex
                     };
 
-
+                    // 模块浮层添加类'ui-popup-modal'
                     popup.addClass(this.className + '-modal');
 
-
+                    // ie6不支持fixed，则采用绝对定位
                     if (!_isFixed) {
                         $.extend(backdropCss, {
                             position: 'absolute',
@@ -212,22 +212,22 @@ define(function(require) {
                     this.__ready = true;
                 }
 
-
+                // 如果浮层木有内容，则默认内容为this.innerHTML的内容
                 if (!popup.html()) {
                     popup.html(this.innerHTML);
                 }
             }
 
-
+            // 为浮层添加类'ui-popup-show'并显示。
             popup
                 .addClass(this.className + '-show')
                 .show();
 
-            backdrop.show();
+            backdrop.show(); // 显示遮罩
 
-
+            // 重置浮层位置并让其获取焦点
             this.reset().focus();
-            this.__dispatchEvent('show');
+            this.__dispatchEvent('show'); // 触发'show'事件回调
 
             return this;
         },
@@ -235,8 +235,8 @@ define(function(require) {
 
         /** 显示模态浮层。参数参见 show() */
         showModal: function() {
-            this.modal = true;
-            return this.show.apply(this, arguments);
+            this.modal = true; // 模态标记
+            return this.show.apply(this, arguments); // 调用浮层实例show方法
         },
 
 
@@ -297,16 +297,17 @@ define(function(require) {
 
         /** 重置位置 */
         reset: function() {
-
+            // 需要follow的元素
             var elem = this.follow;
 
+            // 如果有follow元素，则follow之，否则居中显示
             if (elem) {
                 this.__follow(elem);
             } else {
                 this.__center();
             }
 
-            this.__dispatchEvent('reset');
+            this.__dispatchEvent('reset'); // 触发reset事件回调
 
             return this;
         },
@@ -398,18 +399,18 @@ define(function(require) {
 
         // 获取事件缓存
         __getEventListener: function(type) {
-            var listener = this.__listener;
+            var listener = this.__listener; // 事件缓存器
             if (!listener) {
-                listener = this.__listener = {};
+                listener = this.__listener = {}; // 如果木有事件缓存器，则创建之
             }
             if (!listener[type]) {
-                listener[type] = [];
+                listener[type] = []; // 如果木有此类事件回调缓存，则创建之
             }
             return listener[type];
         },
 
 
-        // 派发事件
+        // 派发事件（触发事件）
         __dispatchEvent: function(type) {
             var listeners = this.__getEventListener(type);
 
@@ -417,6 +418,7 @@ define(function(require) {
                 this['on' + type]();
             }
 
+            // 遍历事件回调并执行
             for (var i = 0; i < listeners.length; i++) {
                 listeners[i].call(this);
             }
@@ -429,6 +431,7 @@ define(function(require) {
             // 防止 IE 不可见元素报错
             try {
                 // ie11 bug: iframe 页面点击会跳到顶部
+                // ie11 自动聚焦时，判断是否是iframe，如果是则让元素聚焦。
                 if (this.autofocus && !/^iframe$/i.test(elem.nodeName)) {
                     elem.focus();
                 }
@@ -441,6 +444,7 @@ define(function(require) {
             try { // try: ie8~9, iframe #26
                 var activeElement = document.activeElement;
                 var contentDocument = activeElement.contentDocument;
+                // 判断是否是iframe
                 var elem = contentDocument && contentDocument.activeElement || activeElement;
                 return elem;
             } catch (e) {}
@@ -449,7 +453,7 @@ define(function(require) {
 
         // 居中浮层
         __center: function() {
-
+            // 浮层jquery对象
             var popup = this.__popup;
             var $window = $(window);
             var $document = $(document);
@@ -603,6 +607,7 @@ define(function(require) {
 
         // 获取元素相对于页面的位置（包括iframe内的元素）
         // 暂时不支持两层以上的 iframe 套嵌
+        // @anchor DOM元素或者事件对象event
         __offset: function(anchor) {
 
             var isNode = anchor.parentNode;
