@@ -163,13 +163,13 @@ fis.cli.run = function(argv){
         */
         var cmd = fis.require('command', argv[2]);
         cmd.register(
-            //返回一个对象作为参数传给cmd.register回调。
+            //返回一个对象（注册的commander选项）作为参数传给cmd.register回调。
             commander
                 .command(cmd.name || first)
-                .usage(cmd.usage)
+                .usage(cmd.usage) //暂时未定义
                 .description(cmd.desc)
         );
-        //即：program.parse(process.argv);
+        //即：commander.parse(process.argv);
         commander.parse(argv);
     }
 };
