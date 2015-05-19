@@ -34,7 +34,7 @@ fis.config.merge({
 });
 
 //exports cli object
-//暴露cli接口对象
+//暴露cli接口对象，创建命名空间 fis.cli。
 fis.cli = {};
 
 fis.cli.name = 'fis';
@@ -49,6 +49,7 @@ fis.cli.commander = null;
 
 //package.json
 //读取package.json文件内容
+//__dirname为命令执行目录
 fis.cli.info = fis.util.readJSON(__dirname + '/package.json');
 
 //output help info
@@ -72,7 +73,7 @@ fis.cli.help = function(){
         */
         var cmd = fis.require('command', name);
         name = cmd.name || name;
-        name = fis.util.pad(name, 12);
+        name = fis.util.pad(name, 12); //'release     '
         content.push('    ' + name + (cmd.desc || ''));
     });
 
@@ -113,6 +114,7 @@ fis.cli.version = function(){
 };
 
 //遍历判断是否有参数search
+//@argv {Array}
 function hasArgv(argv, search){
     var pos = argv.indexOf(search);
     var ret = false;
@@ -135,6 +137,7 @@ fis.cli.run = function(argv){
         fis.cli.colors.mode = 'none';
     }
 
+    //如：$ bin/fis -v => first === '-v'
     var first = argv[2];
     //查看fis帮助信息，如：fis -h 或 fis --help。
     if(argv.length < 3 || first === '-h' ||  first === '--help'){
