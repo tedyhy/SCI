@@ -10,31 +10,31 @@
 var fis = module.exports = require('fis-kernel');
 
 //merge standard conf
-//合并fis标准配置信息
+//增加modules配置信息
 fis.config.merge({
     modules : {
-        preprocessor: {
+        preprocessor: { //预处理器
             js: 'components',
             css: 'components',
             html: 'components'
         },
-        postprocessor : {
+        postprocessor : { //后处理器
             js : 'jswrapper'
         },
-        optimizer : {
+        optimizer : { //优化器
             js : 'uglify-js',
             css : 'clean-css',
             png : 'png-compressor'
         },
-        spriter : 'csssprites',
+        spriter : 'csssprites', //雪碧图工具
         packager : 'map',
-        deploy : 'default',
+        deploy : 'default', //部署
         prepackager: 'derived'
     }
 });
 
 //exports cli object
-//暴露cli接口对象，创建命名空间 fis.cli。
+//创建命名空间 fis.cli
 fis.cli = {};
 
 fis.cli.name = 'fis';
@@ -89,7 +89,7 @@ fis.cli.help = function(){
     console.log(content.join('\n'));
 };
 
-//fis三条命令
+//fis三条主要的命令
 fis.cli.help.commands = [ 'release', 'install', 'server' ];
 
 //output version info
@@ -113,8 +113,9 @@ fis.cli.version = function(){
     console.log(content);
 };
 
-//遍历判断是否有参数search
+//循环判断argv里是否有参数search
 //@argv {Array}
+//@search {String}
 function hasArgv(argv, search){
     var pos = argv.indexOf(search);
     var ret = false;
@@ -134,18 +135,18 @@ fis.cli.run = function(argv){
 
     //如果有参数'--no-color'，则说明console输出不带color。
     if(hasArgv(argv, '--no-color')){
-        fis.cli.colors.mode = 'none';
+        fis.cli.colors.mode = 'none'; //控制台输出颜色模式
     }
 
     //如：$ bin/fis -v => first === '-v'
     var first = argv[2];
-    //查看fis帮助信息，如：fis -h 或 fis --help。
+    //查看fis帮助信息，如：fis 或 fis -h 或 fis --help。
     if(argv.length < 3 || first === '-h' ||  first === '--help'){
         fis.cli.help();
     //查看fis版本信息，如：fis -v 或 fis --version。
     } else if(first === '-v' || first === '--version'){
         fis.cli.version();
-    //查看fis帮助信息，如： fis -。
+    //查看fis帮助信息，如：fis -。
     } else if(first[0] === '-'){
         fis.cli.help();
     //否则加载'commander'模块，分析命令调用相应命令。
@@ -169,7 +170,7 @@ fis.cli.run = function(argv){
                 .usage(cmd.usage) //暂时未定义
                 .description(cmd.desc)
         );
-        //即：commander.parse(process.argv);
+        //分析命令行参数，即：commander.parse(process.argv);
         commander.parse(argv);
     }
 };
