@@ -257,7 +257,7 @@ var requirejs, require, define;
                 waitSeconds: 7, //等待加载时间设置，默认7s。
                 baseUrl: './', //基目录默认为当前文档所在目录。
                 paths: {}, //默认路径配置。
-                bundles: {}, //默认bundles配置。
+                bundles: {}, //默认bundles配置，“捆绑”，将一些模块捆绑成一个模块。
                 pkgs: {}, //默认的pkgs配置。
                 shim: {}, //默认的shim配置。
                 config: {} //默认的config配置。
@@ -271,7 +271,7 @@ var requirejs, require, define;
             defQueue = [],
             defined = {},
             urlFetched = {},
-            bundlesMap = {},
+            bundlesMap = {}, //模块捆绑后的map信息
             requireCounter = 1,
             unnormalizedCounter = 1;
 
@@ -505,6 +505,9 @@ var requirejs, require, define;
         //获取插件模块的前缀和名称。
         //@name {String} name
         //@result {Array} [prefix, name]
+        //如：require(['domready!'], function (doc){});
+        //如：define(['text!review.txt','image!cat.jpg'],function(review,cat){console.log(review);document.body.appendChild(cat);});
+        //如：'text!review.txt' => ['text', 'review.txt']
         function splitPrefix(name) {
             var prefix,
                 index = name ? name.indexOf('!') : -1;
@@ -888,6 +891,7 @@ var requirejs, require, define;
                 this.errback = errback;
 
                 //Indicate this module has be initialized
+                //表明该模块已被初始化
                 this.inited = true;
 
                 this.ignore = options.ignore;
@@ -1317,6 +1321,10 @@ var requirejs, require, define;
         }
 
         //移除script节点事件监听
+        //@node DOM节点
+        //@func 事件回调
+        //@name 标准浏览器下事件名称
+        //@ieName ie下事件对应名称
         function removeListener(node, func, name, ieName) {
             //Favor detachEvent because of IE9
             //issue, see attachEvent/addEventListener comment elsewhere
@@ -1325,6 +1333,7 @@ var requirejs, require, define;
             if (node.detachEvent && !isOpera) {
                 //Probably IE. If not it will throw an error, which will be
                 //useful to know.
+                //判断是否有此ie事件名称
                 if (ieName) {
                     node.detachEvent(ieName, func);
                 }
@@ -1340,14 +1349,13 @@ var requirejs, require, define;
          * @param {Event} evt
          * @returns {Object}
          */
-        //移除脚本节点上绑定的事件
-        //@evt 脚本加载事件对象
+        //移除script节点上绑定的事件，并返回此节点相关信息。
+        //@evt script节点加载事件的事件对象。
         function getScriptData(evt) {
             //Using currentTarget instead of target for Firefox 2.0's sake. Not
             //all old browsers will be supported, but this one was easy enough
             //to support and still makes sense.
-            //标准浏览器下evt.currentTarget，ie浏览器下使用evt.srcElement。
-            //node为script节点。
+            //标准浏览器下evt.currentTarget，ie浏览器下使用evt.srcElement。node为script节点。
             var node = evt.currentTarget || evt.srcElement;
 
             //Remove the listeners once here.
@@ -1381,7 +1389,7 @@ var requirejs, require, define;
             }
         }
 
-        //创建作用域对象，即：requirejs.s._内容。
+        //创建作用域对象，即：requirejs.s.contexts._内容。
         context = {
             config: config, //配置信息
             contextName: contextName, //作用域对象名称
@@ -1398,10 +1406,11 @@ var requirejs, require, define;
              * Set a configuration for the context.
              * @param {Object} cfg config object to integrate.
              */
-            //设置config配置
+            //配置config配置
             configure: function(cfg) {
                 //Make sure the baseUrl ends in a slash.
-                //确保baseUrl以'/'结尾
+                //确保baseUrl以'/'结尾，如：
+                //'http://www.example.com/static' => 'http://www.example.com/static/'
                 if (cfg.baseUrl) {
                     if (cfg.baseUrl.charAt(cfg.baseUrl.length - 1) !== '/') {
                         cfg.baseUrl += '/';
@@ -1414,7 +1423,7 @@ var requirejs, require, define;
                     //需要特别处理的配置项，包括：paths、bundles、config、map。
                     objs = {
                         paths: true,
-                        bundles: true,
+                        bundles: true, //“捆绑”，将一些模块捆绑成一个模块
                         config: true,
                         map: true
                     };
@@ -1425,6 +1434,7 @@ var requirejs, require, define;
                     if (objs[prop]) {
                         //如果木有此配置项，则创建，默认为空对象。
                         if (!config[prop]) {
+                            //paths、bundles、config、map这些配置项都是对象。
                             config[prop] = {};
                         }
                         //混合配置项，用新的配置信息深度递归覆盖默认配置项。
@@ -1436,6 +1446,7 @@ var requirejs, require, define;
                 });
 
                 //Reverse map the bundles
+                //“捆绑”，将一些模块捆绑成一个模块
                 //参考 http://requirejs.org/docs/api.html#config-bundles
                 /*  如：
                     requirejs.config({
@@ -1444,12 +1455,13 @@ var requirejs, require, define;
                             'secondary': ['text!secondary.html']
                         }
                     });
-                    如：
+                    如：生成模块捆绑后的map信息。
                     bundlesMap = {
                         'main': 'primary',
                         'util': 'primary',
                         'text': 'primary',
-                        'text!template.html': 'primary'
+                        'text!template.html': 'primary',
+                        'text!secondary.html': 'secondary'
                     }
                  */
                 if (cfg.bundles) {
@@ -1463,6 +1475,7 @@ var requirejs, require, define;
                 }
 
                 //Merge shim
+                //合并shim配置
                 //参考 http://requirejs.org/docs/api.html#config-shim
                 /*  如：
                     requirejs.config({
@@ -1521,13 +1534,13 @@ var requirejs, require, define;
                     each(cfg.packages, function(pkgObj) {
                         var location, name;
 
-                        //如：{packages: ["cart"]} 或 {packages: [{name: "store",main: "store"}]}
+                        //如：{packages: ["cart"]} => {packages: [{name: "cart"}]}
                         pkgObj = typeof pkgObj === 'string' ? {
                             name: pkgObj
-                        } : pkgObj;
+                        } : pkgObj; //如：{packages: [{name: "store",main: "store"}]}
 
-                        name = pkgObj.name;
-                        location = pkgObj.location;
+                        name = pkgObj.name; //包名
+                        location = pkgObj.location; //包路径path
                         if (location) {
                             config.paths[name] = pkgObj.location; //设置路径配置
                         }
@@ -1537,7 +1550,8 @@ var requirejs, require, define;
                         //and remove any trailing .js, since different package
                         //envs have different conventions: some use a module name,
                         //some use a file name.
-                        //设置pkgs配置。pkgObj.name为包目录名称（相对baseUrl），pkgObj.main为main js，默认为main.js。
+                        //设置pkgs配置。pkgObj.name为包目录名称（相对baseUrl），
+                        //pkgObj.main为main js，默认为main.js。
                         config.pkgs[name] = pkgObj.name + '/' + (pkgObj.main || 'main')
                             .replace(currDirRegExp, '') //清除目录'./'
                             .replace(jsSuffixRegExp, ''); //清除后缀'.js'
@@ -1547,7 +1561,7 @@ var requirejs, require, define;
                 //If there are any "waiting to execute" modules in the registry,
                 //update the maps for them, since their info, like URLs to load,
                 //may have changed.
-                //存储着已经加载好了的模块
+                //存储着已经加载好了的等待执行的模块
                 eachProp(registry, function(mod, id) {
                     //If module already has init called, since it is too
                     //late to modify them, and ignore unnormalized ones
@@ -1572,9 +1586,24 @@ var requirejs, require, define;
             makeShimExports: function(value) {
                 function fn() {
                     var ret;
+                    //如果有init方法，则将init方法作用域指向全局，并返回init方法执行结果。
+                    /*  如：
+                        requirejs.config({
+                            shim: {
+                                'foo': {
+                                    deps: ['bar'],
+                                    exports: 'Foo',
+                                    init: function (bar) {
+                                        return this.Foo.noConflict();
+                                    }
+                                }
+                            }
+                        });
+                     */
                     if (value.init) {
                         ret = value.init.apply(global, arguments);
                     }
+                    //如果木有返回值，则取全局value.exports接口并返回。
                     return ret || (value.exports && getGlobal(value.exports));
                 }
                 return fn;
@@ -1957,6 +1986,7 @@ var requirejs, require, define;
         // Determine if have config object in the call.
         // 确定是否是config配置对象被传递进来。即：如果参数deps不是数组和字符串，则认为是config配置信息。
         // 如：requirejs({...}, ['a', 'b'], function(){...});
+        // 如果deps是函数呢？
         if (!isArray(deps) && typeof deps !== 'string') {
             // deps is a config object
             // 参数deps为配置信息对象。
