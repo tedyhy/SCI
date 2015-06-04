@@ -18,3 +18,7 @@ SCI(Source code interpretation)
 
 6.requireJS
 <pre><code>requirejs-2.1.16/require.js</code></pre>
+
+7.fis
+<pre><code>fis/fis.js</code>  
+<code>fis/node_modules</code></pre>
