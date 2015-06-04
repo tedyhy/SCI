@@ -13,18 +13,19 @@ var requirejs, require, define;
 (function(global) {
     /*
         @req require|requirejs
+        @s s = req.s = {contexts: contexts,newContext: newContext};
         @head document.head|document.getElementsByTagName('base')[0]
         @baseElement document.getElementsByTagName('base')[0]
         @dataMain script.getAttribute('data-main')
         @src dataMain.split('/')
         @interactiveScript script.readyState === 'interactive'
         @currentlyAddingScript 当前正在加载/处理的script节点
-        @mainScript src.pop()
+        @mainScript src.pop()，即主入口模块
         @subPath src.length ? src.join('/') + '/' : './'
     */
     var req, s, head, baseElement, dataMain, src,
         interactiveScript, currentlyAddingScript, mainScript, subPath,
-        version = '2.1.16',
+        version = '2.1.16', //发布版本
         commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg, //注释正则
         cjsRequireRegExp = /[^.]\s*require\s*\(\s*["']([^'"\s]+)["']\s*\)/g, //加载依赖正则
         jsSuffixRegExp = /\.js$/, //js后缀正则
@@ -52,7 +53,7 @@ var requirejs, require, define;
         //用于检测是否是opera浏览器。
         isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]',
         contexts = {}, //作用域内容对象
-        cfg = {}, //config配置信息
+        cfg = {}, //全局config默认配置信息
         globalDefQueue = [],
         useInteractive = false;
 
@@ -205,13 +206,14 @@ var requirejs, require, define;
      */
     //生成错误信息并返回
     function makeError(id, msg, err, requireModules) {
+        //创建Error实例
         var e = new Error(msg + '\nhttp://requirejs.org/docs/errors.html#' + id);
-        e.requireType = id;
-        e.requireModules = requireModules;
+        e.requireType = id; //附加属性
+        e.requireModules = requireModules; //附加属性
         if (err) {
-            e.originalError = err; //原错误
+            e.originalError = err; //原错误链接
         }
-        return e;
+        return e; //返回错误实例
     }
 
 
@@ -1393,13 +1395,13 @@ var requirejs, require, define;
         context = {
             config: config, //配置信息
             contextName: contextName, //作用域对象名称
-            registry: registry,
+            registry: registry, //模块注册缓存
             defined: defined,
             urlFetched: urlFetched,
             defQueue: defQueue,
             Module: Module,
             makeModuleMap: makeModuleMap,
-            nextTick: req.nextTick,
+            nextTick: req.nextTick, //延迟执行
             onError: onError,
 
             /**
@@ -2099,7 +2101,7 @@ var requirejs, require, define;
 
     //如果是浏览器环境，则设置req.s.head（head元素或base元素的父节点）。
     if (isBrowser) {
-        //获取页面上head元素节点。
+        //获取页面上head元素节点。不能用document.head获取head元素（IE<=8不能获取到）。
         head = s.head = document.getElementsByTagName('head')[0];
         //If BASE tag is in play, using appendChild is a problem for IE6.
         //When that browser dies, this can be removed. Details in this jQuery bug:
@@ -2162,8 +2164,8 @@ var requirejs, require, define;
             node = req.createNode(config, moduleName, url);
 
             //设置作用域对象名称和模块名称属性
-            node.setAttribute('data-requirecontext', context.contextName);
-            node.setAttribute('data-requiremodule', moduleName);
+            node.setAttribute('data-requirecontext', context.contextName); //默认为"_"
+            node.setAttribute('data-requiremodule', moduleName); //模块名称
 
             //Set up load listener. Test attachEvent first because IE9 has
             //a subtle issue in its addEventListener and script onload firings
@@ -2195,7 +2197,7 @@ var requirejs, require, define;
                 //readyState at the time of the define call.
                 useInteractive = true;
 
-                //给node绑定'onreadystatechange'事件监听脚本加载情况。
+                //给script节点绑定'onreadystatechange'事件监听脚本加载情况，判断是否加载完毕。
                 node.attachEvent('onreadystatechange', context.onScriptLoad);
                 //It would be great to add an error handler here to catch
                 //404s in IE9+. However, onreadystatechange will fire before
@@ -2208,11 +2210,12 @@ var requirejs, require, define;
                 //Best hope: IE10 fixes the issues,
                 //and then destroys all installs of IE 6-9.
                 //node.attachEvent('onerror', context.onScriptError);
-                //标准浏览器给node节点绑定'load'和'error'事件。
+                //标准浏览器下给script节点绑定'load'和'error'事件。
             } else {
-                node.addEventListener('load', context.onScriptLoad, false);
-                node.addEventListener('error', context.onScriptError, false);
+                node.addEventListener('load', context.onScriptLoad, false); //判断是否加载完毕
+                node.addEventListener('error', context.onScriptError, false); //判断是否加载出错，如：404错误。
             }
+            //注意node.src赋值顺序，建议最好先给node绑定事件，后设置src属性值。
             node.src = url;
 
             //For some cache cases in IE 6-8, the script executes before the end
@@ -2221,20 +2224,21 @@ var requirejs, require, define;
             //to a reference to this node, but clear after the DOM insertion.
             //当前正在增加的script节点。
             currentlyAddingScript = node;
-            //将script节点插入head节点。
+            //将script节点追加到head节点。
             if (baseElement) {
                 head.insertBefore(node, baseElement); //head里base元素bug导致，使用insertBefore代替appendChild方法。
             } else {
                 head.appendChild(node);
             }
-            //清空当前正在增加的script节点。
+            //清空变量currentlyAddingScript，防止ie内存泄漏。
             currentlyAddingScript = null;
 
             return node;
         } else if (isWebWorker) {
-            //webWorker环境下，使用importScripts方法。
+            //webWorker环境下，使用全局importScripts方法。
             //但是，importScripts不是非常高效，它会导致阻塞直到脚本下载完毕。
-            //然而，如果是webWorker环境，期望的是仅仅加载一个脚本就好。如果是其他情况，需要重新考虑了。
+            //然而，如果是webWorker环境，期望的是仅仅加载一个脚本就好。
+            //如果是其他情况，需要重新考虑了。
             try {
                 //In a web worker, use importScripts. This is not a very
                 //efficient use of importScripts, importScripts will block until
@@ -2277,9 +2281,12 @@ var requirejs, require, define;
     //查找有'data-main'属性的script节点
     if (isBrowser && !cfg.skipDataMain) {
         //Figure out baseUrl. Get it from the script tag with require.js in it.
+        //反向遍历script节点，找到baseUrl。
         eachReverse(scripts(), function(script) {
             //Set the 'head' where we can append children by
             //using the script's parent.
+            //如果木有document.getElementsByTagName('head')或baseElement.parentNode，
+            //则将当前script节点的父节点作为head节点（也即拉取模块节点时要追加到的节点）。
             if (!head) {
                 head = script.parentNode;
             }
@@ -2299,17 +2306,19 @@ var requirejs, require, define;
                 if (!cfg.baseUrl) {
                     //Pull off the directory of data-main for use as the
                     //baseUrl.
-                    src = mainScript.split('/');
-                    mainScript = src.pop(); //main模块
-                    //main模块所在的目录，如果木有，则为当前html文档所在目录
+                    //从data-main属性中分析出baseUrl。
+                    src = mainScript.split('/'); //如：'js/main.js' => ['js', 'main.js']
+                    mainScript = src.pop(); //main模块，如：'main.js'。
+                    //获取main模块所在的目录，如果木有，则为当前html文档所在目录。
+                    //如：'js/main.js' => 'js/'; 或 'main.js' => './';
                     subPath = src.length ? src.join('/') + '/' : './';
-                    //设置subPath为baseUrl
+                    //设置baseUrl
                     cfg.baseUrl = subPath;
                 }
 
                 //Strip off any trailing .js since mainScript is now
                 //like a module name.
-                //去掉main模块的后缀'.js'
+                //去掉main模块的后缀'.js'，如：'main.js' => 'main'。
                 mainScript = mainScript.replace(jsSuffixRegExp, '');
 
                 //If mainScript is still a path, fall back to dataMain
@@ -2319,7 +2328,8 @@ var requirejs, require, define;
                 }
 
                 //Put the data-main script in the files to load.
-                //如果有模块依赖，则将mainScript加入依赖数组。
+                //如果有默认模块依赖配置，则将mainScript加入依赖数组。
+                //如：var requirejs = {deps: ['a', 'b']}。
                 cfg.deps = cfg.deps ? cfg.deps.concat(mainScript) : [mainScript];
 
                 //返回true，则中断eachReverse函数遍历script节点。
