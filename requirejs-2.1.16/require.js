@@ -2176,7 +2176,8 @@ var requirejs, require, define;
             //UNFORTUNATELY Opera implements attachEvent but does not follow the script
             //script execution mode.
             //设置script节点加载监听器。
-            //IE9下使用onload监听会有问题，即：在脚本加载完成后木有立即触发onload事件。因此会优先使用attachEvent。
+            //IE9下优先使用attachEvent方法，因为IE9的addEventListener方法有个小问题（
+            //使用addEventListener方法监听script节点的onload事件时onload事件触发行为跟其他浏览器不一致）。
             if (node.attachEvent &&
                 //Check if node.attachEvent is artificially added by custom script or
                 //natively supported by browser
@@ -2185,9 +2186,11 @@ var requirejs, require, define;
                 //in IE8, node.attachEvent does not have toString()
                 //Note the test for "[native code" with no closing brace, see:
                 //https://github.com/jrburke/requirejs/issues/273
-                //首先检测node.attachEvent函数是否是浏览器原生方法。
-                //IE<=8的node.attachEvent函数木有toString方法。
-                //HtmlUnit测试环境下IE7模式的node.attachEvent函数的toString方法为"[native code"，没有右边的中括号。
+                //1.首先检测node.attachEvent方法是浏览器原生方法还是手动自定义添加的。
+                //2.如果在node.attachEvent.toString()结果中不能找到"[native code]"字符串时，它肯定不是浏览器原生方法。
+                //3.IE<=8的node.attachEvent方法木有toString方法。
+                //4.如果IE浏览器支持attachEvent()或addEventListener()方法，在使用HtmlUnit 2.8(in IE7 mode)测试环境中，
+                //  node.attachEvent.toString()方法返回的字符串为"[native code, arity=2"]。
                 !(node.attachEvent.toString && node.attachEvent.toString().indexOf('[native code') < 0) &&
                 !isOpera) {
                 //Probably IE. IE (at least 6-8) do not fire
@@ -2195,6 +2198,9 @@ var requirejs, require, define;
                 //we cannot tie the anonymous define call to a name.
                 //However, IE reports the script as being in 'interactive'
                 //readyState at the time of the define call.
+                //可能IE（至少IE6-8）不能正确触发script脚本的onload事件（在脚本执行完毕后）。
+                //然而我们不可能去标识一个name去记录当前正在执行define的模块。
+                //还好，IE
                 useInteractive = true;
 
                 //给script节点绑定'onreadystatechange'事件监听脚本加载情况，判断是否加载完毕。
@@ -2211,6 +2217,10 @@ var requirejs, require, define;
                 //and then destroys all installs of IE 6-9.
                 //node.attachEvent('onerror', context.onScriptError);
                 //标准浏览器下给script节点绑定'load'和'error'事件。
+                //1.IE9+可以给script节点添加一个错误回调去监听脚本404状态。然而，onreadystatechange事件会
+                //  在错误回调之前被触发，所以没啥用。如果IE9+使用addEventListener方法，错误回调会在load事件前触发。
+                //  但是它不能像其他浏览器一样做到'script execute,then fire the script load event listener before execute next script'。
+                //  例如：当前a脚本加载完毕（下个脚本b也可能加载完毕）-> a执行完毕 -> a的load事件触发 -> b执行完毕 -> b的load事件触发。
             } else {
                 node.addEventListener('load', context.onScriptLoad, false); //判断是否加载完毕
                 node.addEventListener('error', context.onScriptError, false); //判断是否加载出错，如：404错误。
@@ -2222,6 +2232,7 @@ var requirejs, require, define;
             //of the appendChild execution, so to tie an anonymous define
             //call to the module name (which is stored on the node), hold on
             //to a reference to this node, but clear after the DOM insertion.
+            //IE6-8在某些缓存情况下，脚本会在插入DOM完成前执行。
             //当前正在增加的script节点。
             currentlyAddingScript = node;
             //将script节点追加到head节点。
@@ -2278,7 +2289,7 @@ var requirejs, require, define;
 
     //Look for a data-main script attribute, which could also adjust the baseUrl.
     //如果是浏览器平台，且木有配置skipDataMain，即：cfg.skipDataMain === false或undefined。
-    //查找有'data-main'属性的script节点
+    //查找有'data-main'属性的script节点，获取main模块mainScript，设置cfg.baseUrl，收集依赖cfg.deps。
     if (isBrowser && !cfg.skipDataMain) {
         //Figure out baseUrl. Get it from the script tag with require.js in it.
         //反向遍历script节点，找到baseUrl。
@@ -2345,6 +2356,10 @@ var requirejs, require, define;
      * return a value to define the module corresponding to the first argument's
      * name.
      */
+    //这是一个定义模块的函数句柄。不同于requirejs/require函数的是：
+    //1.一个字符串参数必定是第一个参数。
+    //2.此函数句柄在当前模块所有依赖加载完毕后才能执行。
+    //3.所有依赖模块返回值作为模块接口。
     //定义模块的函数。callback回调在此模块的所有依赖被加载完毕后执行。
     //依赖模块返回值作为callback回调的参数。
     define = function(name, deps, callback) {
@@ -2361,7 +2376,7 @@ var requirejs, require, define;
         }
 
         //This module may not have dependencies
-        //定义模块的时候尚未手动指定此模块的依赖模块，如：
+        //定义该模块的时候未手动写上此模块的所有依赖模块，如：
         //define('jquery', function(){...}); 或 define(function(){...});
         if (!isArray(deps)) {
             callback = deps;
@@ -2370,8 +2385,8 @@ var requirejs, require, define;
 
         //If no name, and callback is a function, then figure out if it a
         //CommonJS thing with dependencies.
-        //如果定义此模块时，写明了模块依赖，则不会去计算判断当前模块的依赖。否则会通过正则判断其模块依赖。
-        //如：define('jquery', function(){...}); 或 define(function(){...});（可能是一个CommonJS模块）
+        //如果定义此模块时，写明了模块依赖，则不会去计算判断当前模块的依赖，否则会通过正则判断其模块依赖。
+        //如：define('jquery', function(){...}); 或 define(function(){...});（可能是一个CommonJS模块）。
         if (!deps && isFunction(callback)) {
             deps = [];
             //Remove comments from the callback string,
@@ -2383,8 +2398,7 @@ var requirejs, require, define;
                 callback
                     .toString() //获取callback回调字符串
                     .replace(commentRegExp, '') //将代码中得注释清空
-                    //提取依赖，如：
-                    //require("a") => ["a"]
+                    //提取依赖，如：require("a") => ["a"]
                     .replace(cjsRequireRegExp, function(match, dep) {
                         deps.push(dep);
                     });
@@ -2394,10 +2408,7 @@ var requirejs, require, define;
                 //work though if it just needs require.
                 //REQUIRES the function to expect the CommonJS variables in the
                 //order listed below.
-                //如：define(function(require){...}); 或
-                //define(function(require, exports, module){...});
-                //联合参数，将模块依赖加入参数，如：
-                //define(function('require', 'a', 'b'){...});
+                //生成模块依赖数组。
                 deps = (callback.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps);
             }
         }
