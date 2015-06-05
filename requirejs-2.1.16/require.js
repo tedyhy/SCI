@@ -1921,6 +1921,7 @@ var requirejs, require, define;
                 //Using currentTarget instead of target for Firefox 2.0's sake. Not
                 //all old browsers will be supported, but this one was easy enough
                 //to support and still makes sense.
+                //用"currentTarget"代替"target"。不是所有老浏览器支持，但是目前主流浏览器都支持。
                 //标准浏览器、ie下判断script节点加载完毕状态。
                 if (evt.type === 'load' ||
                     (readyRegExp.test((evt.currentTarget || evt.srcElement).readyState))) {
@@ -1930,10 +1931,16 @@ var requirejs, require, define;
                     interactiveScript = null;
 
                     //Pull out the name of the module and the context.
-                    //移走node节点上绑定事件。
-                    //data.id 模块id。
+                    //移走script节点上绑定的事件。
                     var data = getScriptData(evt);
-                    context.completeLoad(data.id);
+                    /*
+                        data包括：script节点、模块id。
+                        data = {
+                            node: node, //script节点
+                            id: node && node.getAttribute('data-requiremodule') //模块id
+                        };
+                    */
+                    context.completeLoad(data.id); //模块id
                 }
             },
 
@@ -1951,7 +1958,8 @@ var requirejs, require, define;
             }
         };
 
-        //加载模块及依赖的主方法，暴露到作用域对象上，即：context.require。
+        //加载模块及依赖的主方法，暴露到作用域对象上。
+        //如：context.require(cfg.deps || [], cfg.callback);
         context.require = context.makeRequire();
         return context;
     }
@@ -2271,7 +2279,7 @@ var requirejs, require, define;
         }
     };
 
-    //获取状态为“下载完成但尚不可用”的script节点。
+    //获取状态为"interactive"的script节点。
     function getInteractiveScript() {
         //如果有此状态的script节点，则返回此节点
         if (interactiveScript && interactiveScript.readyState === 'interactive') {
