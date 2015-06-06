@@ -219,6 +219,7 @@ var requirejs, require, define;
 
     /*
     * 检查并准备三个全局变量：define、requirejs、require。
+    * define、requirejs是重点全局变量，且require === requirejs。
     */
     //如果define已经定义过了（其他AMD加载器），则返回（不会覆盖当前加载器的define方法）。
     if (typeof define !== 'undefined') {
@@ -2004,7 +2005,7 @@ var requirejs, require, define;
             if (isArray(callback)) {
                 // Adjust args if there are dependencies
                 // 如果有依赖，就调整参数。
-                // 即：requirejs({...}, ['a', 'b']);
+                // 即：requirejs({...}, ['a', 'b'], function(){...}, function(){...});
                 deps = callback;
                 callback = errback;
                 errback = optional;
