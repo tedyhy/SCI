@@ -270,10 +270,10 @@ var requirejs, require, define;
             //cycle breaking code when lots of modules
             //are registered, but not activated.
             enabledRegistry = {},
-            undefEvents = {},
+            undefEvents = {}, //未定义事件对象
             defQueue = [],
             defined = {},
-            urlFetched = {},
+            urlFetched = {}, //被拉取过的url
             bundlesMap = {}, //模块捆绑后的map信息
             requireCounter = 1,
             unnormalizedCounter = 1;
@@ -843,6 +843,7 @@ var requirejs, require, define;
         }
 
         //模块管理类
+        //@map {id: id, url: url}
         Module = function(map) {
             //模块事件对象
             this.events = getOwn(undefEvents, map.id) || {};
