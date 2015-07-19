@@ -996,6 +996,7 @@
  				// 遍历日历元素，对每个日历元素进行初始化。
 				return this.each(function() {
 					// 如果元素上木有 'datepicker' 数据，则初始化，否则跳过已经初始化过的元素。
+					// 'datepicker'保存的是当前日历options信息内容。
 					if (!$(this).data('datepicker')) {
 						options.el = this; // 设置当前日历元素缓存options.el，如：input。
 
