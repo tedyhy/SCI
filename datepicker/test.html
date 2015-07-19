@@ -35,16 +35,25 @@
                 dates[1].getFullYear());
         }
     });
-    $('#datepicker-calendar2').DatePicker({
-        inline: true
-    });
+    // $('#datepicker-calendar2').DatePicker({
+    //     inline: true
+    // });
+
+    // $('#inputDate').DatePicker({
+    //     mode: 'single',
+    //     position: 'top',
+    //     onChange: function(date, el) {
+    //         console.log(arguments)
+    //         $(el).val((date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear());
+    //         $(el).DatePickerHide();
+    //     }
+    // });
 
     $('#inputDate').DatePicker({
-        mode: 'single',
-        position: 'top',
+        mode: 'multiple',
+        // position: 'top',
         onChange: function(date, el) {
-            $(el).val((date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear());
-            $(el).DatePickerHide();
+            console.log(arguments)
         }
     });
     </script>

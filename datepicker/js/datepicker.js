@@ -507,11 +507,11 @@
 				// 为当前日期增加天
 				Date.prototype.addDays = function(n) {
 					this.setDate(this.getDate() + n);
-					this.tempDate = this.getDate(); // 缓存计算后的日期。
+					this.tempDate = this.getDate(); // 缓存计算后的日期（天）。
 				};
 				// 为当前日期增加月
 				Date.prototype.addMonths = function(n) {
-					// 如果木有缓存日期，则取当前日期并缓存。
+					// 如果木有缓存日期，则取当前日期（天）并缓存。
 					if (this.tempDate == null) {
 						this.tempDate = this.getDate();
 					}
@@ -993,7 +993,7 @@
 				// 'range' 选择日期区间。
  				options.mode = /single|multiple|range/.test(options.mode) ? options.mode : 'single';
 
- 				// 遍历日历元素
+ 				// 遍历日历元素，对每个日历元素进行初始化。
 				return this.each(function() {
 					// 如果元素上木有 'datepicker' 数据，则初始化，否则跳过已经初始化过的元素。
 					if (!$(this).data('datepicker')) {
