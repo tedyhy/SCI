@@ -48,11 +48,11 @@ var requirejs, require, define;
         //PS3平台使用'complete'，浏览器平台使用'complete|loaded'来判断script节点是否加载完毕。
         readyRegExp = isBrowser && navigator.platform === 'PLAYSTATION 3' ?
         /^complete$/ : /^(complete|loaded)$/,
-        defContextName = '_', //定义作用域名称
+        defContextName = '_', //定义作用域索引名称
         //Oh the tragedy, detecting opera. See the usage of isOpera for reason.
         //用于检测是否是opera浏览器。
         isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]',
-        contexts = {}, //作用域内容对象
+        contexts = {}, //作用域内容对象，保存着多份配置作用域
         cfg = {}, //全局config默认配置信息
         globalDefQueue = [],
         useInteractive = false;
@@ -191,7 +191,7 @@ var requirejs, require, define;
         var g = global; //window对象
         //如：'a.b.c'
         each(value.split('.'), function(part) {
-            g = g[part];
+            g = g[part]; // 如果木有g[part]，则会抛出错误
         });
         return g;
     }
@@ -247,6 +247,7 @@ var requirejs, require, define;
     }
 
     //创建作用域内容对象
+    //局部变量方法，共被调用一次
     //即：contexts[_] = req.s.newContext(contextName);
     function newContext(contextName) {
         //@context 作用域对象，即：requirejs.s._。
@@ -304,9 +305,11 @@ var requirejs, require, define;
                     // still work when converted to a path, even though
                     // as an ID it is less than ideal. In larger point
                     // releases, may be better to just kick out an error.
+                    // 如：['..', 'a']、['a', '..', '..']、['a', '..', '..', '..']
                     if (i === 0 || (i == 1 && ary[2] === '..') || ary[i - 1] === '..') {
                         continue;
                     } else if (i > 0) {
+                        //如：var b = ['a', '..', 'b'] => ['b']
                         ary.splice(i - 1, 2);
                         i -= 2;
                     }
@@ -1519,6 +1522,18 @@ var requirejs, require, define;
                         shim[id] = value;
                     });
                     config.shim = shim;
+                    /*  shim要得到的结果：
+                        {
+                            deps: ['underscore', 'jquery'],
+                            exports: 'Backbone',
+                            init: function(){
+                                return this.Backbone; // this => global
+                            },
+                            exportsFn: function(){
+                                // 先取init方法返回值，如果木有init方法，则取exports属性值。
+                            }
+                        }
+                     */
                 }
 
                 //Adjust packages if necessary.
@@ -1535,16 +1550,19 @@ var requirejs, require, define;
                     });
                  */
                 if (cfg.packages) {
+                    //cfg.packages为数组
                     each(cfg.packages, function(pkgObj) {
                         var location, name;
 
-                        //如：{packages: ["cart"]} => {packages: [{name: "cart"}]}
+                        //将字符串配置成对象格式，如：
+                        //{packages: ["cart"]} => {packages: [{name: "cart"}]}
                         pkgObj = typeof pkgObj === 'string' ? {
                             name: pkgObj
                         } : pkgObj; //如：{packages: [{name: "store",main: "store"}]}
 
                         name = pkgObj.name; //包名
                         location = pkgObj.location; //包路径path
+                        //如果有包路径，则设置路径别名。
                         if (location) {
                             config.paths[name] = pkgObj.location; //设置路径配置
                         }
@@ -2024,7 +2042,7 @@ var requirejs, require, define;
         }
 
         //判断作用域contexts里是否存在contextName内容，如：
-        //contexts = {_: {...}}
+        //contexts = {"_": {...}, "__": {...}, ...}
         context = getOwn(contexts, contextName);
         //如果不存在，则用req.s.newContext方法依据contextName来创建作用域对象。
         if (!context) {
@@ -2171,6 +2189,7 @@ var requirejs, require, define;
         if (isBrowser) {
             //In the browser so use a script tag
             //浏览器环境下，创建一个script元素节点
+            //参数 moduleName、url 对于 req.createNode 方法没用。
             node = req.createNode(config, moduleName, url);
 
             //设置作用域对象名称和模块名称属性
@@ -2210,7 +2229,6 @@ var requirejs, require, define;
                 //readyState at the time of the define call.
                 //可能IE（至少IE6-8）不能正确触发script脚本的onload事件（在脚本执行完毕后）。
                 //然而我们不可能去标识一个name去记录当前正在执行define的模块。
-                //还好，IE
                 useInteractive = true;
 
                 //给script节点绑定'onreadystatechange'事件监听脚本加载情况，判断是否加载完毕。
@@ -2281,7 +2299,7 @@ var requirejs, require, define;
         }
     };
 
-    //获取状态为"interactive"的script节点。
+    //获取状态为"interactive[互动的]"的script节点。
     function getInteractiveScript() {
         //如果有此状态的script节点，则返回此节点
         if (interactiveScript && interactiveScript.readyState === 'interactive') {
@@ -2294,7 +2312,7 @@ var requirejs, require, define;
                 return (interactiveScript = script);
             }
         });
-        return interactiveScript;
+        return interactiveScript; // null
     }
 
     //Look for a data-main script attribute, which could also adjust the baseUrl.
