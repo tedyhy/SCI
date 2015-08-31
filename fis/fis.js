@@ -113,7 +113,7 @@ fis.cli.version = function(){
     console.log(content);
 };
 
-//循环判断argv里是否有参数search
+//循环判断argv里是否有参数search，并删除搜索到的参数。
 //@argv {Array}
 //@search {String}
 function hasArgv(argv, search){
@@ -153,12 +153,15 @@ fis.cli.run = function(argv){
     } else {
         //register command
         //通过command模块构建[ 'release', 'install', 'server' ]3个命令的命令控制台。
-        //参考https://www.npmjs.com/package/commander
+        //commander 参考：
+        //https://www.npmjs.com/package/commander
+        //https://github.com/tj/commander.js/tree/1.3.2
         var commander = fis.cli.commander = require('commander');
         /*cmd如下：
             cmd = {
-                name: 'release',
-                desc: 'build and deploy your project',
+                name: 'install',
+                usage: '[options] <components...>',
+                desc: 'install components,
                 register: function(){}
             };
         */
@@ -167,7 +170,7 @@ fis.cli.run = function(argv){
             //返回一个对象（注册的commander选项）作为参数传给cmd.register回调。
             commander
                 .command(cmd.name || first)
-                .usage(cmd.usage) //暂时未定义
+                .usage(cmd.usage)
                 .description(cmd.desc)
         );
         //分析命令行参数，即：commander.parse(process.argv);
