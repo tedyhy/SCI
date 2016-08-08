@@ -677,10 +677,13 @@ jQuery.extend({
 	},
 
 	getJSON: function( url, data, callback ) {
+		// 内部调用$.get方法，dataType="json"
 		return jQuery.get( url, data, callback, "json" );
 	},
 
 	getScript: function( url, callback ) {
+		// 内部调用$.get方法，dataType="script"，也可以这样写：
+		// return jQuery.get( url, callback, "script" );
 		return jQuery.get( url, undefined, callback, "script" );
 	}
 });
@@ -688,12 +691,20 @@ jQuery.extend({
 jQuery.each( [ "get", "post" ], function( i, method ) {
 	jQuery[ method ] = function( url, data, callback, type ) {
 		// shift arguments if data argument was omitted
+		/*
+			处理参数顺序，例如：
+				$.get(url, {}, function(data){}, "json");
+				$.get(url, function(data){}, "json");
+				$.post(url, {}, function(data){}, "json");
+			"json"设置了获取数据的类型。
+		*/
 		if ( jQuery.isFunction( data ) ) {
 			type = type || callback;
 			callback = data;
 			data = undefined;
 		}
 
+		// 内部调用ajax方法
 		return jQuery.ajax({
 			url: url,
 			type: method,
