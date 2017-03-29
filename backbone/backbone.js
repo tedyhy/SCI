@@ -35,7 +35,7 @@
 
 	// Save the previous value of the `Backbone` variable, so that it can be
 	// restored later on, if `noConflict` is used.
-	// //保存上一个版本的backbone，用于解决冲突，有可能页面引入了多次backbone,保存当前 window.Backbone 变量。
+	// 保存上一个版本的backbone，用于解决冲突，有可能页面引入了多次backbone,保存当前 window.Backbone 变量。
 	var previousBackbone = root.Backbone;
 
 	// Create local references to array methods we'll want to use later.
@@ -2095,7 +2095,7 @@
 	Model.extend = Collection.extend = Router.extend = View.extend = History.extend = extend;
 
 	// Throw an error when a URL is needed, and none is supplied.
-	// 当URL是必须的但是未提供的时候爆出错误.
+	// 当URL是必须的但是未提供的时候抛出错误.
 	var urlError = function() {
 		throw new Error('A "url" property or function must be specified');
 	};
