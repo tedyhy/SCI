@@ -4,7 +4,7 @@
 //     Backbone may be freely distributed under the MIT license.
 //     For all details and documentation:
 //     http://backbonejs.org
-
+// 		 AMD规范支持，这里的root指的是window
 (function(root, factory) {
 
 	// Set up Backbone appropriately for the environment. Start with AMD.
@@ -35,13 +35,15 @@
 
 	// Save the previous value of the `Backbone` variable, so that it can be
 	// restored later on, if `noConflict` is used.
-	// 用于解决冲突，保存当前 window.Backbone 变量。
+	// //保存上一个版本的backbone，用于解决冲突，有可能页面引入了多次backbone,保存当前 window.Backbone 变量。
 	var previousBackbone = root.Backbone;
 
 	// Create local references to array methods we'll want to use later.
 	// 创建本地数组方法
+	// 用局部变量保存数组常用的方法，
 	var array = [];
 	var push = array.push;
+  // slice 一般用于将伪数组转成真正的数组,比如arguments
 	var slice = array.slice;
 	var splice = array.splice;
 
@@ -55,23 +57,30 @@
 
 	// Runs Backbone.js in *noConflict* mode, returning the `Backbone` variable
 	// to its previous owner. Returns a reference to this Backbone object.
-	// 解决冲突
+	// 解决冲突,在 无冲突 模式下运行Backbone
 	Backbone.noConflict = function() {
+  	// 用一个引用指向先前 Backbone 的对象，
 		root.Backbone = previousBackbone;
+		// 返回变量 `Backbone`
 		return this;
 	};
 
 	// Turn on `emulateHTTP` to support legacy HTTP servers. Setting this option
 	// will fake `"PATCH"`, `"PUT"` and `"DELETE"` requests via the `_method` parameter and
 	// set a `X-Http-Method-Override` header.
-	// ???
+	// 开启 `emulateHTTP`（模拟HTTP） 以支持传统的 HTTP 服务.
+  // 通过设置 '_method' 参数和设置 'X-Http-Method-Override' 头的这个参数可以伪造 'PUT'和'DELETE' 请求
+  // 简单的说 就是 老的浏览器不支持REST/HTTP，开启emulateHTTP选项，Backbone将通过POST方法伪造PUT和DELETE方法
 	Backbone.emulateHTTP = false;
 
 	// Turn on `emulateJSON` to support legacy servers that can't deal with direct
 	// `application/json` requests ... will encode the body as
 	// `application/x-www-form-urlencoded` instead and will send the model in a
 	// form param named `model`.
-	// ???
+	// 开启 `emulateJSON`（模拟JSON） 以支持传统服务器无法直接处理的问题
+  // `application/json` 请求 ... 将自身编码为application/x-www-form-urlencoded`发送模型， 而不是直接'model'的表单参数。
+  // 老的浏览器不支持直接发送'application/json'编码的请求，开启emulateJSON选项
+  // Backbone会将JSON模型数据序列化为modal参数，请求会按照application/x-www-form-urlencoded的内容发送
 	Backbone.emulateJSON = false;
 
 	// Backbone.Events
@@ -93,14 +102,19 @@
 		// the callback to all events fired.
 		// 绑定事件，"all" 事件将触发所有绑定的事件。
 		on: function(name, callback, context) {
+			// API 检测?
 			// 如果 (!name || !callback) 则返回 this。
 			// 如果 (name === "click blur" || name === {click: fn1, blur: fn2}) 则递归调用on方法
 			// 注册事件，最后返回 this。
 			if (!eventsApi(this, 'on', name, [callback, context]) || !callback) return this;
 			// this._events 一个对象，用于存储当前实例上（this）所有注册的事件。
+			// 相当于 this._events = this._events || {} 下面语法更容易用来赋值 如下下句
+      // 在绑定时间的对象中 建立事件池 来进行事件管理
 			this._events || (this._events = {});
 			// 当前实例的事件 name 下的所有回调。
+			// name 事件在事件池中的形式（数组形式） 存放当前对象绑定在name的所有事件
 			var events = this._events[name] || (this._events[name] = []);
+			// 将当前需要绑定的事件 push到事件池中的具体事件名称中
 			// 如：this._events['click'] = [{}, {}, ...]。
 			// 每个回调都由 {callback: callback, context: context, ctx: context || this} 组成。
 			events.push({
@@ -151,7 +165,9 @@
 			}
 			// 事件 name 有值时，取当前实例下事件 name 下所有回调。
 			// 事件 name 无值时，取当前实例下所有事件下所有回调。
+			// 使用 underscore 的 keys 获取对象键值方法
 			names = name ? [name] : _.keys(this._events);
+			// 对每个包含回调函数的对象进行筛选，不符合指定参数条件的进行保留
 			for (i = 0, l = names.length; i < l; i++) {
 				// 事件name，如：click
 				name = names[i];
@@ -180,15 +196,22 @@
 		// passed the same arguments as `trigger` is, apart from the event name
 		// (unless you're listening on `"all"`, which will cause your callback to
 		// receive the true name of the event as the first argument).
-		// 触发一个或多个事件 name 下回调。
+		// 触发一个或多个事件 name 下回调。会触发所有绑定的回调.
+    // 除了事件名称，回调函数会被传递'trigger'相同的参数。
+    // (如果你监听了 'all', 会让你的回调函数将事件名称作为第一个参数).
+    // obj.trigger("change",function(){});
+    // obj.trigger("all",function(eventName){ alert(eventName) });
 		trigger: function(name) {
 			if (!this._events) return this;
+			// 参数列表，不包含name 即不包含第一个tigger的参数 name
 			// 取参数 arg1, arg2, ...，如：obj.trigger('click', arg1, arg2, ...)
 			var args = slice.call(arguments, 1);
 			// 递归调用实例的trigger方法，如果事件 name 为空，则返回实例。
+			// trigger方法中调用了两次triggerEvents
 			if (!eventsApi(this, 'trigger', name, args)) return this;
 			var events = this._events[name];
 			var allEvents = this._events.all;
+			// 通过参数传进来的事件触发
 			if (events) triggerEvents(events, args);
 			// 任何事件触发都会触发事件 all 上的回调。
 			// http://backbonejs.org/#Events-on
@@ -198,6 +221,7 @@
 
 		// Tell this object to stop listening to either specific events ... or
 		// to every object it's currently listening to.
+		// 使这个对象或者所有监听特定事件的对象停止监听该特定的事件
 		stopListening: function(obj, name, callback) {
 			// 如果当前实例无监听对象列表 this._listeningTo，则返回当前实例。
 			var listeningTo = this._listeningTo;
@@ -234,6 +258,11 @@
 	 * @rest：数组 [callback, context]
 	 * @result：true/false
 	 */
+ 	// 处理多个事件的绑定，比如"change blur"或者'{change: action}'
+  // 该函数的主要作用：
+  // 当指定事件名为object对象时，将object对象中key作为事件名
+  // 将obejct中的value作为回调函数对象，然后递归调用on、off、trigger
+  // 当指定的事件名为string，但包含空格时，将string按空格切割，再依次递归调用
 	// on: function(name, callback, context) {
 	// if (!eventsApi(this, 'on', name, [callback, context]) || !callback)
 	var eventsApi = function(obj, action, name, rest) {
@@ -248,6 +277,7 @@
 				blur: handler3
 			}
 		*/
+		// 当指定的事件名为object时
 		if (typeof name === 'object') {
 			for (var key in name) {
 				// 参数为：(key, name[key] [, ......])，callback或context不存在。
@@ -259,6 +289,7 @@
 		}
 
 		// Handle space separated event names.
+		// 当指定的事件名包含空格时
 		/*
 		如：
 			var name = "click focus blur"
@@ -279,6 +310,11 @@
 	// triggering events. Tries to keep the usual cases speedy (most internal
 	// Backbone events have 3 arguments).
 	// 内部使用的触发事件执行回调的方法，为了保证通常快速执行，Backbone的事件回调大多会有3个参数。
+	// 调用事件回调函数的函数
+  // 为了性能问题，才使用了switch，而不是直接使用default中的代码
+  // 关于这个函数性能测试 可以查看下：http://jsperf.com/js-function-call-vs-function-apply
+  // 实际上是call 与 apply的性能差异 http://stackoverflow.com/questions/14968387/backbone-triggerevents-variable
+  // 中文：http://www.cnblogs.com/snandy/archive/2013/05/23/3091258.html
 	var triggerEvents = function(events, args) {
 		var ev, i = -1,
 			l = events.length,
@@ -305,7 +341,7 @@
 	};
 
 	// 监听方法 listenTo、listenToOnce
-	// 用于当前实例监听另一个对象的变化，并执行相关事件的回调。
+	// 用于当前实例监听另一个对象的变化，当另一个对象的某个事件触发时，将会执行当前这个对象的回调函数
 	var listenMethods = {
 		listenTo: 'on',
 		listenToOnce: 'once'
@@ -334,14 +370,16 @@
 	});
 
 	// Aliases for backwards compatibility.
-	// 事件别名，为了向后兼容
+	// 事件别名，为了向后兼容,以前的版本用bind来绑定事件
 	Events.bind = Events.on;
 	Events.unbind = Events.off;
 
 	// Allow the `Backbone` object to serve as a global event bus, for folks who
 	// want global "pubsub" in a convenient place.
-	// 为全局变量 Backbone 添加事件系统。
+	// 为全局变量 Backbone 添加事件系统,将Events对象fix到Backbone对象
 	_.extend(Backbone, Events);
+	// 在Events中维护了一个_events对象，而_events对象中的属性名就代表了一个事件，属性值为一个数组，数组中的元素为包含了注册的回调函数的对象。
+  // 所以当我们调用on('click', callback, ctx)时,实际上是做了这样的操作:this._events['click'].push({ callback: callback, context: ctx });
 
 	// Backbone.Model
 	// --------------
@@ -353,9 +391,17 @@
 
 	// Create a new model with the specified attributes. A client id (`cid`)
 	// is automatically generated and assigned for you.
+	// Backbone Models 在框架中是基础的数据对象,通常代表你服务器数据库表中的一行.
+ 	// 一个离散的数据块，和一堆对这些数据进行计算转换的有用的相关的方法
+
+ 	// 使用指定的属性创建一个新的模型.
+ 	// 会自动生成并分配一个用户id (`cid`)
 	// Backbone 的数据模块，Model模块里有个自动生成的，全局唯一的cid，用于区分数据实例。
 	var Model = Backbone.Model = function(attributes, options) {
+		// 设置model的默认参数，如果不传的话，默认都是空对象
+		// attrs也相当于是model的实例属性，一般对应于数据库的字段
 		var attrs = attributes || {};
+		// 配置项
 		options || (options = {});
 		// 当前数据实例唯一id
 		this.cid = _.uniqueId('c');
@@ -363,38 +409,43 @@
 		this.attributes = {};
 		// ???
 		if (options.collection) this.collection = options.collection;
+		// 解析attrs，默认直接返回attrs
 		if (options.parse) attrs = this.parse(attrs, options) || {};
 		// http://underscorejs.org/#result
 		// http://underscorejs.org/#defaults
 		// 整理数据，即：构造器传入的参数 attributes 数据优先级高，其次是当前数据实例的。
 		// defaults 为默认数据。
 		attrs = _.defaults({}, attrs, _.result(this, 'defaults'));
-		// 为每个数据实例初始化默认数据。
+		// 为每个数据实例初始化默认数据。设置model相应的属性
 		this.set(attrs, options);
 		// 记录当前数据实例改变的数据。
 		this.changed = {};
 		// 执行当前实例的 initialize 方法，参数为传给构造器的参数。
 		// var A = Backbone.Model.extend({});
 		// new A({}, {});
+		// 初始化事件，可以覆盖重写这个方法，this指向model
 		this.initialize.apply(this, arguments);
 	};
 
 	// Attach all inheritable methods to the Model prototype.
 	// 将 Events 事件系统添加到 Model 模块实例上。那么，每个数据实例将拥有完整的事件系统。
+	// 给 prototype 添加 属性
+  // 将所有可继承的方法添加到 模型 的原型中.
 	_.extend(Model.prototype, Events, {
 
 		// A hash of attributes whose current and previous value differ.
 		// 存储数据（当前值与之前的值不同的数据）。
 		// 这个用来存储，当连续改变实例数据的过程中数据的最新值。
-		changed: null,
+		changed: null,// 记录当前数据对象下哪些属性改变了
 
 		// The value returned during the last failed validation.
 		// 用于存储验证数据失败信息。
-		validationError: null,
+		validationError: null,// 最后一次验证失败的返回值.
 
 		// The default name for the JSON `id` attribute is `"id"`. MongoDB and
 		// CouchDB users may want to set this to `"_id"`.
 		// json数据中的id别名，如："id"、"_id"
+		// 数据的id属性模式是什么,一般对应数据库的自增长id,如果和数据库上的id名称不一样，比如page表的id叫page_id,则通过这个属性进行修改
 		idAttribute: 'id',
 
 		// Initialize is an empty function by default. Override it with your own
@@ -411,7 +462,11 @@
 		// Proxy `Backbone.sync` by default -- but override this if you need
 		// custom syncing semantics for *this* particular model.
 		// 调用Backbone.sync方法，一个映射。
-		// ???
+		// 默认使用 `Backbone.sync` 代理
+    // 如果需要可以自定义重写
+    // 该方法用于向服务端同步数据（增、删、改）
+    // 该方法默认调用的是Backbone.sync方法（ajax）
+    // 可以通过替换Backbone.sync来使用我们自己的sync方法，比如mongodb，这样backbone也能用于Node.js后端
 		sync: function() {
 			return Backbone.sync.apply(this, arguments);
 		},
@@ -433,6 +488,7 @@
 		// Returns `true` if the attribute contains a value that is not null
 		// or undefined.
 		// 返回boolean值，判断实例属性中是否存在属性attr。
+		// 若属性值不为 null 或者 undefined 则返回  `true`
 		has: function(attr) {
 			return this.get(attr) != null;
 		},
@@ -441,12 +497,17 @@
 		// the core primitive operation of a model, updating the data and notifying
 		// anyone who needs to know about the change in state. The heart of the beast.
 		// 设置实例数据，方法unset、clear等方法都基于此方法。
-		// 此方法会触发实例的change事件。它是Model模块的核心。
+		// 在对象上建立模型的属性哈希,此方法会触发实例的change事件。它是Model模块的核心。
+		// 更新数据, 通知那些需要知道 模型 状态变化的对象
+    // 第一个参数key如果是对象类型，直接将该对象拷贝到this.attributes上，
+    // 如果key是字符串，那么将在内部把key，value转成一个临时对象attrs再拷贝到this.attributes上。
+    // jQuery API 的风格
 		set: function(key, val, options) {
 			var attr, attrs, unset, changes, silent, changing, prev, current;
 			if (key == null) return this;
 
 			// Handle both `"key", value` and `{key: value}` -style arguments.
+			// 处理 `"key", value` 和 `{key: value}` 2种参数形式的情况.
 			// 例如：obj.set({key1: value1, key2: value2, ...}, options)
 			if (typeof key === 'object') {
 				attrs = key;
@@ -458,12 +519,17 @@
 
 			options || (options = {});
 			// Run validation.
+			// 验证设置的属性是否符合要求，_validate方法内部将会调用validate方法
+      // validate方法需要model使用者自己指定
 			// 在设置数据之前做属性值校验。如果校验失败，则返回false。
 			if (!this._validate(attrs, options)) return false;
 
 			// Extract attributes and options.
 			// 标记model数据状态。
+			// 提取 属性 和 可选项.
+      // 表示应当删除属性，而不是设置属性
 			unset = options.unset;		// 实例方法unset、clear会用到的选项。
+			// 当silent为true时，不触发change事件
 			silent = options.silent;	// 静默设置。
 			changes = [];				// 当前数据的哪些数据正在被改变了。
 			changing = this._changing;	// 当前实例的数据是否正在被改变（true/false）。
@@ -477,23 +543,24 @@
 				this.changed = {};
 			}
 
-			// 记录当前数据和之前数据。
+			// 记录当前数据和之前数据。通过current，prev两个参数存储当前数据和之前数据
 			// 如果 changing === true，则current和prev值初始化的时候是不一样。
 			// 如果 changing === false，则current和prev值初始化的时候是相同的。
 			current = this.attributes, prev = this._previousAttributes;
 
 			// Check for changes of `id`.
-			// 如果实例的数据属性中包含 this.idAttribute 属性，在设置实例的属性id。
+			// 如果实例的数据属性中包含 this.idAttribute 属性，再设置实例的属性id。如果设置了idAttribute为别的id ，则内部设置一个id来表示这个model
 			if (this.idAttribute in attrs) this.id = attrs[this.idAttribute];
 
 			// For each `set` attribute, update or delete the current value.
 			// 循环设置数据attrs。使用_.isEqual判断两个值是否相等。
 			for (attr in attrs) {
 				val = attrs[attr];
-				// 当前改变了哪些数据
+				// 当前改变了哪些数据，当设置的值与当前的数据attrs的属性值不同时，将要设置的属性的key加入changes列表中
 				if (!_.isEqual(current[attr], val)) changes.push(attr);
 				// 更新当前实例，在被连续改变数据的过程中，数据的最新值。
 				if (!_.isEqual(prev[attr], val)) {
+					// this.changed存储改变了的属性和其属性值
 					this.changed[attr] = val;
 				} else {
 					delete this.changed[attr];
@@ -508,6 +575,7 @@
 			// 触发事件 change 的过程中，回调会得到的参数有(当前实例, 老的数据, 选项)。
 			if (!silent) {
 				if (changes.length) this._pending = options;
+				// 触发'change:变更的属性名'事件
 				for (var i = 0, l = changes.length; i < l; i++) {
 					this.trigger('change:' + changes[i], this, current[changes[i]], options);
 				}
@@ -515,10 +583,13 @@
 
 			// You might be wondering why there's a `while` loop here. Changes can
 			// be recursively nested within `"change"` events.
+			// while 循环 修改将被递归嵌套在'events'事件中
 			if (changing) return this;
 			// 当实例数据结束改变时执行。
 			// 如果不是静默模式，则会触发默认事件 change。回调会得到的参数有(当前实例, 选项)。
 			if (!silent) {
+				// 触发'change'事件，这里使用while，是因为change事件也有可能会调用set方法
+        // 所以需要递归的调用
 				while (this._pending) {
 					options = this._pending;
 					this._pending = false;
@@ -532,7 +603,7 @@
 
 		// Remove an attribute from the model, firing `"change"`. `unset` is a noop
 		// if the attribute doesn't exist.
-		// 删除实例数据方法。主要是由选项 unset 控制。
+		// 删除实例数据方法。主要是由选项 unset 控制，`unset` 如果属性不存在设置为空
 		unset: function(attr, options) {
 			return this.set(attr, void 0, _.extend({}, options, {
 				unset: true
@@ -540,7 +611,7 @@
 		},
 
 		// Clear all attributes on the model, firing `"change"`.
-		// 清空实例数据方法。主要是由选项 unset 控制。
+		// 清空实例数据方法。主要是由选项 unset 控制，触发 `"change"`.
 		clear: function(options) {
 			var attrs = {};
 			for (var key in this.attributes) attrs[key] = void 0;
@@ -551,7 +622,8 @@
 
 		// Determine if the model has changed since the last `"change"` event.
 		// If you specify an attribute name, determine if that attribute has changed.
-		// 判断属性值是否改变。
+		// 确保 模型 在上一次更改后再一次更改 `"change"` event.
+		// 如果指定了属性名称，判断属性值是否改变。
 		hasChanged: function(attr) {
 			// 判断model的attributes是否有改变
 			if (attr == null) return !_.isEmpty(this.changed);
@@ -565,6 +637,10 @@
 		// persisted to the server. Unset attributes will be set to undefined.
 		// You can also pass an attributes object to diff against the model,
 		// determining if there *would be* a change.
+		// 返回一个包含所有改变的属性的对象, 当没有属性被更改，就返回 false.
+    // 常用来判断视图块是否需要更新或者那些属性需要保存到后端
+    // 未设置的属性将设置为 undefined.
+    // 你也可以针对模型传递一个属性对象来改变,决定是否 *would be* 改变.
 		// diff 是（要与当前实例数据相比较的）数据。比较之后，如果 diff 里的数据与当前实例数据不一致，
 		// 则说明当前实例数据已经被改变，最后会返回改变了的数据集合。
 		changedAttributes: function(diff) {
@@ -590,7 +666,7 @@
 
 		// Get all of the attributes of the model at the time of the previous
 		// `"change"` event.
-		// 取最近一次（触发了实例change事件后的那次）实例数据，json格式。
+		//  获取上一次（触发了实例change事件后的那次）实例数据，json格式。
 		previousAttributes: function() {
 			return _.clone(this._previousAttributes);
 		},
@@ -598,15 +674,20 @@
 		// Fetch the model from the server. If the server's representation of the
 		// model differs from its current attributes, they will be overridden,
 		// triggering a `"change"` event.
-		// ???
+		// 从服务器端获取 模型 .  相当于ajax的get操作
+    // 如果服务器端的显示的模型与当前属性有区别，那么覆盖并且触发事件"change"`.
 		fetch: function(options) {
 			options = options ? _.clone(options) : {};
 			if (options.parse === void 0) options.parse = true;
 			var model = this;
+			// 先缓存用户设置的success
 			var success = options.success;
+			// fetch方法自带的success回调
 			options.success = function(resp) {
+				// 从服务器获取数据后设置model的属性值
 				if (!model.set(model.parse(resp, options), options)) return false;
 				if (success) success(model, resp, options);
+				// 触发sync事件
 				model.trigger('sync', model, resp, options);
 			};
 			wrapError(this, options);
@@ -616,18 +697,20 @@
 		// Set a hash of model attributes, and sync the model to the server.
 		// If the server returns an attributes hash that differs, the model's
 		// state will be `set` again.
-		// ???
+		// 设置属性的哈希, 同步模型到服务器.
+    // 如果服务器返回一个有区别的属性散列，那么模型的状态要重新设置
 		save: function(key, val, options) {
 			var attrs, method, xhr, attributes = this.attributes;
 
 			// Handle both `"key", value` and `{key: value}` -style arguments.
+			// 处理 `"key", value` and `{key: value}` 2种参数情况.
 			if (key == null || typeof key === 'object') {
 				attrs = key;
 				options = val;
 			} else {
 				(attrs = {})[key] = val;
 			}
-
+			// 默认验证为通过 validate true
 			options = _.extend({
 				validate: true
 			}, options);
@@ -635,6 +718,11 @@
 			// If we're not waiting and attributes exist, save acts as
 			// `set(attr).save(null, opts)` with validation. Otherwise, check if
 			// the model will be valid when the attributes, if any, are set.
+			// 如果并不在等待队列中并且属性不存在, 保存行为以 `set(attr).save(null, opts)`格式.
+      // 如果选项参数里面没有wait方法 即不需要验证，直接就set了
+      // options.wait为true用于等待服务器返回结果，再进行属性值的设置（进而view变化）
+      // 为false的话，先进行数据验证，再设置属性值（改变view, 拥有更好的用户体验），再提交数据，
+      // （这样的话等待服务器返回结果前还原attributes，进行属性值的set操作，包含验证）
 			if (attrs && !options.wait) {
 				if (!this.set(attrs, options)) return false;
 			} else {
@@ -1258,57 +1346,85 @@
 
 	// Creating a Backbone.View creates its initial element outside of the DOM,
 	// if an existing element is not provided...
+	// Backbone Views 常常比他们真正所编写的代码更常规.
+  // 一个 视图 是一个简单的在Dom代理 UI逻辑块的JavaScript对象
+  // 它可能是一个简单的项目, 一个完整的列表, 一个侧栏或者面板, 甚至是包含你所用应用的环境框架
+  // 定义 UI 来作为一个 **View** 允许你用声明方式定义DOM事件,
+  // 无需担心渲染顺序 ... 并且能很容易让视图对你模型状态变化时做出反应。
+
+  // 创建一个DOM以外初始化的 Backbone.View 元素,
+  // 如果现有环境不提供...
 	var View = Backbone.View = function(options) {
+		// 为每一个视图对象创建一个唯一标识, 前缀为"view"
 		this.cid = _.uniqueId('view');
 		options || (options = {});
 		_.extend(this, _.pick(options, viewOptions));
+		// 根据this.el是否被赋值，做一些处理
 		this._ensureElement();
+		// 初始化时调用initialize方法，并且this指向backbone view
 		this.initialize.apply(this, arguments);
 		this.delegateEvents();
 	};
 
 	// Cached regex to split keys for `delegate`.
+	// 一个正则，匹配未被空格、换行等分隔符分隔的字符串，或者以空格、换行等分隔符分隔为2段的字符串
 	var delegateEventSplitter = /^(\S+)\s*(.*)$/;
 
 	// List of view options to be merged as properties.
+	// viewOptions列表记录一些列属性名, 在构造视图对象时, 如果传递的配置项中包含这些名称, 则将属性复制到对象本身
 	var viewOptions = ['model', 'collection', 'el', 'id', 'attributes', 'className', 'tagName', 'events'];
 
 	// Set up all inheritable **Backbone.View** properties and methods.
+	// 设置所有可继承的** Backbone.View ** 属性和方法。
 	_.extend(View.prototype, Events, {
 
 		// The default `tagName` of a View's element is `"div"`.
+		// 如果在创建视图对象时, 没有设置指定的el元素, 则会通过make方法创建一个元素, tagName为创建元素的默认标签
 		tagName: 'div',
 
 		// jQuery delegate for element lookup, scoped to DOM elements within the
 		// current view. This should be preferred to global lookups where possible.
+		// 相当于jq的find方法，用于查找元素
+    // 每个视图中都具有一个$选择器方法, 该方法与jQuery或Zepto类似, 通过传递一个表达式来获取元素
+    // 但该方法只会在视图对象的$el元素范围内进行查找, 因此会提高匹配效率
 		$: function(selector) {
 			return this.$el.find(selector);
 		},
 
 		// Initialize is an empty function by default. Override it with your own
 		// initialization logic.
+		// 初始化方法, 在对象被实例化后自动调用
 		initialize: function() {},
 
 		// **render** is the core function that your view should override, in order
 		// to populate its element (`this.el`), with the appropriate HTML. The
 		// convention is for **render** to always return `this`.
+		// render方法与initialize方法类似, 默认没有实现任何逻辑
+    // 一般会重载该方法, 以实现对视图中元素的渲染
 		render: function() {
 			return this;
 		},
 
 		// Remove this view by taking the element out of the DOM, and removing any
 		// applicable Backbone.Events listeners.
+		// 移除当前视图的$el元素
 		remove: function() {
 			this.$el.remove();
+			// 删除绑定的事件，释放内存
 			this.stopListening();
 			return this;
 		},
 
 		// Change the view's element (`this.el` property), including event
 		// re-delegation.
+		// 为视图对象设置标准的$el及el属性, 该方法在对象创建时被自动调用
 		setElement: function(element, delegate) {
+			//如果没有视图对象，就取消el的事件绑定
 			if (this.$el) this.undelegateEvents();
+			// this.$el 存放Jquery或其他库的示例对象
+      // 将元素创建为jQuery或Zepto对象, 并存放在$el属性中
 			this.$el = element instanceof Backbone.$ ? element : Backbone.$(element);
+			// this.el存放标准的DOM对象 熟悉jq的话 应该都清楚
 			this.el = this.$el[0];
 			if (delegate !== false) this.delegateEvents();
 			return this;
@@ -1329,15 +1445,32 @@
 		// Omitting the selector binds the event to `this.el`.
 		// This only works for delegate-able events: not `focus`, `blur`, and
 		// not `change`, `submit`, and `reset` in Internet Explorer.
+		// 为视图元素绑定事件
+    // events参数配置了需要绑定事件的集合, 格式如('事件名称 元素选择表达式' : '事件方法名称/或事件函数'):
+    // {
+    //     'click #title': 'edit',
+    //     'click .save': 'save'
+    //     'click span': function() {}
+    // }
+    // 该方法在视图对象初始化时会被自动调用, 并将对象中的events属性作为events参数(事件集合)
 		delegateEvents: function(events) {
+			// 如果没有手动传递events参数, 则从视图对象获取events属性作为事件集合
 			if (!(events || (events = _.result(this, 'events')))) return this;
+			// 取消当前已经绑定过的events事件 避免重复绑定导致事件执行多次
 			this.undelegateEvents();
+			// 遍历需要绑定的事件列表
 			for (var key in events) {
+				 // 获取需要绑定的方法(允许是方法名称或函数)
 				var method = events[key];
+				// 如果是方法名, 则从对象中获取该函数对象, 因此该方法名必须是视图对象中已定义的方法
 				if (!_.isFunction(method)) method = this[events[key]];
 				if (!method) continue;
 
+				// 解析事件表达式(key), 从表达式中解析出事件的名字和需要操作的元素
+        // 例如 'click #title'将被解析为 'click' 和 '#title' 两部分, 均存放在match数组中
 				var match = key.match(delegateEventSplitter);
+				// match[1]为解析后的事件名称
+        // match[2]为解析后的事件元素选择器表达式
 				var eventName = match[1],
 					selector = match[2];
 				method = _.bind(method, this);
@@ -1354,7 +1487,11 @@
 		// Clears all callbacks previously bound to the view with `delegateEvents`.
 		// You usually don't need to use this, but may wish to if you have multiple
 		// Backbone views attached to the same DOM element.
+		// 取消视图中当前元素绑定的events事件, 该方法一般不会被使用
+    // 除非调用delegateEvents方法重新为视图中的元素绑定事件, 在重新绑定之前会清除当前的事件
+    // 或通过setElement方法重新设置试图的el元素, 也会清除当前元素的事件
 		undelegateEvents: function() {
+			// 如果已经存在了$el属性(可能是手动调用了setElement方法切换视图的元素),则取消之前对$el绑定的events事件
 			this.$el.off('.delegateEvents' + this.cid);
 			return this;
 		},
@@ -1363,14 +1500,26 @@
 		// If `this.el` is a string, pass it through `$()`, take the first
 		// matching element, and re-assign it to `el`. Otherwise, create
 		// an element from the `id`, `className` and `tagName` properties.
+		// 每一个视图对象都应该有一个el元素, 作为渲染的元素
+    // 在构造视图时, 可以设置对象的el属性来指定一个元素
+    // 如果设置的el是一个字符串或DOM对象, 则通过$方法将其创建为一个jQuery或Zepto对象
+    // 如果没有设置el属性, 则根据传递的tagName, id和className, 调用_createElement方法创建一个元素
+    // (新创建的元素不会被添加到文档树中, 而始终存储在内存, 当处理完毕需要渲染到页面时, 一般会在重写的render方法, 或自定义方法中, 访问this.el将其追加到文档)
+    // (如果我们需要向页面添加一个目前还没有的元素, 并且需要为其添加一些子元素, 属性, 样式或事件时, 可以通过该方式先将元素创建到内存, 在完成所有操作之后再手动渲染到文档, 可以提高渲染效率)
 		_ensureElement: function() {
+			 // 如果没有设置el属性, 则创建默认元素
 			if (!this.el) {
+				// 从对象获取attributes属性, 作为新创建元素的默认属性列表
 				var attrs = _.extend({}, _.result(this, 'attributes'));
+				// 设置新元素的id
 				if (this.id) attrs.id = _.result(this, 'id');
+				// 设置新元素的class
 				if (this.className) attrs['class'] = _.result(this, 'className');
 				var $el = Backbone.$('<' + _.result(this, 'tagName') + '>').attr(attrs);
+				// 调用setElement方法将元素设置为视图所使用的标准元素
 				this.setElement($el, false);
 			} else {
+				// 如果设置了el属性, 则直接调用setElement方法将el元素设置为视图的标准元素
 				this.setElement(_.result(this, 'el'), false);
 			}
 		}
@@ -1395,33 +1544,54 @@
 	// instead of `application/json` with the model in a param named `model`.
 	// Useful when interfacing with server-side languages like **PHP** that make
 	// it difficult to read the body of `PUT` requests.
+	// Backbone.sync  同步
+	// 重载这个方法来改变 Backbone 持久模型在服务器中的方式、
+	// 通过请求类型和问题中的模型
+	// 默认情况发送 RESTful Ajax 请求到模型中的`url()`.
+	// 一些可行的自定义为:
+	//
+	// * 使用 `setTimeout` 在一个请求中批量的触发更新.
+	// * 发送 XML 而不是 JSON.
+	// * 坚持模型通过 WebSockets 而不是 Ajax.
+	//
+	// 开启 `Backbone.emulateHTTP` 为像 `POST` 一样发送 `PUT` 和 `DELETE` 请求
+	// `_method` 参数中包含真正的 HTTP 方法,
+	// 以及主体的所有请求 as `application/x-www-form-urlencoded`
+	// 替换为 `application/json`参数名为 `model`的模块.
+	// 当接口为服务器端语言，如**PHP**时很有用， 使得主体的'PUT'请求难以读取
+	// 实际调用Backbone.ajax 请求
 	Backbone.sync = function(method, model, options) {
 		var type = methodMap[method];
 
 		// Default options, unless specified.
+		// 相当于jq的 extend，合并默认值
 		_.defaults(options || (options = {}), {
 			emulateHTTP: Backbone.emulateHTTP,
 			emulateJSON: Backbone.emulateJSON
 		});
 
 		// Default JSON-request options.
+		// 默认使用json的数据格式
 		var params = {
 			type: type,
 			dataType: 'json'
 		};
 
 		// Ensure that we have a URL.
+		// 如果不存在url的话 则获取model里面的url设置 ，如果还是没有 则抛出异常
 		if (!options.url) {
 			params.url = _.result(model, 'url') || urlError();
 		}
 
 		// Ensure that we have the appropriate request data.
+		// 确保有正确的请求数据.
 		if (options.data == null && model && (method === 'create' || method === 'update' || method === 'patch')) {
 			params.contentType = 'application/json';
 			params.data = JSON.stringify(options.attrs || model.toJSON(options));
 		}
 
 		// For older servers, emulate JSON by encoding the request into an HTML-form.
+		// 对于老的服务器, 模拟JSON以HTML的形式.
 		if (options.emulateJSON) {
 			params.contentType = 'application/x-www-form-urlencoded';
 			params.data = params.data ? {
@@ -1431,6 +1601,8 @@
 
 		// For older servers, emulate HTTP by mimicking the HTTP method with `_method`
 		// And an `X-HTTP-Method-Override` header.
+		// 对于老的服务器, 模拟 HTTP 通过用 `_method` 方法仿造 HTTP
+    // 和一个 `X-HTTP-Method-Override` 头.
 		if (options.emulateHTTP && (type === 'PUT' || type === 'DELETE' || type === 'PATCH')) {
 			params.type = 'POST';
 			if (options.emulateJSON) params.data._method = type;
@@ -1442,6 +1614,7 @@
 		}
 
 		// Don't process data on a non-GET request.
+		// 在 non-GET 请求中不传递数据.
 		if (params.type !== 'GET' && !options.emulateJSON) {
 			params.processData = false;
 		}
@@ -1449,6 +1622,9 @@
 		// If we're sending a `PATCH` request, and we're in an old Internet Explorer
 		// that still has ActiveX enabled by default, override jQuery to use that
 		// for XHR instead. Remove this line when jQuery supports `PATCH` on IE8.
+		// 如果我们在旧的IE中发送一个“PATCH”请求
+		// 默认情况下仍然启用ActiveX，替换jQuery来使用
+		// 代替XHR 当jQuery在IE8上支持“PATCH”时，可以删除此行。
 		if (params.type === 'PATCH' && noXhrPatch) {
 			params.xhr = function() {
 				return new ActiveXObject("Microsoft.XMLHTTP");
@@ -1456,6 +1632,7 @@
 		}
 
 		// Make the request, allowing the user to override any Ajax options.
+		// 提出请求, 允许用户自定义Ajax选项.
 		var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
 		model.trigger('request', model, xhr, options);
 		return xhr;
@@ -1466,6 +1643,7 @@
 		!(window.XMLHttpRequest && (new XMLHttpRequest).dispatchEvent);
 
 	// Map from CRUD to HTTP for our default `Backbone.sync` implementation.
+	// 映射 CRUD 到 HTTP 为了默认的 `Backbone.sync` 执行.
 	var methodMap = {
 		'create': 'POST',
 		'update': 'PUT',
@@ -1476,6 +1654,8 @@
 
 	// Set the default implementation of `Backbone.ajax` to proxy through to `$`.
 	// Override this if you'd like to use a different library.
+	// 通过 `$` 代理来设置 `Backbone.ajax` 的默认执行.
+  // 如果想要使用另一个库那么重载它.
 	Backbone.ajax = function() {
 		return Backbone.$.ajax.apply(Backbone.$, arguments);
 	};
@@ -1485,6 +1665,8 @@
 
 	// Routers map faux-URLs to actions, and fire events when routes are
 	// matched. Creating a new one sets its `routes` hash, if not set statically.
+	// 路由映射 faux-URLs 到 actions, 当路由匹配后触发事件
+  // 如果还没有静态的设置，创建一个新的 `router` 哈希.
 	var Router = Backbone.Router = function(options) {
 		options || (options = {});
 		if (options.routes) this.routes = options.routes;
@@ -1494,10 +1676,11 @@
 
 	// Cached regular expressions for matching named param parts and splatted
 	// parts of route strings.
-	var optionalParam = /\((.*?)\)/g;
-	var namedParam = /(\(\?)?:\w+/g;
-	var splatParam = /\*\w+/g;
-	var escapeRegExp = /[\-{}\[\]+?.,\\\^$|#\s]/g;
+	 // 缓存匹配名称参数和路由字符串分割的正则表达式
+	var optionalParam = /\((.*?)\)/g;    						// 规则中的括号部分 也就是可有可没有的部分
+	var namedParam = /(\(\?)?:\w+/g;     						// 将不带括号部分的 但是:...形式的进行替换可以匹配为非/以外任意字符
+	var splatParam = /\*\w+/g;					 						// 将*...形式的替换为除换行以外的任何字符匹配.*
+	var escapeRegExp = /[\-{}\[\]+?.,\\\^$|#\s]/g;	// 将 - { } [ ] + ? . , \ ^ $ # 空格 等进行转义
 
 	// Set up all inheritable **Backbone.Router** properties and methods.
 	_.extend(Router.prototype, Events, {
@@ -1507,7 +1690,7 @@
 		initialize: function() {},
 
 		// Manually bind a single named route to a callback. For example:
-		//
+		// 手动绑定回调函数到单个路由名称. 例如:
 		//     this.route('search/:query/p:num', 'search', function(query, num) {
 		//       ...
 		//     });
@@ -1518,6 +1701,7 @@
 				callback = name;
 				name = '';
 			}
+			// 如果callback不存在，则调用name方法
 			if (!callback) callback = this[name];
 			var router = this;
 			Backbone.history.route(route, function(fragment) {
@@ -1525,6 +1709,7 @@
 				router.execute(callback, args);
 				router.trigger.apply(router, ['route:' + name].concat(args));
 				router.trigger('route', name, args);
+				// 触发history的route事件
 				Backbone.history.trigger('route', router, name, args);
 			});
 			return this;
@@ -1537,6 +1722,7 @@
 		},
 
 		// Simple proxy to `Backbone.history` to save a fragment into the history.
+		// 将`Backbone.history`作为代理来保存片段到 history.
 		navigate: function(fragment, options) {
 			Backbone.history.navigate(fragment, options);
 			return this;
@@ -1545,6 +1731,8 @@
 		// Bind all defined routes to `Backbone.history`. We have to reverse the
 		// order of the routes here to support behavior where the most general
 		// routes can be defined at the bottom of the route map.
+		// 绑定所有定义了的路由到 `Backbone.history`.
+    // 在此我们需要调转路由的顺序来支持普通路由在路由映射底部定义的情况
 		_bindRoutes: function() {
 			if (!this.routes) return;
 			this.routes = _.result(this, 'routes');
@@ -1556,6 +1744,8 @@
 
 		// Convert a route string into a regular expression, suitable for matching
 		// against the current location hash.
+		// 将路由字符串转换到适合匹配当前 location hash的正则表达式
+    // 将route字符串转成正则表达式
 		_routeToRegExp: function(route) {
 			route = route.replace(escapeRegExp, '\\$&')
 				.replace(optionalParam, '(?:$1)?')
@@ -1563,12 +1753,14 @@
 					return optional ? match : '([^/?]+)';
 				})
 				.replace(splatParam, '([^?]*?)');
-			return new RegExp('^' + route + '(?:\\?([\\s\\S]*))?$');
+			return new RegExp('^' + route + '(?:\\?([\\s\\S]*))?$');// 构建正则 加上 开始^和结束$
 		},
 
 		// Given a route, and a URL fragment that it matches, return the array of
 		// extracted decoded parameters. Empty or unmatched parameters will be
 		// treated as `null` to normalize cross-browser behavior.
+		// 给一个 路由, 当URL的片段匹配后, 返回匹配到的解码后的参数数组.
+    // 空或者不匹配的参数会被作为 null 来对待保证跨浏览器兼容
 		_extractParameters: function(route, fragment) {
 			var params = route.exec(fragment).slice(1);
 			return _.map(params, function(param, i) {
@@ -1622,6 +1814,7 @@
 
 		// The default interval to poll for hash changes, if necessary, is
 		// twenty times a second.
+		// hash更改的事件间隔 针对低版本浏览器
 		interval: 50,
 
 		// Are we at the app root?
@@ -1638,6 +1831,7 @@
 
 		// Get the cross-browser normalized URL fragment, either from the URL,
 		// the hash, or the override.
+		// 跨浏览器的得到URL片段 不管是URL hash 或其他
 		getFragment: function(fragment, forcePushState) {
 			if (fragment == null) {
 				if (this._hasPushState || !this._wantsHashChange || forcePushState) {
@@ -1653,6 +1847,7 @@
 
 		// Start the hash change handling, returning `true` if the current URL matches
 		// an existing route, and `false` otherwise.
+		// 开始监听hash change事件（兼容性）
 		start: function(options) {
 			if (History.started) throw new Error("Backbone.history has already been started");
 			History.started = true;
@@ -1664,13 +1859,14 @@
 			}, this.options, options);
 			this.root = this.options.root;
 			this._wantsHashChange = this.options.hashChange !== false;
-			this._wantsPushState = !!this.options.pushState;
+			this._wantsPushState = !!this.options.pushState; // 是否采用popstate修改地址栏地址
 			this._hasPushState = !!(this.options.pushState && this.history && this.history.pushState);
 			var fragment = this.getFragment();
 			var docMode = document.documentMode;
 			var oldIE = (isExplorer.exec(navigator.userAgent.toLowerCase()) && (!docMode || docMode <= 7));
 
 			// Normalize root to always include a leading and trailing slash.
+			// 规范化root中含有头和尾的斜杠.
 			this.root = ('/' + this.root + '/').replace(rootStripper, '/');
 
 			if (oldIE && this._wantsHashChange) {
@@ -1720,6 +1916,8 @@
 
 		// Disable Backbone.history, perhaps temporarily. Not useful in a real app,
 		// but possibly useful for unit testing Routers.
+		// 关闭 Backbone.history, 可能暂时性.
+    // 在真实应用中无用，但是在单元测试中有用.
 		stop: function() {
 			Backbone.$(window).off('popstate', this.checkUrl).off('hashchange', this.checkUrl);
 			if (this._checkUrlInterval) clearInterval(this._checkUrlInterval);
@@ -1728,6 +1926,8 @@
 
 		// Add a route to be tested when the fragment changes. Routes added later
 		// may override previous routes.
+		// 当一个框架改变的时候添加一个测试路由.
+    // 路由添加后可能会重写之前的路由.
 		route: function(route, callback) {
 			this.handlers.unshift({
 				route: route,
@@ -1737,6 +1937,8 @@
 
 		// Checks the current URL to see if it has changed, and if it has,
 		// calls `loadUrl`, normalizing across the hidden iframe.
+		// 检测当前的URL是否有改变,
+    // 如果有，调用 `loadUrl`, 规范隐藏的iframe.
 		checkUrl: function(e) {
 			var current = this.getFragment();
 			if (current === this.fragment && this.iframe) {
@@ -1750,6 +1952,8 @@
 		// Attempt to load the current URL fragment. If a route succeeds with a
 		// match, returns `true`. If no defined routes matches the fragment,
 		// returns `false`.
+		// 尝试加载当前的URL片段. 如果路由匹配成功则返回`true`.
+    // 定义的路由不能匹配片段时返回 `false`.
 		loadUrl: function(fragment) {
 			fragment = this.fragment = this.getFragment(fragment);
 			return _.any(this.handlers, function(handler) {
@@ -1767,6 +1971,12 @@
 		// The options object can contain `trigger: true` if you wish to have the
 		// route callback be fired (not usually desirable), or `replace: true`, if
 		// you wish to modify the current URL without adding an entry to the history.
+		// 保存片段至 hash history,
+	  // 或者，如果'replace' 参数传递了就替换URL的状态.
+	  // 你需要确保提前进行URL编码.
+	  //
+	  // 对象的选项包括 `trigger: true` 如果你希望有路由的回调函数被触发（不理想）
+	  // `replace: true`, 如果你希望修改当前的URL但是不添加到 history
 		navigate: function(fragment, options) {
 			if (!History.started) return false;
 			if (!options || options === true) options = {
@@ -1785,6 +1995,7 @@
 			if (fragment === '' && url !== '/') url = url.slice(0, -1);
 
 			// If pushState is available, we use it to set the fragment as a real URL.
+			// 如果支持 pushState , 使用片段作为 a real URL.
 			if (this._hasPushState) {
 				this.history[options.replace ? 'replaceState' : 'pushState']({}, document.title, url);
 
@@ -1796,6 +2007,8 @@
 					// Opening and closing the iframe tricks IE7 and earlier to push a
 					// history entry on hash-tag change.  When replace is true, we don't
 					// want this.
+					// 在IE7 和更早的版本中用打开关闭iframe是推入history来实现hash-tag变化
+          // 我们不希望它真正替换
 					if (!options.replace) this.iframe.document.open().close();
 					this._updateHash(this.iframe.location, fragment, options.replace);
 				}
@@ -1810,6 +2023,7 @@
 
 		// Update the hash location, either replacing the current entry, or adding
 		// a new one to the browser history.
+		// 更新location的 hash, 取代当前的 entry, 或者向浏览器history添加一个新的.
 		_updateHash: function(location, fragment, replace) {
 			if (replace) {
 				var href = location.href.replace(/(javascript:|#).*$/, '');
@@ -1831,6 +2045,8 @@
 	// Helper function to correctly set up the prototype chain, for subclasses.
 	// Similar to `goog.inherits`, but uses a hash of prototype properties and
 	// class properties to be extended.
+	// Helper 函数 为子类正确的设置原型链.
+  // 与`goog.inherits`类似, 但是使用原型属性和类属性的hash形式进行拓展
 	var extend = function(protoProps, staticProps) {
 		var parent = this;
 		var child;
@@ -1838,6 +2054,8 @@
 		// The constructor function for the new subclass is either defined by you
 		// (the "constructor" property in your `extend` definition), or defaulted
 		// by us to simply call the parent's constructor.
+		// 由你定义的构造函数或者简单的有我们的父类构造函数创建新子类
+    // ( "constructor" 的属性是有你来扩展定义的)
 		if (protoProps && _.has(protoProps, 'constructor')) {
 			child = protoProps.constructor;
 		} else {
@@ -1847,10 +2065,12 @@
 		}
 
 		// Add static properties to the constructor function, if supplied.
+		// 如果提供，给构造函数添加静态属性.
 		_.extend(child, parent, staticProps);
 
 		// Set the prototype chain to inherit from `parent`, without calling
 		// `parent`'s constructor function.
+		// 设置原型链用 `parent`的原型,不调用`parent`的构造函数
 		var Surrogate = function() {
 			this.constructor = child;
 		};
@@ -1859,24 +2079,29 @@
 
 		// Add prototype properties (instance properties) to the subclass,
 		// if supplied.
+		// 如果提供了，给子类添加原型属性 (替代 属性)
 		if (protoProps) _.extend(child.prototype, protoProps);
 
 		// Set a convenience property in case the parent's prototype is needed
 		// later.
+		// 设置一个方便的属性来处理之后父类的原型在之后可能被引用的情况
 		child.__super__ = parent.prototype;
 
 		return child;
 	};
 
 	// Set up inheritance for the model, collection, router, view and history.
+	//可参考 http://www.cnblogs.com/snandy/archive/2013/05/27/3097429.html
 	Model.extend = Collection.extend = Router.extend = View.extend = History.extend = extend;
 
 	// Throw an error when a URL is needed, and none is supplied.
+	// 当URL是必须的但是未提供的时候爆出错误.
 	var urlError = function() {
 		throw new Error('A "url" property or function must be specified');
 	};
 
 	// Wrap an optional error callback with a fallback error event.
+	// 包装一个设置的错误回调函数来作为后备错误事件。
 	var wrapError = function(model, options) {
 		var error = options.error;
 		options.error = function(resp) {
